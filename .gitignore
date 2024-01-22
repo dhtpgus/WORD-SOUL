@@ -16,3 +16,5 @@ Content
 *.suo
 *.htm
 
+ServerWS/x64/
+ServerWS/.vs/
