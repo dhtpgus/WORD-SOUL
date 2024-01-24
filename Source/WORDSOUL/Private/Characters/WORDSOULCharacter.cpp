@@ -50,6 +50,9 @@ void AWORDSOULCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAxis(FName("Turn"), this, &AWORDSOULCharacter::Turn);
 	PlayerInputComponent->BindAxis(FName("LookUp"), this, &AWORDSOULCharacter::LookUp);
 	PlayerInputComponent->BindAxis(FName("MoveRight"), this, &AWORDSOULCharacter::MoveRight);
+
+	PlayerInputComponent->BindAction(FName("Jump"), IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction(FName("GetItem"), IE_Pressed, this, &AWORDSOULCharacter::GetItem);
 }
 
 void AWORDSOULCharacter::MoveForward(float value)
@@ -83,6 +86,17 @@ void AWORDSOULCharacter::MoveRight(float value)
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, value);
+	}
+}
+
+void AWORDSOULCharacter::GetItem()
+{
+	if (OverlappingItem)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, "GetItem");
+		}
 	}
 }
 

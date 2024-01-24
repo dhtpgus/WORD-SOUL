@@ -8,6 +8,7 @@
 
 class USpringArmComponent;
 class UCameraComponent;
+class AItem;
 
 UCLASS()
 class WORDSOUL_API AWORDSOULCharacter : public ACharacter
@@ -18,6 +19,7 @@ public:
 	AWORDSOULCharacter();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -25,6 +27,7 @@ protected:
 	void Turn(float value);
 	void LookUp(float value);
 	void MoveRight(float value);
+	void GetItem();
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -33,4 +36,6 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* ViewCamera;
 
+	UPROPERTY(VisibleInstanceOnly)
+	AItem* OverlappingItem;
 };
