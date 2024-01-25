@@ -8,6 +8,13 @@
 #include <thread>
 
 namespace thread {
-	static const int kNumWorker{ 2 * (int)std::thread::hardware_concurrency() };
-	static thread_local int id;
+	int GetNumWorker() {
+		return 2 * (int)std::thread::hardware_concurrency();
+	}
+
+	int GetID() {
+		static int cnt;
+		static thread_local int id = cnt++;
+		return id;
+	}
 }

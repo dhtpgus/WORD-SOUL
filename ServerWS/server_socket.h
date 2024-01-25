@@ -11,8 +11,13 @@
 #include "worker.h"
 
 namespace server {
-	constexpr unsigned short kPort{ 21155 };
-	constexpr size_t kBufferSize{ 1024 };
+	constexpr unsigned short GetPortNum() {
+		return 21155;
+	}
+
+	constexpr size_t GetBufferSize() {
+		return 1024;
+	}
 
 	class Socket {
 	public:
@@ -22,9 +27,9 @@ namespace server {
 			}
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 
-			workers_.reserve(thread::kNumWorker);
+			workers_.reserve(thread::GetNumWorker());
 
-			for (int i = 0; i < thread::kNumWorker; ++i) {
+			for (int i = 0; i < thread::GetNumWorker(); ++i) {
 				workers_.emplace_back(thread::Worker, iocp_, i);
 			}
 			for (std::thread& worker : workers_) {
@@ -39,7 +44,7 @@ namespace server {
 			memset(&server_addr_, 0, sizeof(server_addr_));
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
-			server_addr_.sin_port = htons(kPort);
+			server_addr_.sin_port = htons(GetPortNum());
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -64,8 +69,7 @@ namespace server {
 		void Accept() {
 			int sockaddr_len = sizeof(sockaddr_in);
 			sockaddr_in client_sockaddr;
-			SOCKET client_sock =
-				accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
+			SOCKET client_sock = accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
 			if (client_sock == INVALID_SOCKET) {
 				return;
 			}

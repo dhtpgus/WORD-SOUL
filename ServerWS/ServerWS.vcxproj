@@ -135,7 +135,9 @@
   <ItemGroup>
     <ClInclude Include="boss.h" />
     <ClInclude Include="client_socket.h" />
+    <ClInclude Include="ebr.h" />
     <ClInclude Include="entity.h" />
+    <ClInclude Include="lf_node.h" />
     <ClInclude Include="monster.h" />
     <ClInclude Include="packet.h" />
     <ClInclude Include="player.h" />

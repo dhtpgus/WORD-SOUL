@@ -13,8 +13,6 @@
 namespace thread {
 	void Worker(HANDLE iocp, int thread_id)
 	{
-		id = thread_id;
-
 		DWORD transferred;
 		SOCKET client_sock;
 		client::Socket* client_ptr;

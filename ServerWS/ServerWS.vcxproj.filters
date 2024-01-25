@@ -22,6 +22,9 @@
     <Filter Include="헤더 파일\thread">
       <UniqueIdentifier>{d2b2e80d-a721-4e5c-98d0-fd3f82d1f061}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\thread\lf">
+      <UniqueIdentifier>{0a024113-02a0-4889-b2ba-f3910fa94d77}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -55,6 +58,12 @@
     </ClInclude>
     <ClInclude Include="thread.h">
       <Filter>헤더 파일\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="ebr.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="lf_node.h">
+      <Filter>헤더 파일\thread\lf</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
