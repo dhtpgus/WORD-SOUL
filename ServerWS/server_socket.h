@@ -21,7 +21,7 @@ namespace server {
 
 	class Socket {
 	public:
-		Socket() : workers_{}, clients_{}, mx_{} {
+		Socket() : workers_{}, clients_{}, mx_{}, rq{ thread::GetNumWorker() } {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
@@ -30,8 +30,9 @@ namespace server {
 			workers_.reserve(thread::GetNumWorker());
 
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
-				workers_.emplace_back(thread::Worker, iocp_, i);
+				workers_.emplace_back(thread::Worker, iocp_, i, &rq);
 			}
+
 			for (std::thread& worker : workers_) {
 				worker.detach();
 			}
@@ -90,6 +91,7 @@ namespace server {
 		HANDLE iocp_;
 		std::unordered_set<client::Socket*> clients_;
 		std::mutex mx_;
+		lf::RelaxedQueue rq;
 	};
 
 	server::Socket sock;

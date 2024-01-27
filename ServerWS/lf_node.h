@@ -4,11 +4,12 @@ namespace lf {
 	struct Node {
 		using Level = unsigned long long;
 		using Epoch = unsigned long long;
+		using Value = unsigned long long;
 		Node* volatile next;
-		void* v;
+		Value v;
 		Level level;
 		Epoch retire_epoch;
-		Node(void* p, Level level)
-			: v{ p }, level{ level }, next{ nullptr }, retire_epoch{} {}
+		Node(Value v, Level level)
+			: v{ v }, level{ level }, next{ nullptr }, retire_epoch{} {}
 	};
 }

@@ -128,9 +128,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ebr.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
+    <ClCompile Include="relaxed_queue.cpp" />
+    <ClCompile Include="thread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="boss.h" />
@@ -141,6 +144,7 @@
     <ClInclude Include="monster.h" />
     <ClInclude Include="packet.h" />
     <ClInclude Include="player.h" />
+    <ClInclude Include="relaxed_queue.h" />
     <ClInclude Include="server_socket.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="worker.h" />
