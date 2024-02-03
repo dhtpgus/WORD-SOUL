@@ -1,3 +1,9 @@
+//-----------------------------------------------------------------
+// 
+// lf_relaxed_queue.h - lockfree 자료구조 relaxed queue 정의
+// 
+//-----------------------------------------------------------------
+
 #pragma once
 #include <atomic>
 #include "thread.h"
@@ -5,8 +11,8 @@
 #include "ebr.h"
 
 namespace lf {
-	constexpr Node::Value kRetryRequired = 1;
-	constexpr Node::Value kPopFailed = 2;
+	const Node::Value kRetryRequired = reinterpret_cast<Node::Value>(1);
+	constexpr Node::Value kPopFailed = nullptr;
 
 	class alignas(std::hardware_destructive_interference_size) LFQueue {
 	public:
@@ -63,7 +69,7 @@ namespace lf {
 			return false;
 		}
 
-		Node::Value Pop(Node::Level level = 0) {
+		Node::Value Pop(EBR& ebr, Node::Level level = 0) {
 			while (true) {
 				Node* first = head;
 				Node* last = tail;
@@ -116,20 +122,9 @@ namespace lf {
 			}
 			tail = head;
 		}
-
-		size_t Count() const {
-			Node* p = head->next;
-			size_t cnt{};
-			while (true) {
-				if (p == nullptr) break;
-				++cnt;
-				p = p->next;
-			}
-			return cnt;
-		}
 	private:
 		bool CAS(Node* volatile* next, Node* old_p, Node* new_p) {
-			return atomic_compare_exchange_strong(
+			return std::atomic_compare_exchange_strong(
 				reinterpret_cast<volatile std::atomic_llong*>(next),
 				reinterpret_cast<long long*>(&old_p),
 				reinterpret_cast<long long>(new_p));
@@ -138,18 +133,19 @@ namespace lf {
 		Node* volatile tail;
 	};
 
+	template<class T>
 	class RelaxedQueue {
 	public:
 		RelaxedQueue() = delete;
-		RelaxedQueue(int num_thread) : num_thread_{ num_thread }, queues_{} {
-			queues_.reserve(num_thread_ + 1);
+		RelaxedQueue(int num_thread) : num_thread_{ num_thread }, queues_{}, ebr_{ num_thread } {
+			queues_.reserve(num_thread_ + 1ULL);
 			for (int i = 0; i < num_thread_ + 1; ++i) {
 				queues_.emplace_back();
 			}
 		}
-		void Push(void* x) {
-			Node* e = new Node{ (Node::Value)x, 0 };
-			ebr.StartOp();
+		void Push(T* x) {
+			Node* e = new Node{ x, 0 };
+			ebr_.StartOp();
 
 			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;
 
@@ -158,10 +154,10 @@ namespace lf {
 				queues_[thread::GetID()].Push(e, queues_[num_thread_]);
 			}
 
-			ebr.EndOp();
+			ebr_.EndOp();
 		}
-		void* Pop() {
-			ebr.StartOp();
+		T* Pop() {
+			ebr_.StartOp();
 			Node::Value ret{};
 			Node::Level main_head_level{};
 			Node::Level branch_head_level{};
@@ -173,13 +169,13 @@ namespace lf {
 
 					main_head_level = queues_[num_thread_].GetHeadLevel();
 					if (main_head_level == 0) {
-						ebr.EndOp();
-						return nullptr;
+						ebr_.EndOp();
+						return (T*)kPopFailed;
 					}
 
 					branch_head_level = queues_[id].GetHeadLevel();
 					if (branch_head_level != 0 and branch_head_level <= main_head_level) {
-						ret = queues_[id].Pop();
+						ret = queues_[id].Pop(ebr_);
 
 						if (ret == kPopFailed) {
 							continue;
@@ -191,8 +187,8 @@ namespace lf {
 							continue;
 						}
 
-						ebr.EndOp();
-						return (void*)ret;
+						ebr_.EndOp();
+						return (T*)ret;
 					}
 					id = (id + 1) % num_thread_;
 				}
@@ -203,18 +199,19 @@ namespace lf {
 
 				main_head_level = queues_[num_thread_].GetHeadLevel();
 				if (main_head_level == 0) {
-					ebr.EndOp();
-					return nullptr;
+					ebr_.EndOp();
+					return (T*)kPopFailed;
 				}
-				ret = queues_[num_thread_].Pop(main_head_level);
+				ret = queues_[num_thread_].Pop(ebr_, main_head_level);
 				if (ret != kRetryRequired) {
-					ebr.EndOp();
-					return (void*)ret;
+					ebr_.EndOp();
+					return (T*)ret;
 				}
 			}
 		}
 	private:
 		int num_thread_;
 		std::vector<LFQueue> queues_;
+		EBR ebr_;
 	};
 }

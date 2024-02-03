@@ -4,7 +4,7 @@ namespace lf {
 	struct Node {
 		using Level = unsigned long long;
 		using Epoch = unsigned long long;
-		using Value = unsigned long long;
+		using Value = void*;
 		Node* volatile next;
 		Value v;
 		Level level;

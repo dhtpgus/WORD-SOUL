@@ -76,12 +76,14 @@ namespace server {
 			}
 
 			mx_.lock();
-			clients_.emplace(new client::Socket{ client_sock, iocp_ });
+			clients_.insert(new client::Socket{ client_sock, iocp_ });
 			mx_.unlock();
 		}
 		void Disconnect(client::Socket* client_ptr) {
+			mx_.lock();
 			clients_.erase(client_ptr);
 			delete client_ptr;
+			mx_.unlock();
 		}
 	private:
 		WSADATA wsa_;
@@ -91,7 +93,7 @@ namespace server {
 		HANDLE iocp_;
 		std::unordered_set<client::Socket*> clients_;
 		std::mutex mx_;
-		lf::RelaxedQueue rq;
+		lf::RelaxedQueue<int> rq;
 	};
 
 	server::Socket sock;
