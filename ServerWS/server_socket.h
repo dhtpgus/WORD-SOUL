@@ -8,7 +8,6 @@
 #include <unordered_set>
 #include <vector>
 #include "client_socket.h"
-#include "worker.h"
 
 namespace server {
 	constexpr unsigned short GetPortNum() {
@@ -25,12 +24,12 @@ namespace server {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
-			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
+			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
 			workers_.reserve(thread::GetNumWorker());
 
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
-				workers_.emplace_back(thread::Worker, iocp_, i, &rq);
+				workers_.emplace_back([this, i]() { Worker(i); });
 			}
 
 			for (std::thread& worker : workers_) {
@@ -56,8 +55,7 @@ namespace server {
 		}
 
 		void Bind() {
-			if (bind(listen_sock_, (sockaddr*)&server_addr_, sizeof(server_addr_))
-				== SOCKET_ERROR) {
+			if (bind(listen_sock_, (sockaddr*)&server_addr_, sizeof(server_addr_)) == SOCKET_ERROR) {
 				exit(1);
 			}
 		}
@@ -86,6 +84,8 @@ namespace server {
 			mx_.unlock();
 		}
 	private:
+		void Worker(int id);
+
 		WSADATA wsa_;
 		std::vector<std::thread> workers_;
 		sockaddr_in server_addr_;
@@ -96,5 +96,5 @@ namespace server {
 		lf::RelaxedQueue<int> rq;
 	};
 
-	server::Socket sock;
+	extern Socket sock;
 };

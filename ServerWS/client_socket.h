@@ -9,6 +9,7 @@
 #include <mutex>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <print>
 #include "packet.h"
 #include "lf_relaxed_queue.h"
 #pragma comment(lib, "ws2_32")
@@ -23,9 +24,10 @@ namespace client {
 		Socket() = delete;
 		Socket(SOCKET sock, HANDLE iocp)
 			: overlapped_{}, sock_{ sock }, buf_{}, recv_bytes_{}, send_bytes_{},
-				wsabuf_{}, rq_{ thread::GetNumWorker()} {
+				wsabuf_{}, rq_{ thread::GetNumWorker() } {
 			wsabuf_.buf = buf_;
 			wsabuf_.len = (ULONG)GetBufferSize();
+
 			CreateIoCompletionPort((HANDLE)sock_, iocp, sock_, 0);
 			StartAsyncIO();
 			std::cout << std::format("{}\n", (long long)this);
@@ -40,20 +42,18 @@ namespace client {
 
 		void StartAsyncIO() {
 			DWORD flags = 0;
-			WSARecv(sock_, &wsabuf_, 1, &recv_bytes_, &flags, &overlapped_, NULL);
+			wsabuf_.buf = buf_;
+			WSARecv(sock_, &wsabuf_, 1, &recv_bytes_, &flags, &overlapped_, nullptr);
 		}
 
-		template<class Packet>
-		void Push(const Packet& p) {
-			long long data = reinterpret_cast<long long>(&p) | (sizeof(Packet) << 48);
-
-			rq_.Push(reinterpret_cast<packet::Base*>(data));
+		void Push(packet::Base* p) {
+			rq_.Push(p);
 		}
 
-		// thread safe 하지 않다.
 		void Send() {
-			memset(buf_, 0, GetBufferSize());
-			send_bytes_ = 0;
+			char buf_2[GetBufferSize()]{};
+			//memset(buf_, 0, GetBufferSize());
+			int send_bytes = 0;
 
 			while (true) {
 				packet::Base* pop_value{};
@@ -70,29 +70,30 @@ namespace client {
 					pop_value = last_packet_;
 				}
 
-				long long bin = reinterpret_cast<long long>(pop_value);
-				WORD size = bin >> 48;
-				packet::Base* p = reinterpret_cast<packet::Base*>(bin & 0x0000'FFFF'FFFF'FFFF);
+				size_t size = pop_value->size;
 				
-				if (send_bytes_ + size > GetBufferSize()) {
+				if (send_bytes + size > GetBufferSize()) {
 					last_packet_ = pop_value;
 					break;
 				}
 
-				memcpy(&buf_[send_bytes_ + sizeof(size)], p, size);
+				buf_2[send_bytes] = (unsigned char)pop_value->type;
+				memcpy(&buf_2[send_bytes + 1], ((char*)pop_value) + 4, size);
 
-				delete p;
+				send_bytes += 1 + (DWORD)size;
 
-				DWORD* packet_head = (DWORD*)buf_;
-				*packet_head += size;
-				send_bytes_ += size;
+				delete pop_value;
 			}
 
-			if (send_bytes_ == 0) {
+			if (send_bytes == 0) {
 				return;
 			}
 
-			WSASend(sock_, &wsabuf_, 1, &send_bytes_, 0, &overlapped_, NULL);
+			wsabuf_.buf = buf_2;
+			wsabuf_.len = send_bytes;
+
+			send(sock_, buf_2, send_bytes, 0);
+			//WSASend(sock_, &wsabuf_, 1, &send_bytes_, 0, &overlapped_, nullptr);
 		}
 
 		const char* GetBuffer() const {
