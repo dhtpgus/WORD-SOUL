@@ -5,6 +5,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Items/Item.h"
+#include "Items/Weapons/Weapon.h"
 
 // Sets default values
 AWORDSOULCharacter::AWORDSOULCharacter()
@@ -91,12 +93,20 @@ void AWORDSOULCharacter::MoveRight(float value)
 
 void AWORDSOULCharacter::GetItem()
 {
+	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingItem)
 	{
-		if (GEngine)
+		if (OverlappingWeapon)
 		{
-			GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, "GetItem");
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, "GetItem");
+			}
+
+			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"));
 		}
 	}
+
+	
 }
 

@@ -27,10 +27,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-private:
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* ItemMesh;
 
+private:
 	UPROPERTY(VisibleAnywhere)
 	USphereComponent* Sphere;
 	
