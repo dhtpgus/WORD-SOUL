@@ -53,7 +53,8 @@ namespace client {
 		void Send() {
 			char buf_2[GetBufferSize()]{};
 			//memset(buf_, 0, GetBufferSize());
-			int send_bytes = 0;
+
+			DWORD send_bytes = 0;
 
 			while (true) {
 				packet::Base* pop_value{};
@@ -89,11 +90,8 @@ namespace client {
 				return;
 			}
 
-			wsabuf_.buf = buf_2;
-			wsabuf_.len = send_bytes;
-
 			send(sock_, buf_2, send_bytes, 0);
-			//WSASend(sock_, &wsabuf_, 1, &send_bytes_, 0, &overlapped_, nullptr);
+			//WSASend(sock_, &wsabuf_2, 1, &send_bytes, 0, &overlapped_, nullptr);
 		}
 
 		const char* GetBuffer() const {

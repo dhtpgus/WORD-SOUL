@@ -129,12 +129,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ebr.cpp" />
+    <ClCompile Include="entity.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
+    <ClCompile Include="random_number_generator.cpp" />
     <ClCompile Include="server_socket.cpp" />
     <ClCompile Include="thread.cpp" />
-    <ClCompile Include="worker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="boss.h" />
@@ -146,9 +147,9 @@
     <ClInclude Include="packet.h" />
     <ClInclude Include="player.h" />
     <ClInclude Include="lf_relaxed_queue.h" />
+    <ClInclude Include="random_number_generator.h" />
     <ClInclude Include="server_socket.h" />
     <ClInclude Include="thread.h" />
-    <ClInclude Include="worker.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

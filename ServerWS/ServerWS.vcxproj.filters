@@ -36,10 +36,13 @@
     <ClCompile Include="thread.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="worker.cpp">
+    <ClCompile Include="server_socket.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="server_socket.cpp">
+    <ClCompile Include="random_number_generator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="entity.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,9 +68,6 @@
     <ClInclude Include="entity.h">
       <Filter>헤더 파일\entity</Filter>
     </ClInclude>
-    <ClInclude Include="worker.h">
-      <Filter>헤더 파일\thread</Filter>
-    </ClInclude>
     <ClInclude Include="thread.h">
       <Filter>헤더 파일\thread</Filter>
     </ClInclude>
@@ -79,6 +79,9 @@
     </ClInclude>
     <ClInclude Include="lf_relaxed_queue.h">
       <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="random_number_generator.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

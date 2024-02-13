@@ -11,8 +11,9 @@ void server::Socket::Worker(int thread_id)
 	client::Socket* client_ptr;
 	int retval;
 
-	auto tp = std::chrono::steady_clock::now();
-	auto d = std::chrono::nanoseconds{};
+	// ÀÓ½Ã·Î ³öµÒ
+	// auto tp = std::chrono::steady_clock::now();
+	// std::chrono::nanoseconds d{};
 
 	while (true) {
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &client_sock,
@@ -24,7 +25,7 @@ void server::Socket::Worker(int thread_id)
 		else if (transferred != 0) {
 			std::print("{}: [{}] {}\n", client_sock, transferred, client_ptr->GetBuffer());
 			
-			client_ptr->Push(new packet::Position{ 4, 5, 6 });
+			client_ptr->Push(new packet::Position{ 0, 4, 5, 6 });
 
 			client_ptr->Send();
 

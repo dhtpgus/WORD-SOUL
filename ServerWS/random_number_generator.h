@@ -4,7 +4,7 @@
 
 class RandomNumberGenerator {
 public:
-	RandomNumberGenerator() = default;
+	RandomNumberGenerator();
 
 	template<class T>
 	T Rand(T min, T max) {
