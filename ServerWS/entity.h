@@ -1,9 +1,12 @@
 #pragma once
 #include <atomic>
-#include "packet.h"
 
 namespace entity {
 	extern std::atomic_uint id;
+
+	enum class Type : unsigned char {
+		kPlayer, kMonster, kBoss
+	};
 
 	struct Postion {
 		float x, y, z;
@@ -18,10 +21,6 @@ namespace entity {
 			pos_.x = x;
 			pos_.y = y;
 			pos_.z = z;
-		}
-
-		void SetPostion(packet::Position p) {
-			SetPostion(p.x, p.y, p.z);
 		}
 
 		unsigned int GetID() {

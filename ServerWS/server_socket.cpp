@@ -4,7 +4,20 @@ namespace server {
 	Socket sock;
 }
 
-void server::Socket::Worker(int thread_id)
+void server::Socket::AccepterThread() {
+	int sockaddr_len = sizeof(sockaddr_in);
+	sockaddr_in client_sockaddr;
+	SOCKET client_sock = accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
+	if (client_sock == INVALID_SOCKET) {
+		return;
+	}
+
+	mx_.lock();
+	clients_.insert(new client::Socket{ client_sock, iocp_ });
+	mx_.unlock();
+}
+
+void server::Socket::WorkerThread(int thread_id)
 {
 	DWORD transferred;
 	SOCKET client_sock;
