@@ -38,16 +38,7 @@ namespace server {
 
 			Bind();
 			Listen();
-
-			threads_.reserve(thread::GetNumWorker() + 1);
-			for (int i = 0; i < thread::GetNumWorker(); ++i) {
-				threads_.emplace_back([this, i]() { WorkerThread(i); });
-			}
-			threads_.emplace_back([this]() { AccepterThread(); });
-
-			for (std::thread& th : threads_) {
-				th.join();
-			}
+			CreateThread();
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -72,6 +63,17 @@ namespace server {
 		void Listen() {
 			if (listen(listen_sock_, SOMAXCONN) == SOCKET_ERROR) {
 				exit(1);
+			}
+		}
+		void CreateThread() {
+			threads_.reserve(thread::GetNumWorker() + 1);
+			for (int i = 0; i < thread::GetNumWorker(); ++i) {
+				threads_.emplace_back([this, i]() { WorkerThread(i); });
+			}
+			threads_.emplace_back([this]() { AccepterThread(); });
+
+			for (std::thread& th : threads_) {
+				th.join();
 			}
 		}
 		void AccepterThread();

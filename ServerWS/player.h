@@ -1,6 +1,8 @@
 #pragma once
 #include "entity.h"
 
-class Player : public Entity {
+namespace entity {
+	class Player : public Entity {
 
-};
+	};
+}

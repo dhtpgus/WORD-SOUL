@@ -1,6 +1,8 @@
 #pragma once
 #include "entity.h"
 
-class Monster : public Entity {
+namespace entity {
+	class Monster : public Entity {
 
-};
+	};
+}

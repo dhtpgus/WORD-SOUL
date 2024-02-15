@@ -83,5 +83,14 @@
     <ClInclude Include="random_number_generator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="cas_lock.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="lf_skip_node.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="lf_skip_list.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

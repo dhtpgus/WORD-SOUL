@@ -1,8 +1,9 @@
 #pragma once
 #include <atomic>
+#include <compare>
 
 namespace entity {
-	extern std::atomic_uint id;
+	using ID = unsigned long long;
 
 	enum class Type : unsigned char {
 		kPlayer, kMonster, kBoss
@@ -15,7 +16,7 @@ namespace entity {
 	class Entity {
 	public:
 		Entity(float x, float y, float z, short hp) 
-			: pos_{ x, y, z }, hp_{ hp }, id_{ id.fetch_add(1) } {}
+			: pos_{ x, y, z }, hp_{ hp }, id_{ next_id_.fetch_add(1) } {}
 
 		void SetPostion(float x, float y, float z) {
 			pos_.x = x;
@@ -23,15 +24,20 @@ namespace entity {
 			pos_.z = z;
 		}
 
-		unsigned int GetID() {
+		ID GetID() {
 			return id_;
 		}
 		const Postion& GetPostion() const {
 			return pos_;
 		}
 
+		auto operator<=>(const Entity& rhs) const {
+			return id_ <=> rhs.id_;
+		}
+
 	private:
-		unsigned int id_;
+		static std::atomic<ID> next_id_;
+		ID id_;
 		Postion pos_;
 		short hp_;
 	};
