@@ -1,6 +1,6 @@
 #pragma once
-namespace lf {
 
+namespace lf {
 	struct Node {
 		using Level = unsigned long long;
 		using Epoch = unsigned long long;
