@@ -2,7 +2,7 @@
 #include <atomic>
 
 namespace lf {
-	// TryLock만을 제공하는 상호배제 클래스
+	// TryLock만을 제공하는 상호배제 클래스: 블로킹 알고리즘에 사용하지 아니한다.
 	class CASLock {
 	public:
 		CASLock() : has_locked{} {}

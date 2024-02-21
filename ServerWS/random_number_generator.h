@@ -1,6 +1,7 @@
 #pragma once
 #include <random>
 #include <memory>
+#undef max
 
 class RandomNumberGenerator {
 public:

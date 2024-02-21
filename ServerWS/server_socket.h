@@ -5,22 +5,14 @@
 //---------------------------------------------------
 
 #pragma once
-#include <unordered_set>
 #include <vector>
 #include "client_socket.h"
+#include "lf_skip_list.h"
 
 namespace server {
-	constexpr unsigned short GetPortNum() {
-		return 21155;
-	}
-
-	constexpr size_t GetBufferSize() {
-		return 1024;
-	}
-
 	class Socket {
 	public:
-		Socket() : threads_{}, clients_{}, mx_{}, rq{ thread::GetNumWorker() } {
+		Socket() : threads_{}, clients_{ thread::GetNumWorker() } {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
@@ -34,11 +26,7 @@ namespace server {
 			memset(&server_addr_, 0, sizeof(server_addr_));
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
-			server_addr_.sin_port = htons(GetPortNum());
-
-			Bind();
-			Listen();
-			CreateThread();
+			server_addr_.sin_port = htons(kPortNum);
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -48,11 +36,15 @@ namespace server {
 			WSACleanup();
 		}
 
+		void Start() {
+			Bind();
+			Listen();
+			CreateThread();
+		}
+
 		void Disconnect(client::Socket* client_ptr) {
-			mx_.lock();
-			clients_.erase(client_ptr);
+			clients_.Remove(client_ptr);
 			delete client_ptr;
-			mx_.unlock();
 		}
 	private:
 		void Bind() {
@@ -66,9 +58,12 @@ namespace server {
 			}
 		}
 		void CreateThread() {
+
+			auto p = new lf::SkipList<int>{ thread::GetNumWorker() };
+
 			threads_.reserve(thread::GetNumWorker() + 1);
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
-				threads_.emplace_back([this, i]() { WorkerThread(i); });
+				threads_.emplace_back([this, i, p]() { WorkerThread(i); });
 			}
 			threads_.emplace_back([this]() { AccepterThread(); });
 
@@ -76,17 +71,19 @@ namespace server {
 				th.join();
 			}
 		}
+
 		void AccepterThread();
 		void WorkerThread(int id);
+
+		static constexpr unsigned short kPortNum = 21155;
+		static constexpr size_t kBufferSize = 1024;
 
 		WSADATA wsa_;
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		SOCKET listen_sock_;
 		HANDLE iocp_;
-		std::unordered_set<client::Socket*> clients_;
-		std::mutex mx_;
-		lf::RelaxedQueue<int> rq;
+		lf::SkipList<client::Socket> clients_;
 	};
 
 	extern Socket sock;

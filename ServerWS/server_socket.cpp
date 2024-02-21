@@ -4,17 +4,18 @@ namespace server {
 	Socket sock;
 }
 
-void server::Socket::AccepterThread() {
+void server::Socket::AccepterThread()
+{
 	int sockaddr_len = sizeof(sockaddr_in);
-	sockaddr_in client_sockaddr;
-	SOCKET client_sock = accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
-	if (client_sock == INVALID_SOCKET) {
-		return;
-	}
+	while (true) {
+		sockaddr_in client_sockaddr;
+		SOCKET client_sock = accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
+		if (client_sock == INVALID_SOCKET) {
+			continue;
+		}
 
-	mx_.lock();
-	clients_.insert(new client::Socket{ client_sock, iocp_ });
-	mx_.unlock();
+		clients_.Add(new client::Socket{ client_sock, iocp_ });
+	}
 }
 
 void server::Socket::WorkerThread(int thread_id)

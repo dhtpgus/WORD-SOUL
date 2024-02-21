@@ -138,11 +138,15 @@ namespace lf {
 	public:
 		RelaxedQueue() = delete;
 		RelaxedQueue(int num_thread) : num_thread_{ num_thread }, queues_{}, ebr_{ num_thread } {
-			queues_.reserve(num_thread_ + 1ULL);
+			queues_.reserve(num_thread_ + 1);
 			for (int i = 0; i < num_thread_ + 1; ++i) {
 				queues_.emplace_back();
 			}
 		}
+		RelaxedQueue(const RelaxedQueue&) = delete;
+		RelaxedQueue(RelaxedQueue&&) = delete;
+		RelaxedQueue& operator=(const RelaxedQueue&) = delete;
+		RelaxedQueue& operator=(RelaxedQueue&&) = delete;
 		void Push(T* x) {
 			Node* e = new Node{ x, 0 };
 			ebr_.StartOp();
