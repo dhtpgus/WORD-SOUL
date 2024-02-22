@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
+#include "Animation/AnimMontage.h"
 
 // Sets default values
 AWORDSOULCharacter::AWORDSOULCharacter()
@@ -55,6 +56,7 @@ void AWORDSOULCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	PlayerInputComponent->BindAction(FName("Jump"), IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction(FName("GetItem"), IE_Pressed, this, &AWORDSOULCharacter::GetItem);
+	PlayerInputComponent->BindAction(FName("Attack"), IE_Pressed, this, &AWORDSOULCharacter::Attack);
 }
 
 void AWORDSOULCharacter::MoveForward(float value)
@@ -108,5 +110,29 @@ void AWORDSOULCharacter::GetItem()
 	}
 
 	
+}
+
+void AWORDSOULCharacter::Attack()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance and AttackMontage)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+		int32 MontageSelection = FMath::RandRange(0, 1);
+		FName SectionName = FName();
+
+		switch (MontageSelection)
+		{
+		case 0:
+			SectionName = FName("Attack1");
+			break;
+		case 1:
+			SectionName = FName("Attack2");
+			break;
+		default:
+			break;
+		}
+		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
+	}
 }
 

@@ -10,7 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class AItem;
-
+class UAnimMontage;
 
 
 UCLASS()
@@ -32,6 +32,7 @@ protected:
 	void LookUp(float value);
 	void MoveRight(float value);
 	void GetItem();
+	void Attack();
 
 private:
 
@@ -45,4 +46,7 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* AttackMontage;
 };
