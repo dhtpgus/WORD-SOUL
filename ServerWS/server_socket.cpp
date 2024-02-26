@@ -1,4 +1,5 @@
 #include "server_socket.h"
+#include "timer.h"
 
 namespace server {
 	Socket sock;
@@ -25,13 +26,13 @@ void server::Socket::WorkerThread(int thread_id)
 	client::Socket* client_ptr;
 	int retval;
 
-	// ÀÓ½Ã·Î ³öµÒ
-	// auto tp = std::chrono::steady_clock::now();
-	// std::chrono::nanoseconds d{};
+	Timer timer;
 
 	while (true) {
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &client_sock,
 			(LPOVERLAPPED*)&client_ptr, 1);
+
+		auto duration{ timer.GetDuration() };
 
 		if (retval == 0) {
 			//continue;
@@ -44,6 +45,12 @@ void server::Socket::WorkerThread(int thread_id)
 			client_ptr->Send();
 
 			client_ptr->StartAsyncIO();
+		}
+
+		auto c = timer.GetAccumulatedDuration();
+		if (c >= 1.0 / 45) {
+			//...
+			timer.ResetAccumulatedDuration();
 		}
 	}
 }

@@ -25,6 +25,9 @@
     <Filter Include="헤더 파일\thread\lf">
       <UniqueIdentifier>{0a024113-02a0-4889-b2ba-f3910fa94d77}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\others">
+      <UniqueIdentifier>{1d79f983-1172-4fc9-89b4-38665214e53e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -80,9 +83,6 @@
     <ClInclude Include="lf_relaxed_queue.h">
       <Filter>헤더 파일\thread\lf</Filter>
     </ClInclude>
-    <ClInclude Include="random_number_generator.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="cas_lock.h">
       <Filter>헤더 파일\thread\lf</Filter>
     </ClInclude>
@@ -91,6 +91,12 @@
     </ClInclude>
     <ClInclude Include="lf_skip_list.h">
       <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="random_number_generator.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
+    <ClInclude Include="timer.h">
+      <Filter>헤더 파일\others</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
