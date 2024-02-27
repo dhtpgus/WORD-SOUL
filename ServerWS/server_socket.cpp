@@ -15,7 +15,7 @@ void server::Socket::AccepterThread()
 			continue;
 		}
 
-		clients_.Add(new client::Socket{ client_sock, iocp_ });
+		clients_.Add(client_sock, new client::Socket{ client_sock, iocp_ });
 	}
 }
 
@@ -38,8 +38,9 @@ void server::Socket::WorkerThread(int thread_id)
 			//continue;
 		}
 		else if (transferred != 0) {
-			std::print("{}: [{}] {}\n", client_sock, transferred, client_ptr->GetBuffer());
-			
+			std::print("{}({}): [{}] {}\n",
+				client_sock, clients_.Contains(client_sock), transferred, client_ptr->GetBuffer());
+
 			client_ptr->Push(new packet::Position{ 0, 4, 5, 6 });
 
 			client_ptr->Send();

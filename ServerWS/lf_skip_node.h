@@ -2,12 +2,12 @@
 #include <atomic>
 
 namespace lf {
+	template<class K, class V>
 	struct SkipNode {
 		using Epoch = unsigned long long;
-		using Value = void*;
 
-		SkipNode() : v{}, top_level{}, next{}, retire_epoch{} {}
-		SkipNode(Value x, int top) : v{ x }, top_level{ top }, next{}, retire_epoch{} {}
+		SkipNode() : k{}, v{}, top_level{}, next{}, retire_epoch{} {}
+		SkipNode(const K& k, V* v, int top) : k{ k }, v{ v }, top_level{ top }, next{}, retire_epoch{} {}
 
 		void Set(int level, SkipNode* ptr, bool marking) {
 			long long temp = reinterpret_cast<long long>(ptr);
@@ -41,7 +41,8 @@ namespace lf {
 		static constexpr int kMaxLevel = 10;
 		static constexpr long long kAddrMask = 0xFFFF'FFFF'FFFF'FFFE;
 
-		Value v;
+		const K k;
+		const std::shared_ptr<V> v;
 		int top_level;
 		SkipNode* volatile next[kMaxLevel + 1];
 		Epoch retire_epoch;

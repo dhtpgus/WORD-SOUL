@@ -32,7 +32,7 @@ namespace lf {
 
 		RetiredNodeQueue& GetRetired();
 		Epoch GetCapacity() const;
-		Epoch GetMinReservation();
+		Epoch GetMinReservation() const;
 		void Clear();
 
 		Epoch* volatile reservations;

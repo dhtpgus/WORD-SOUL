@@ -42,9 +42,8 @@ namespace server {
 			CreateThread();
 		}
 
-		void Disconnect(client::Socket* client_ptr) {
-			clients_.Remove(client_ptr);
-			delete client_ptr;
+		void Disconnect(SOCKET sock) {
+			clients_.Remove(sock);
 		}
 	private:
 		void Bind() {
@@ -59,11 +58,9 @@ namespace server {
 		}
 		void CreateThread() {
 
-			auto p = new lf::SkipList<int>{ thread::GetNumWorker() };
-
 			threads_.reserve(thread::GetNumWorker() + 1);
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
-				threads_.emplace_back([this, i, p]() { WorkerThread(i); });
+				threads_.emplace_back([this, i]() { WorkerThread(i); });
 			}
 			threads_.emplace_back([this]() { AccepterThread(); });
 
@@ -83,7 +80,7 @@ namespace server {
 		sockaddr_in server_addr_;
 		SOCKET listen_sock_;
 		HANDLE iocp_;
-		lf::SkipList<client::Socket> clients_;
+		lf::SkipList<SOCKET, client::Socket> clients_;
 	};
 
 	extern Socket sock;

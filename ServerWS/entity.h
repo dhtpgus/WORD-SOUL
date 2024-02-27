@@ -24,15 +24,12 @@ namespace entity {
 			pos_.z = z;
 		}
 
-		ID GetID() {
+		ID GetID() const {
 			return id_;
 		}
+
 		const Postion& GetPostion() const {
 			return pos_;
-		}
-
-		auto operator<=>(const Entity& rhs) const {
-			return id_ <=> rhs.id_;
 		}
 
 	private:

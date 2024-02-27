@@ -5,14 +5,12 @@
 
 namespace lf {
 
-	template<class T>
+	template<class K, class V>
 	class SkipList {
 	public:
 		SkipList() = delete;
-		SkipList(int num_thread) : ebr_{ num_thread } {
-			head_.v = reinterpret_cast<SkipNode::Value>(0);
-			tail_.v = reinterpret_cast<SkipNode::Value>(0xFFFF'FFFF'FFFF'FFFF);
-			for (int i = 0; i <= SkipNode::kMaxLevel; ++i) {
+		SkipList(int num_thread) /* : ebr_{num_thread}*/ {
+			for (int i = 0; i <= SkipNode<K, V>::kMaxLevel; ++i) {
 				head_.Set(i, &tail_, false);
 			}
 		}
@@ -24,23 +22,22 @@ namespace lf {
 		SkipList& operator=(const SkipList&) = delete;
 		SkipList& operator=(SkipList&&) = delete;
 
-		bool Add(T* ptr) {
-			SkipNode::Value x{ ptr };
+		bool Add(const K& key, V* value) {
 
 			int level = 0;
-			for (level = 0; level < SkipNode::kMaxLevel; ++level) {
+			for (level = 0; level < SkipNode<K, V>::kMaxLevel; ++level) {
 				if (rng.Rand(0, 1) == 1) {
 					break;
 				}
 			}
+			
+			SkipNode<K, V>* node{ new SkipNode<K, V>{ key, value, level } };
 
-			SkipNode* node{ new SkipNode{ x, level } };
-
-			SkipNode* prev[SkipNode::kMaxLevel + 1];
-			SkipNode* curr[SkipNode::kMaxLevel + 1];
+			SkipNode<K, V>* prev[SkipNode<K, V>::kMaxLevel + 1];
+			SkipNode<K, V>* curr[SkipNode<K, V>::kMaxLevel + 1];
 
 			while (true) {
-				if (true == Find(x, prev, curr)) {
+				if (true == Find(key, prev, curr)) {
 					return false;
 				}
 				for (int i = 0; i <= level; ++i) {
@@ -56,28 +53,26 @@ namespace lf {
 						if (prev[i]->CAS(i, curr[i], node, false, false)) {
 							break;
 						}
-						Find(x, prev, curr);
+						Find(key, prev, curr);
 					}
 				}
 				return true;
 			}
 		}
 
-		bool Remove(T* ptr) {
-			SkipNode::Value x{ ptr };
-
-			SkipNode* prev[SkipNode::kMaxLevel + 1];
-			SkipNode* curr[SkipNode::kMaxLevel + 1];
-			SkipNode* victim = nullptr;
-			if (false == Find(x, prev, curr)) {
+		bool Remove(const K& key) {
+			SkipNode<K, V>* prev[SkipNode<K, V>::kMaxLevel + 1];
+			SkipNode<K, V>* curr[SkipNode<K, V>::kMaxLevel + 1];
+			SkipNode<K, V>* victim = nullptr;
+			if (false == Find(key, prev, curr)) {
 				return false;
 			}
-			SkipNode* r_node = curr[0];
+			auto* r_node = curr[0];
 			int top_level = curr[0]->top_level;
 			for (int i = top_level; i >= 1; --i) { // 0 레벨 빼고 나머지 링크 제거
 				while (true) {
 					bool removed = false;
-					SkipNode* succ = r_node->Get(i, &removed);
+					auto* succ = r_node->Get(i, &removed);
 					if (true == removed) {
 						break;
 					}
@@ -89,24 +84,24 @@ namespace lf {
 			}
 			while (true) {
 				bool removed = false;
-				SkipNode* succ = r_node->Get(0, &removed);
+				auto succ = r_node->Get(0, &removed);
 				if (true == removed) {
 					return false;
 				}
 				if (true == r_node->CAS(0, succ, succ, false, true)) {
-					Find(x, prev, curr);
+					Find(key, prev, curr);
 					return true;
 				}
 			}
 		}
 
-		bool Contains(T& value) {
-			SkipNode* prev = &head_;
-			SkipNode* curr{};
-			SkipNode* succ{};
+		bool Contains(const K& key) {
+			SkipNode<K, V>* prev = &head_;
+			SkipNode<K, V>* curr{};
+			SkipNode<K, V>* succ{};
 			bool removed = false;
 
-			for (int i = SkipNode::kMaxLevel; i >= 0; --i) {
+			for (int i = SkipNode<K, V>::kMaxLevel; i >= 0; --i) {
 				curr = prev->Get(i);
 				while (true) {
 					succ = curr->Get(i, &removed);
@@ -114,7 +109,7 @@ namespace lf {
 						curr = curr->Get(i);
 						succ = curr->Get(i, &removed);
 					}
-					if ((*(T*)(curr->v) <=> value) < 0) {
+					if ((curr->k <=> key) < 0) {
 						prev = curr;
 						curr = succ;
 					}
@@ -123,34 +118,34 @@ namespace lf {
 					}
 				}
 			}
-			return (value <=> *(T*)(curr->v)) == 0;
+			return (key <=> curr->k) == 0;
 		}
 
 		void Clear() {
-			SkipNode* p = head_.Get(0);
+			auto* p = head_.Get(0);
 			while (p != &tail_) {
-				SkipNode* t = p;
+				auto* t = p;
 				p = p->Get(0);
 				delete t;
 			}
-			for (int i = 0; i <= SkipNode::kMaxLevel; ++i) {
+			for (int i = 0; i <= SkipNode<K, V>::kMaxLevel; ++i) {
 				head_.Set(i, &tail_, false);
 			}
 		}
 
 	private:
-		bool Find(SkipNode::Value x, SkipNode* prev[], SkipNode* curr[]) {
+		bool Find(const K& k, SkipNode<K, V>* prev[], SkipNode<K, V>* curr[]) {
 		retry:
-			prev[SkipNode::kMaxLevel] = &head_;
-			for (int cl = SkipNode::kMaxLevel; cl >= 0; --cl) {
-				if (cl != SkipNode::kMaxLevel)
+			prev[SkipNode<K, V>::kMaxLevel] = &head_;
+			for (int cl = SkipNode<K, V>::kMaxLevel; cl >= 0; --cl) {
+				if (cl != SkipNode<K, V>::kMaxLevel)
 					prev[cl] = prev[cl + 1];
 
 				while (true) {
 					curr[cl] = prev[cl]->Get(cl);
 					bool removed = false;
 
-					SkipNode* succ = curr[cl]->Get(cl, &removed);
+					auto* succ = curr[cl]->Get(cl, &removed);
 					while (true == removed) {
 						if (false == prev[cl]->CAS(cl, curr[cl], succ, false, false)) {
 							goto retry;
@@ -159,25 +154,25 @@ namespace lf {
 						succ = curr[cl]->Get(cl, &removed);
 					}
 
-					if (curr[cl]->v == tail_.v) {
+					if (curr[cl] == &tail_) {
 						break;
 					}
 
-					if ((*(T*)(curr[cl]->v) <=> *(T*)x) >= 0) {
+					if ((curr[cl]->k <=> k) >= 0) {
 						break;
 					}
 					prev[cl] = curr[cl];
 				}
 			}
 
-			if (curr[0]->v == head_.v or curr[0]->v == tail_.v) {
+			if (curr[0] == &head_ or curr[0] == &tail_) {
 				return false;
 			}
 
-			return (*(T*)(curr[0]->v) <=> *(T*)x) == 0;
+			return ((curr[0]->k) <=> k) == 0;
 		}
 
-		SkipNode head_, tail_;
-		EBR ebr_;
+		SkipNode<K, V> head_, tail_;
+		//EBR ebr_;
 	};
 }

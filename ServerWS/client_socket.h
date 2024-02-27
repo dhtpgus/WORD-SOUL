@@ -36,10 +36,6 @@ namespace client {
 		Socket& operator=(const Socket&) = delete;
 		Socket& operator=(Socket&&) = default;
 
-		auto operator<=>(const Socket& rhs) const {
-			return sock_ <=> rhs.sock_;
-		}
-
 		void StartAsyncIO() {
 			DWORD flags = 0;
 			wsabuf_.buf = buf_;
@@ -91,12 +87,18 @@ namespace client {
 				return;
 			}
 
+			std::print("send: {} bytes\n", send_bytes);
+
 			send(sock_, buf_2, send_bytes, 0);
 			//WSASend(sock_, &wsabuf_2, 1, &send_bytes, 0, &overlapped_, nullptr);
 		}
 
 		const char* GetBuffer() const {
 			return buf_;
+		}
+
+		SOCKET GetSocket() const {
+			return sock_;
 		}
 	private:
 		static constexpr size_t kBufferSize = 1024;

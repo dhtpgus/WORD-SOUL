@@ -42,7 +42,7 @@ lf::EBR::Epoch lf::EBR::GetCapacity() const
 	return (Epoch)(3 * thread::GetNumWorker() * 2 * 10);
 }
 
-lf::EBR::Epoch lf::EBR::GetMinReservation()
+lf::EBR::Epoch lf::EBR::GetMinReservation() const
 {
 	Epoch min_re = std::numeric_limits<Epoch>::max();
 	for (int i = 0; i < 32/*reservations.size()*/; ++i) {
