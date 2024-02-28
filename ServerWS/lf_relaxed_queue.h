@@ -69,7 +69,7 @@ namespace lf {
 			return false;
 		}
 
-		Node::Value Pop(EBR& ebr, Node::Level level = 0) {
+		Node::Value Pop(EBR<Node>& ebr, Node::Level level = 0) {
 			while (true) {
 				Node* first = head;
 				Node* last = tail;
@@ -216,6 +216,6 @@ namespace lf {
 	private:
 		int num_thread_;
 		std::vector<LFQueue> queues_;
-		EBR ebr_;
+		EBR<Node> ebr_;
 	};
 }

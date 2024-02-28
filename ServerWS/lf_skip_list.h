@@ -9,7 +9,7 @@ namespace lf {
 	class SkipList {
 	public:
 		SkipList() = delete;
-		SkipList(int num_thread) /* : ebr_{num_thread}*/ {
+		SkipList(int num_thread) : ebr_{ num_thread } {
 			for (int i = 0; i <= SkipNode<K, V>::kMaxLevel; ++i) {
 				head_.Set(i, &tail_, false);
 			}
@@ -23,7 +23,6 @@ namespace lf {
 		SkipList& operator=(SkipList&&) = delete;
 
 		bool Add(const K& key, V* value) {
-
 			int level = 0;
 			for (level = 0; level < SkipNode<K, V>::kMaxLevel; ++level) {
 				if (rng.Rand(0, 1) == 1) {
@@ -63,7 +62,7 @@ namespace lf {
 		bool Remove(const K& key) {
 			SkipNode<K, V>* prev[SkipNode<K, V>::kMaxLevel + 1];
 			SkipNode<K, V>* curr[SkipNode<K, V>::kMaxLevel + 1];
-			SkipNode<K, V>* victim = nullptr;
+			SkipNode<K, V>* victim{};
 			if (false == Find(key, prev, curr)) {
 				return false;
 			}
@@ -109,7 +108,7 @@ namespace lf {
 						curr = curr->Get(i);
 						succ = curr->Get(i, &removed);
 					}
-					if ((curr->k <=> key) < 0) {
+					if (curr->k < key) {
 						prev = curr;
 						curr = succ;
 					}
@@ -118,7 +117,7 @@ namespace lf {
 					}
 				}
 			}
-			return (key <=> curr->k) == 0;
+			return key == curr->k;
 		}
 
 		void Clear() {
@@ -138,9 +137,9 @@ namespace lf {
 		retry:
 			prev[SkipNode<K, V>::kMaxLevel] = &head_;
 			for (int cl = SkipNode<K, V>::kMaxLevel; cl >= 0; --cl) {
-				if (cl != SkipNode<K, V>::kMaxLevel)
+				if (cl != SkipNode<K, V>::kMaxLevel) {
 					prev[cl] = prev[cl + 1];
-
+				}
 				while (true) {
 					curr[cl] = prev[cl]->Get(cl);
 					bool removed = false;
@@ -158,7 +157,7 @@ namespace lf {
 						break;
 					}
 
-					if ((curr[cl]->k <=> k) >= 0) {
+					if (curr[cl]->k >= k) {
 						break;
 					}
 					prev[cl] = curr[cl];
@@ -169,10 +168,10 @@ namespace lf {
 				return false;
 			}
 
-			return ((curr[0]->k) <=> k) == 0;
+			return curr[0]->k == k;
 		}
 
 		SkipNode<K, V> head_, tail_;
-		//EBR ebr_;
+		EBR ebr_<SkipNode<K, V>>;
 	};
 }

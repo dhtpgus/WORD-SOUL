@@ -39,7 +39,8 @@ void server::Socket::WorkerThread(int thread_id)
 		}
 		else if (transferred != 0) {
 			std::print("{}({}): [{}] {}\n",
-				client_sock, clients_.Contains(client_sock), transferred, client_ptr->GetBuffer());
+				client_sock, clients_.Contains(client_sock),
+				transferred, client_ptr->GetBuffer());
 
 			client_ptr->Push(new packet::Position{ 0, 4, 5, 6 });
 
