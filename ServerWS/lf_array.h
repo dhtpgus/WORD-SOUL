@@ -7,7 +7,7 @@ namespace lf {
 	struct alignas(std::hardware_destructive_interference_size) Element {
 		std::atomic_int cnt{};
 		CASLock cas_lock{};
-		volatile T* data{};
+		T* data{};
 		Element() = default;
 		~Element() {
 			if (cnt > 0) {
@@ -22,11 +22,11 @@ namespace lf {
 		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {}
 		void InitIndexes() {
 			for (int i = 0; i < elements_.size(); ++i) {
-				index_queue_.Push(new int{ i });
+				index_queue_.Emplace(i);
 			}
 		}
-		T* operator[](int i) {
-			return elements_[i].data;
+		T& operator[](int i) {
+			return *elements_[i].data;
 		}
 		bool StartAccess(int i) {
 			if (not IsIndexValid(i)) {
@@ -91,7 +91,7 @@ namespace lf {
 		void TryDelete(int i) {
 			if (CAS(elements_[i].cnt, 0, -1)) {
 				delete elements_[i].data;
-				index_queue_.Push(new int{ i });
+				index_queue_.Emplace(i);
 			}
 		}
 		bool IsIndexValid(int i) const {

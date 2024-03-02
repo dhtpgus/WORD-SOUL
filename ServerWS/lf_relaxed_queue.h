@@ -144,8 +144,9 @@ namespace lf {
 		RelaxedQueue& operator=(const RelaxedQueue&) = delete;
 		RelaxedQueue& operator=(RelaxedQueue&&) = delete;
 
-		void Push(T* x) {
-			Node* e = new Node{ x, 0 };
+		template<class... Value>
+		void Emplace(Value&&... value) {
+			Node* e = new Node{ new T{ value... }, 0 };
 			ebr_.StartOp();
 
 			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;
@@ -156,10 +157,6 @@ namespace lf {
 			}
 
 			ebr_.EndOp();
-		}
-		void PushToMain(T* x) {
-			Node* e = new Node{ x, 0 };
-			queues_[num_thread_].Push(e, queues_[num_thread_]);
 		}
 		T* Pop() {
 			ebr_.StartOp();

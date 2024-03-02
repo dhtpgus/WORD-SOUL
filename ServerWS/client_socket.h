@@ -7,7 +7,6 @@
 #pragma once
 #include <thread>
 #include <mutex>
-#include <print>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "packet.h"
@@ -43,8 +42,10 @@ namespace client {
 			WSARecv(sock_, &wsabuf_, 1, &recv_bytes_, &flags, &overlapped_, nullptr);
 		}
 
-		void Push(packet::Base* p) {
-			rq_.Push(p);
+		template<class Packet, class... Value>
+		void Push(Value&&... value) {
+			packet::Base* p{ new Packet{ value... } };
+			rq_.Emplace(p);
 		}
 
 		// WSASend 함수로 재작성 필요
@@ -55,7 +56,7 @@ namespace client {
 			DWORD send_bytes = 0;
 
 			while (true) {
-				packet::Base* pop_value{};
+				packet::Base** pop_value{};
 
 				if (last_packet_ == nullptr) {
 					pop_value = rq_.Pop();
@@ -69,18 +70,19 @@ namespace client {
 					pop_value = last_packet_;
 				}
 
-				size_t size = pop_value->size;
+				size_t size = (*pop_value)->size;
 				
 				if (send_bytes + size > kBufferSize) {
 					last_packet_ = pop_value;
 					break;
 				}
 
-				buf_2[send_bytes] = (unsigned char)pop_value->type;
-				memcpy(&buf_2[send_bytes + 1], ((char*)pop_value) + 4, size);
+				buf_2[send_bytes] = (unsigned char)(*pop_value)->type;
+				memcpy(&buf_2[send_bytes + 1], ((char*)*pop_value) + 4, size);
 
 				send_bytes += 1 + (DWORD)size;
 
+				delete *pop_value;
 				delete pop_value;
 			}
 
@@ -115,7 +117,7 @@ namespace client {
 		DWORD send_bytes_;
 		WSABUF wsabuf_;
 		ID id_;
-		lf::RelaxedQueue<packet::Base> rq_;
-		packet::Base* last_packet_;
+		lf::RelaxedQueue<packet::Base*> rq_;
+		packet::Base** last_packet_;
 	};
 }
