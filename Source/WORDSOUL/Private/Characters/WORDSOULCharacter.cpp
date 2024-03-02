@@ -61,6 +61,7 @@ void AWORDSOULCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 void AWORDSOULCharacter::MoveForward(float value)
 {
+	if (ActionState == EActionState::EAS_Attacking) return;
 	if (Controller && value != 0.f)
 	{
 		const FRotator ControlRotation = GetControlRotation();
@@ -83,6 +84,7 @@ void AWORDSOULCharacter::LookUp(float value)
 
 void AWORDSOULCharacter::MoveRight(float value)
 {
+	if (ActionState == EActionState::EAS_Attacking) return;
 	if (Controller && value != 0.f)
 	{
 		const FRotator ControlRotation = GetControlRotation();
@@ -106,19 +108,42 @@ void AWORDSOULCharacter::GetItem()
 			}
 
 			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"));
+			CharacterState = ECharacterState::ECS_EquippedWeapon;
 		}
 	}
 
 	
 }
 
+bool AWORDSOULCharacter::CanAttack()
+{
+	return ActionState == EActionState::EAS_Unoccupied and CharacterState != ECharacterState::ECS_Unequipped;
+}
+
 void AWORDSOULCharacter::Attack()
+{
+	if (CanAttack())
+	{
+		PlayAttackMontage();
+		ActionState = EActionState::EAS_Attacking;
+	}
+	
+}
+
+void AWORDSOULCharacter::AttackEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
+
+
+void AWORDSOULCharacter::PlayAttackMontage()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance and AttackMontage)
 	{
 		AnimInstance->Montage_Play(AttackMontage);
-		int32 MontageSelection = FMath::RandRange(0, 1);
+		const int32 MontageSelection = FMath::RandRange(0, 1);
 		FName SectionName = FName();
 
 		switch (MontageSelection)
@@ -135,4 +160,6 @@ void AWORDSOULCharacter::Attack()
 		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
 	}
 }
+
+
 
