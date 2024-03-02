@@ -6,8 +6,14 @@ namespace lf {
 	struct SkipNode {
 		using Epoch = unsigned long long;
 
-		SkipNode() : k{}, v{}, top_level{}, next{}, retire_epoch{} {}
-		SkipNode(const K& k, V* v, int top) : k{ k }, v{ v }, top_level{ top }, next{}, retire_epoch{} {}
+		SkipNode() : k{}, v{}, top_level{}, next{}, retire_epoch{}, connections{ 1 } {}
+		SkipNode(const K& k, V* v, int top) : k{ k }, v{ v }, top_level{ top },
+			next{}, retire_epoch{}, connections{ top + 1 } {}
+		~SkipNode() = default;
+		SkipNode(const SkipNode&) = delete;
+		SkipNode(SkipNode&&) = delete;
+		SkipNode& operator=(const SkipNode&) = delete;
+		SkipNode& operator=(SkipNode&&) = delete;
 
 		void Set(int level, SkipNode* ptr, bool marking) {
 			long long temp = reinterpret_cast<long long>(ptr);
@@ -16,6 +22,7 @@ namespace lf {
 		}
 
 		SkipNode* Get(int level, bool* removed) {
+			//std::print("ddd {}\n", level);
 			long long temp = reinterpret_cast<long long>(next[level]);
 			*removed = temp & 1;
 			return reinterpret_cast<SkipNode*>(temp & kAddrMask);
@@ -46,5 +53,6 @@ namespace lf {
 		int top_level;
 		SkipNode* volatile next[kMaxLevel + 1];
 		Epoch retire_epoch;
+		std::atomic_int connections;
 	};
 }

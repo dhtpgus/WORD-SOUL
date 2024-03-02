@@ -9,7 +9,9 @@ namespace lf {
 	class SkipList {
 	public:
 		SkipList() = delete;
-		SkipList(int num_thread) : ebr_{ num_thread } {
+		SkipList(int num_thread) : ebr_{ num_thread },
+			head_{ K{}, nullptr, SkipNode<K, V>::kMaxLevel },
+			tail_{ K{}, nullptr, SkipNode<K, V>::kMaxLevel } {
 			for (int i = 0; i <= SkipNode<K, V>::kMaxLevel; ++i) {
 				head_.Set(i, &tail_, false);
 			}
@@ -29,14 +31,15 @@ namespace lf {
 					break;
 				}
 			}
-			
-			SkipNode<K, V>* node{ new SkipNode<K, V>{ key, value, level } };
+			ebr_.StartOp();
 
+			SkipNode<K, V>* node{ new SkipNode<K, V>{ key, value, level } };
 			SkipNode<K, V>* prev[SkipNode<K, V>::kMaxLevel + 1];
 			SkipNode<K, V>* curr[SkipNode<K, V>::kMaxLevel + 1];
 
 			while (true) {
 				if (true == Find(key, prev, curr)) {
+					ebr_.EndOp();
 					return false;
 				}
 				for (int i = 0; i <= level; ++i) {
@@ -55,6 +58,7 @@ namespace lf {
 						Find(key, prev, curr);
 					}
 				}
+				ebr_.EndOp();
 				return true;
 			}
 		}
@@ -63,7 +67,10 @@ namespace lf {
 			SkipNode<K, V>* prev[SkipNode<K, V>::kMaxLevel + 1];
 			SkipNode<K, V>* curr[SkipNode<K, V>::kMaxLevel + 1];
 			SkipNode<K, V>* victim{};
+
+			ebr_.StartOp();
 			if (false == Find(key, prev, curr)) {
+				ebr_.EndOp();
 				return false;
 			}
 			auto* r_node = curr[0];
@@ -85,10 +92,12 @@ namespace lf {
 				bool removed = false;
 				auto succ = r_node->Get(0, &removed);
 				if (true == removed) {
+					ebr_.EndOp();
 					return false;
 				}
 				if (true == r_node->CAS(0, succ, succ, false, true)) {
 					Find(key, prev, curr);
+					ebr_.EndOp();
 					return true;
 				}
 			}
@@ -99,9 +108,11 @@ namespace lf {
 			SkipNode<K, V>* curr{};
 			SkipNode<K, V>* succ{};
 			bool removed = false;
-
+			
+			ebr_.StartOp();
 			for (int i = SkipNode<K, V>::kMaxLevel; i >= 0; --i) {
 				curr = prev->Get(i);
+				std::print("{:x}\n", (long long)curr);
 				while (true) {
 					succ = curr->Get(i, &removed);
 					while (removed) {
@@ -117,7 +128,9 @@ namespace lf {
 					}
 				}
 			}
-			return key == curr->k;
+			bool ret = key == curr->k;
+			ebr_.EndOp();
+			return ret;
 		}
 
 		void Clear() {
@@ -142,12 +155,16 @@ namespace lf {
 				}
 				while (true) {
 					curr[cl] = prev[cl]->Get(cl);
-					bool removed = false;
+					bool removed{};
 
 					auto* succ = curr[cl]->Get(cl, &removed);
 					while (true == removed) {
 						if (false == prev[cl]->CAS(cl, curr[cl], succ, false, false)) {
 							goto retry;
+						}
+						int res = curr[cl]->connections.fetch_add(-1);
+						if (res <= 1) {
+							ebr_.Retire(curr[cl]);
 						}
 						curr[cl] = succ;
 						succ = curr[cl]->Get(cl, &removed);
@@ -172,6 +189,6 @@ namespace lf {
 		}
 
 		SkipNode<K, V> head_, tail_;
-		EBR ebr_<SkipNode<K, V>>;
+		EBR<SkipNode<K, V>> ebr_;
 	};
 }

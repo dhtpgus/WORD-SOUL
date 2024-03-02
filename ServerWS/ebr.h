@@ -36,16 +36,16 @@ namespace lf {
 		EBR& operator=(EBR&&) = delete;
 		void Retire(T* ptr) {
 			ptr->retire_epoch = epoch_.load(std::memory_order_relaxed);
-			retired_[thread::GetID()].push(ptr);
-			if (retired_[thread::GetID()].size() >= GetCapacity()) {
+			retired_[thread::ID()].push(ptr);
+			if (retired_[thread::ID()].size() >= GetCapacity()) {
 				Clear();
 			}
 		}
 		void StartOp() {
-			reservations_[thread::GetID()] = epoch_.fetch_add(1, std::memory_order_relaxed);
+			reservations_[thread::ID()] = epoch_.fetch_add(1, std::memory_order_relaxed);
 		}
 		void EndOp() {
-			reservations_[thread::GetID()] = std::numeric_limits<Epoch>::max();
+			reservations_[thread::ID()] = std::numeric_limits<Epoch>::max();
 		}
 
 	private:
@@ -66,11 +66,11 @@ namespace lf {
 		void Clear() {
 			Epoch max_safe_epoch = GetMinReservation();
 
-			while (false == retired_[thread::GetID()].empty()) {
-				auto f = retired_[thread::GetID()].front();
+			while (false == retired_[thread::ID()].empty()) {
+				auto f = retired_[thread::ID()].front();
 				if (f->retire_epoch >= max_safe_epoch)
 					break;
-				retired_[thread::GetID()].pop();
+				retired_[thread::ID()].pop();
 
 				delete f;
 			}
