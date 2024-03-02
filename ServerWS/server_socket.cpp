@@ -58,16 +58,12 @@ void server::Socket::WorkerThread(int thread_id)
 			std::print("{}({}): [{}] {}\n",
 				id, clients_.Exists(id), transferred, client_ptr->GetBuffer());
 
-			std::print("asda\n");
-
-			client_ptr->Push(new packet::Position{ 0, 4, 5, 6 });
+			client_ptr->Push<packet::Position>(0, 4.0f, 5.0f, 6.0f);
 
 			client_ptr->Send();
 
 			client_ptr->StartAsyncIO();
 		}
-
-		client_sock = SOCKET{};
 
 		auto c = timer.GetAccumulatedDuration();
 		if (c >= 1.0 / 45) {

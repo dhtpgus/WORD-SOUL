@@ -43,7 +43,7 @@ namespace packet {
 	};
 
 	struct Position : Base {
-		Position(unsigned int id, float x, float y, float z) 
+		Position(int id, float x, float y, float z) 
 			: Base{ Type::kPosition, (unsigned char)sizeof(*this) - 4},
 				id{ id }, x{ x }, y{ y }, z{ z } {}
 
@@ -55,14 +55,14 @@ namespace packet {
 			z = Deserialize<decltype(z)>(p);
 		}
 
-		unsigned int id;
+		int id;
 		float x;
 		float y;
 		float z;
 	};
 
 	struct NewEntity : Position {
-		NewEntity(unsigned int id, float x, float y, float z, entity::Type et)
+		NewEntity(int id, float x, float y, float z, entity::Type et)
 			: Position{ id, x, y, z }, entity_type{ et } {
 			type = Type::kNewEntity;
 			entity_type = et;
