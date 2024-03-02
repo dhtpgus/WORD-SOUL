@@ -9,7 +9,7 @@ void server::Socket::AccepterThread(int thread_id)
 {
 	thread::ID(thread_id);
 
-	clients_.InitIndexes();
+	clients_.InitIndexes(GetMaxClients());
 
 	int sockaddr_len = sizeof(sockaddr_in);
 	while (true) {

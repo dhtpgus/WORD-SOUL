@@ -19,11 +19,16 @@ namespace lf {
 	template<class T>
 	class Array {
 	public:
+		Array() = delete;
+		Array(int th_num) : elements_(0), index_queue_{ th_num } {}
 		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {}
-		void InitIndexes() {
-			for (int i = 0; i < elements_.size(); ++i) {
+		void InitIndexes(int el_num) {
+			for (int i = 0; i < el_num; ++i) {
 				index_queue_.Emplace(i);
 			}
+		}
+		void InitIndexes() {
+			InitIndexes(elements_.size());
 		}
 		T& operator[](int i) {
 			return *elements_[i].data;

@@ -6,6 +6,7 @@
 
 #pragma once
 #include <vector>
+#include <fstream>
 #include "client_socket.h"
 #include "lf_array.h"
 
@@ -68,7 +69,22 @@ namespace server {
 				th.join();
 			}
 		}
+		int GetMaxClients() const {
+			static int max_clients;
+			if (max_clients != 0) {
+				return max_clients;
+			}
+			std::ifstream in{ "data/max_clients.txt" };
+			if (not in) {
+				in.open("../../data/max_clients.txt");
+			}
+			in >> max_clients;
 
+			std::print("max clients: {}\n", max_clients);
+
+			return max_clients;
+		}
+		
 		void AccepterThread(int id);
 		void WorkerThread(int id);
 
