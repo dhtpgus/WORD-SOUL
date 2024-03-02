@@ -7,12 +7,12 @@
 #pragma once
 #include <vector>
 #include "client_socket.h"
-#include "lf_skip_list.h"
+#include "lf_array.h"
 
 namespace server {
 	class Socket {
 	public:
-		Socket() : threads_{}, clients_{ thread::GetNumWorker() } {
+		Socket() : threads_{}, clients_{ 1000, thread::GetNumWorker() + 1 } {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
@@ -42,8 +42,8 @@ namespace server {
 			CreateThread();
 		}
 
-		void Disconnect(SOCKET sock) {
-			clients_.Remove(sock);
+		void Disconnect(client::Socket::ID id) {
+			clients_.ReserveDelete(id);
 		}
 	private:
 		void Bind() {
@@ -62,14 +62,14 @@ namespace server {
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
 			}
-			threads_.emplace_back([this]() { AccepterThread(); });
+			threads_.emplace_back([this]() { AccepterThread(thread::GetNumWorker()); });
 
 			for (std::thread& th : threads_) {
 				th.join();
 			}
 		}
 
-		void AccepterThread();
+		void AccepterThread(int id);
 		void WorkerThread(int id);
 
 		static constexpr unsigned short kPortNum = 21155;
@@ -80,7 +80,7 @@ namespace server {
 		sockaddr_in server_addr_;
 		SOCKET listen_sock_;
 		HANDLE iocp_;
-		lf::SkipList<SOCKET, client::Socket> clients_;
+		lf::Array<client::Socket> clients_;
 	};
 
 	extern Socket sock;

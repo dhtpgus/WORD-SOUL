@@ -143,6 +143,7 @@
     <ClInclude Include="client_socket.h" />
     <ClInclude Include="ebr.h" />
     <ClInclude Include="entity.h" />
+    <ClInclude Include="lf_array.h" />
     <ClInclude Include="lf_node.h" />
     <ClInclude Include="lf_skip_list.h" />
     <ClInclude Include="lf_skip_node.h" />

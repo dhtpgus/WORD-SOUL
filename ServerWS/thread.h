@@ -8,6 +8,8 @@
 #include <thread>
 
 namespace thread {
+	constexpr inline int kUnregisteredID = -1;
+
 	int GetNumWorker();
-	int GetID();
+	int ID(int id_to_register = kUnregisteredID);
 }

@@ -98,5 +98,8 @@
     <ClInclude Include="timer.h">
       <Filter>헤더 파일\others</Filter>
     </ClInclude>
+    <ClInclude Include="lf_array.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

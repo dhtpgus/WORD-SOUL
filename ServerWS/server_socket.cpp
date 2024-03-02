@@ -5,8 +5,12 @@ namespace server {
 	Socket sock;
 }
 
-void server::Socket::AccepterThread()
+void server::Socket::AccepterThread(int thread_id)
 {
+	thread::ID(thread_id);
+
+	clients_.InitIndexes();
+
 	int sockaddr_len = sizeof(sockaddr_in);
 	while (true) {
 		sockaddr_in client_sockaddr;
@@ -15,20 +19,32 @@ void server::Socket::AccepterThread()
 			continue;
 		}
 
-		clients_.Add(client_sock, new client::Socket{ client_sock, iocp_ });
+		clients_.Allocate(client_sock, iocp_);
 	}
 }
 
 void server::Socket::WorkerThread(int thread_id)
 {
-	DWORD transferred;
-	SOCKET client_sock;
-	client::Socket* client_ptr;
-	int retval;
+	thread::ID(thread_id);
+
+	DWORD transferred{};
+	SOCKET client_sock{};
+	client::Socket* client_ptr{};
+	int retval{};
 
 	Timer timer;
 
 	while (true) {
+		if (thread::ID() == 0) {
+			int s;
+			std::cin >> s;
+			if (clients_.Exists(s)) {
+				std::print("{} exists\n", s);
+				clients_.ReserveDelete(s);
+			}
+			continue;
+		}
+
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &client_sock,
 			(LPOVERLAPPED*)&client_ptr, 1);
 
@@ -38,9 +54,11 @@ void server::Socket::WorkerThread(int thread_id)
 			//continue;
 		}
 		else if (transferred != 0) {
+			auto id = client_ptr->GetID();
 			std::print("{}({}): [{}] {}\n",
-				client_sock, clients_.Contains(client_sock),
-				transferred, client_ptr->GetBuffer());
+				id, clients_.Exists(id), transferred, client_ptr->GetBuffer());
+
+			std::print("asda\n");
 
 			client_ptr->Push(new packet::Position{ 0, 4, 5, 6 });
 
@@ -48,6 +66,8 @@ void server::Socket::WorkerThread(int thread_id)
 
 			client_ptr->StartAsyncIO();
 		}
+
+		client_sock = SOCKET{};
 
 		auto c = timer.GetAccumulatedDuration();
 		if (c >= 1.0 / 45) {

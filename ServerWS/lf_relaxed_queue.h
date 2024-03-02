@@ -137,16 +137,13 @@ namespace lf {
 	class RelaxedQueue {
 	public:
 		RelaxedQueue() = delete;
-		RelaxedQueue(int num_thread) : num_thread_{ num_thread }, queues_{}, ebr_{ num_thread } {
-			queues_.reserve(num_thread_ + 1);
-			for (int i = 0; i < num_thread_ + 1; ++i) {
-				queues_.emplace_back();
-			}
-		}
+		RelaxedQueue(int num_thread) : num_thread_{ num_thread },
+			queues_(num_thread + 1), ebr_{ num_thread } {}
 		RelaxedQueue(const RelaxedQueue&) = delete;
 		RelaxedQueue(RelaxedQueue&&) = delete;
 		RelaxedQueue& operator=(const RelaxedQueue&) = delete;
 		RelaxedQueue& operator=(RelaxedQueue&&) = delete;
+
 		void Push(T* x) {
 			Node* e = new Node{ x, 0 };
 			ebr_.StartOp();
@@ -155,10 +152,14 @@ namespace lf {
 
 			if (false == queues_[num_thread_].TryPush(e, top_level)) {
 				
-				queues_[thread::GetID()].Push(e, queues_[num_thread_]);
+				queues_[thread::ID()].Push(e, queues_[num_thread_]);
 			}
 
 			ebr_.EndOp();
+		}
+		void PushToMain(T* x) {
+			Node* e = new Node{ x, 0 };
+			queues_[num_thread_].Push(e, queues_[num_thread_]);
 		}
 		T* Pop() {
 			ebr_.StartOp();
@@ -168,7 +169,7 @@ namespace lf {
 			bool retry_flag{};
 
 			while (true) {
-				int id = thread::GetID();
+				int id = thread::ID();
 				for (int i = 0; i < num_thread_; ++i) {
 
 					main_head_level = queues_[num_thread_].GetHeadLevel();
@@ -214,6 +215,7 @@ namespace lf {
 			}
 		}
 	private:
+	public:
 		int num_thread_;
 		std::vector<LFQueue> queues_;
 		EBR<Node> ebr_;

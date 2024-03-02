@@ -17,18 +17,19 @@
 namespace client {
 	class Socket {
 	public:
+		using ID = int;
 		Socket() = delete;
-		Socket(SOCKET sock, HANDLE iocp)
-			: overlapped_{}, sock_{ sock }, buf_{}, recv_bytes_{}, send_bytes_{},
+		Socket(ID id, SOCKET sock, HANDLE iocp)
+			: id_{ id }, overlapped_{}, sock_{ sock }, buf_ {}, recv_bytes_{}, send_bytes_{},
 				wsabuf_{}, rq_{ thread::GetNumWorker() } {
 			wsabuf_.buf = buf_;
 			wsabuf_.len = (ULONG)kBufferSize;
-
 			CreateIoCompletionPort((HANDLE)sock_, iocp, sock_, 0);
 			StartAsyncIO();
-			std::print("{}\n", (long long)this);
+			std::print("joined: {}\n", id_);
 		}
 		~Socket() {
+			std::print("left: {}\n", id_);
 			closesocket(sock_);
 		}
 		Socket(const Socket&) = delete;
@@ -97,6 +98,10 @@ namespace client {
 			return buf_;
 		}
 
+		ID GetID() const {
+			return id_;
+		}
+
 		SOCKET GetSocket() const {
 			return sock_;
 		}
@@ -109,6 +114,7 @@ namespace client {
 		DWORD recv_bytes_;
 		DWORD send_bytes_;
 		WSABUF wsabuf_;
+		ID id_;
 		lf::RelaxedQueue<packet::Base> rq_;
 		packet::Base* last_packet_;
 	};
