@@ -1,3 +1,9 @@
+//---------------------------------------------------
+// 
+// packet.h - 패킷 관련 구조체 및 열거자 정의
+// 
+//---------------------------------------------------
+
 #pragma once
 #include <print>
 #include <tuple>
@@ -10,49 +16,55 @@ namespace packet {
 		kNewEntity,
 		kPosition,
 	};
+	using Size = unsigned char;
+	using Byte = unsigned char;
 
-	template<class T>
-	static T Deserialize(char*& p) {
-		T data = *(T*)p;
-		p += sizeof(data);
-		return data;
-	}
+#pragma pack(push, 1)
 
 	struct Base {
+		Size size;
 		Type type;
-		unsigned char size;
 	};
 
+	template<class Packet>
+	static constexpr Size GetPacketSize()
+	{
+		return sizeof(Packet) - sizeof(Base);
+	}
+
+	template<class Packet>
+	void Deserialize(Packet* packet, const Byte* byte)
+	{
+		memcpy(((Byte*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
+	}
+
 	struct Test : Base {
-		// 디버그 전용 디폴트 생성자
-		Test() : Base{ Type::kTest, (unsigned char)sizeof(*this) - 4 },
-			a{ 7 }, b{ 8 }, c{ 9 } {}
+		Test() : Base{ GetPacketSize<decltype(*this)>(), Type::kTest },
+			a{ 7 }, b{ 8 }, c{ 9 } {
+		}
 
 		Test(int a, int b, int c)
-			: Base{ Type::kTest, (unsigned char)sizeof(*this) - 4 },
-			a{ a }, b{ b }, c{ c } {}
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{ a }, b{ b }, c{ c } {}
 
-		Test(char*& p)
-			: Base{ Type::kTest, (unsigned char)sizeof(*this) - 4 } {
-			a = Deserialize<decltype(a)>(p);
-			b = Deserialize<decltype(b)>(p);
-			c = Deserialize<decltype(c)>(p);
+		Test(Byte*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest } {
+			Deserialize(this, byte);
 		}
 
 		int a, b, c;
 	};
 
 	struct Position : Base {
+		Position() : Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
+			id{}, x{}, y{}, z{} {}
+
 		Position(int id, float x, float y, float z) 
-			: Base{ Type::kPosition, (unsigned char)sizeof(*this) - 4},
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
 				id{ id }, x{ x }, y{ y }, z{ z } {}
 
-		Position(char*& p)
-			: Base{ Type::kPosition, (unsigned char)sizeof(*this) - 4 } {
-			id = Deserialize<decltype(id)>(p);
-			x = Deserialize<decltype(x)>(p);
-			y = Deserialize<decltype(y)>(p);
-			z = Deserialize<decltype(z)>(p);
+		Position(Byte*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition } {
+			Deserialize(this, byte);
 		}
 
 		int id;
@@ -65,19 +77,23 @@ namespace packet {
 		NewEntity(int id, float x, float y, float z, entity::Type et)
 			: Position{ id, x, y, z }, entity_type{ et } {
 			type = Type::kNewEntity;
-			entity_type = et;
+			size = GetPacketSize<decltype(*this)>();
 		}
-		NewEntity(char*& p) : Position{ p } {
+		NewEntity(Byte*& byte)  {
+			Deserialize(this, byte);
 			type = Type::kNewEntity;
-			entity_type = Deserialize<decltype(entity_type)>(p);
+			size = GetPacketSize<decltype(*this)>();
 		}
 
 		entity::Type entity_type;
 	};
 
-	static std::shared_ptr<Base> Deserialize(char*& bytes)
+#pragma pack(pop)
+
+	static std::shared_ptr<Base> Deserialize(Byte*& bytes)
 	{
-		Type type = *(Type*)((bytes++));
+		Size size = *(Size*)(bytes++);
+		Type type = *(Type*)(bytes++);
 
 		switch (type) {
 		case Type::kTest: {

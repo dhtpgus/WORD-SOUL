@@ -78,7 +78,7 @@ namespace client {
 				}
 
 				buf_2[send_bytes] = (unsigned char)(*pop_value)->type;
-				memcpy(&buf_2[send_bytes + 1], ((char*)*pop_value) + 4, size);
+				memcpy(&buf_2[send_bytes + 1], ((char*)*pop_value) + sizeof(packet::Base), size);
 
 				send_bytes += 1 + (DWORD)size;
 

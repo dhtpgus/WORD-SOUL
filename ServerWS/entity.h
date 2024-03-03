@@ -1,9 +1,13 @@
+//---------------------------------------------------
+// 
+// entity.h - 엔티티 관련 클래스의 부모 클래스 정의
+// 
+//---------------------------------------------------
+
 #pragma once
-#include <atomic>
-#include <compare>
 
 namespace entity {
-	using ID = unsigned long long;
+	using ID = int;
 
 	enum class Type : unsigned char {
 		kPlayer, kMonster, kBoss
@@ -15,8 +19,8 @@ namespace entity {
 
 	class Entity {
 	public:
-		Entity(float x, float y, float z, short hp) 
-			: pos_{ x, y, z }, hp_{ hp }, id_{ next_id_.fetch_add(1) } {}
+		Entity(ID id, float x, float y, float z, short hp) 
+			: id_{ id }, pos_{ x, y, z }, hp_{ hp } {}
 
 		void SetPostion(float x, float y, float z) {
 			pos_.x = x;
@@ -33,7 +37,6 @@ namespace entity {
 		}
 
 	private:
-		static std::atomic<ID> next_id_;
 		ID id_;
 		Postion pos_;
 		short hp_;

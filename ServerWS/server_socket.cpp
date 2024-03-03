@@ -9,7 +9,7 @@ void server::Socket::AccepterThread(int thread_id)
 {
 	thread::ID(thread_id);
 
-	clients_.InitIndexes(GetMaxClients());
+	clients_ = std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1);
 
 	int sockaddr_len = sizeof(sockaddr_in);
 	while (true) {
@@ -19,7 +19,9 @@ void server::Socket::AccepterThread(int thread_id)
 			continue;
 		}
 
-		clients_.Allocate(client_sock, iocp_);
+		if (ClientArray::kAllocationFailed == clients_->Allocate(client_sock, iocp_)) {
+			closesocket(client_sock);
+		}
 	}
 }
 
@@ -38,9 +40,9 @@ void server::Socket::WorkerThread(int thread_id)
 		if (thread::ID() == 0) {
 			int s;
 			std::cin >> s;
-			if (clients_.Exists(s)) {
+			if (clients_->Exists(s)) {
 				std::print("{} exists\n", s);
-				clients_.ReserveDelete(s);
+				clients_->ReserveDelete(s);
 			}
 			continue;
 		}
@@ -56,7 +58,7 @@ void server::Socket::WorkerThread(int thread_id)
 		else if (transferred != 0) {
 			auto id = client_ptr->GetID();
 			std::print("{}({}): [{}] {}\n",
-				id, clients_.Exists(id), transferred, client_ptr->GetBuffer());
+				id, clients_->Exists(id), transferred, client_ptr->GetBuffer());
 
 			client_ptr->Push<packet::Position>(0, 4.0f, 5.0f, 6.0f);
 

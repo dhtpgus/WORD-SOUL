@@ -1,3 +1,9 @@
+//----------------------------------------------------------------
+// 
+// random_number_generator.h - RandomNumberGenerator 클래스 정의
+// 
+//----------------------------------------------------------------
+
 #pragma once
 #include <random>
 #include <memory>

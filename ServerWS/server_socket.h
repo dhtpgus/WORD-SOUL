@@ -13,7 +13,7 @@
 namespace server {
 	class Socket {
 	public:
-		Socket() : threads_{}, clients_{ 1000, thread::GetNumWorker() + 1 } {
+		Socket() : threads_{}, clients_{} {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
@@ -44,9 +44,11 @@ namespace server {
 		}
 
 		void Disconnect(client::Socket::ID id) {
-			clients_.ReserveDelete(id);
+			clients_->ReserveDelete(id);
 		}
 	private:
+		using ClientArray = lf::Array<client::Socket>;
+
 		void Bind() {
 			if (bind(listen_sock_, (sockaddr*)&server_addr_, sizeof(server_addr_)) == SOCKET_ERROR) {
 				exit(1);
@@ -58,7 +60,6 @@ namespace server {
 			}
 		}
 		void CreateThread() {
-
 			threads_.reserve(thread::GetNumWorker() + 1);
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
@@ -77,10 +78,14 @@ namespace server {
 			std::ifstream in{ "data/max_clients.txt" };
 			if (not in) {
 				in.open("../../data/max_clients.txt");
+				if (not in) {
+					std::print("[오류] data/max_client.txt를 열 수 없습니다.");
+					exit(1);
+				}
 			}
 			in >> max_clients;
 
-			std::print("max clients: {}\n", max_clients);
+			//std::print("max clients: {}\n", max_clients);
 
 			return max_clients;
 		}
@@ -88,15 +93,15 @@ namespace server {
 		void AccepterThread(int id);
 		void WorkerThread(int id);
 
-		static constexpr unsigned short kPortNum = 21155;
-		static constexpr size_t kBufferSize = 1024;
+		static constexpr unsigned short kPortNum{ 21155 };
+		static constexpr size_t kBufferSize{ 1024 };
 
 		WSADATA wsa_;
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		SOCKET listen_sock_;
 		HANDLE iocp_;
-		lf::Array<client::Socket> clients_;
+		std::shared_ptr<ClientArray> clients_;
 	};
 
 	extern Socket sock;
