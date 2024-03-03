@@ -41,8 +41,8 @@ namespace lf {
 		T& operator[](int i) {
 			return *elements_[i].data;
 		}
-		bool StartAccess(int i) {
-			if (not IsIndexValid(i)) {
+		bool TryAccess(int i) {
+			if (not IsIDValid(i)) {
 				return false;
 			}
 			while (true) {
@@ -56,14 +56,14 @@ namespace lf {
 			}
 		}
 		void EndAccess(int i) {
-			if (not IsIndexValid(i)) {
+			if (not IsIDValid(i)) {
 				return;
 			}
 			elements_[i].ref_cnt -= 1;
 			TryDelete(i);
 		}
 		void ReserveDelete(int i) {
-			if (not IsIndexValid(i)) {
+			if (not IsIDValid(i)) {
 				return;
 			}
 			if (not elements_[i].cas_lock.TryLock()) {
@@ -72,23 +72,23 @@ namespace lf {
 			elements_[i].ref_cnt -= 1;
 			TryDelete(i);
 		}
-		template<class... Value>
+		template<class Type, class... Value>
 		int Allocate(Value&&... value) {
 			auto pop = index_queue_.Pop();
 			if (nullptr == pop) {
 				std::print("[경고] 할당 실패 - 허용량 초과\n");
-				return kAllocationFailed;
+				return kInvalidID;
 			}
 			int id = *pop;
 			delete pop;
 
-			elements_[id].data = new T{ id, value... };
+			elements_[id].data = new Type{ id, value... };
 			elements_[id].cas_lock.Unlock();
 			elements_[id].ref_cnt = 1;
 			return id;
 		}
 		bool Exists(int id) const {
-			return IsIndexValid(id) and elements_[id].ref_cnt > 0;
+			return IsIDValid(id) and elements_[id].ref_cnt > 0;
 		}
 		int Count() const {
 			int cnt = 0;
@@ -97,7 +97,7 @@ namespace lf {
 			}
 			return cnt;
 		}
-		static constexpr int kAllocationFailed = -1;
+		static constexpr int kInvalidID = -1;
 	private:
 		bool CAS(std::atomic_int& mem, int expected, int desired) {
 			return mem.compare_exchange_strong(expected, desired);
@@ -108,7 +108,7 @@ namespace lf {
 				index_queue_.Emplace(i);
 			}
 		}
-		bool IsIndexValid(int i) const {
+		bool IsIDValid(int i) const {
 			if (0 <= i and i < elements_.size()) {
 				return true;
 			}

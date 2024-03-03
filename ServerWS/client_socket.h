@@ -16,19 +16,18 @@
 namespace client {
 	class Socket {
 	public:
-		using ID = int;
 		Socket() = delete;
-		Socket(ID id, SOCKET sock, HANDLE iocp)
-			: id_{ id }, overlapped_{}, sock_{ sock }, buf_ {}, recv_bytes_{}, send_bytes_{},
-				wsabuf_{}, rq_{ thread::GetNumWorker() } {
+		Socket(int id, SOCKET sock, HANDLE iocp)
+			: overlapped_{}, sock_{ sock }, buf_{}, recv_bytes_{}, send_bytes_{},
+				wsabuf_{}, id_{ id }, player_id_{}, rq_{ thread::GetNumWorker() } {
 			wsabuf_.buf = buf_;
 			wsabuf_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, sock_, 0);
 			StartAsyncIO();
-			std::print("joined: {}\n", id_);
+			std::print("ID: {} has joined.\n", id_);
 		}
 		~Socket() {
-			std::print("left: {}\n", id_);
+			std::print("ID: {} has left.\n", id_);
 			closesocket(sock_);
 		}
 		Socket(const Socket&) = delete;
@@ -90,7 +89,7 @@ namespace client {
 				return;
 			}
 
-			std::print("send: {} bytes\n", send_bytes);
+			packet::Print(buf_2, send_bytes);
 
 			send(sock_, buf_2, send_bytes, 0);
 			//WSASend(sock_, &wsabuf_2, 1, &send_bytes, 0, &overlapped_, nullptr);
@@ -100,12 +99,20 @@ namespace client {
 			return buf_;
 		}
 
-		ID GetID() const {
+		int GetID() const {
 			return id_;
 		}
 
 		SOCKET GetSocket() const {
 			return sock_;
+		}
+
+		int GetPlayerID(int id) const {
+			return player_id_;
+		}
+
+		void SetPlayerID(int id) {
+			player_id_ = id;
 		}
 	private:
 		static constexpr size_t kBufferSize = 1024;
@@ -116,7 +123,8 @@ namespace client {
 		DWORD recv_bytes_;
 		DWORD send_bytes_;
 		WSABUF wsabuf_;
-		ID id_;
+		int id_;
+		int player_id_;
 		lf::RelaxedQueue<packet::Base*> rq_;
 		packet::Base** last_packet_;
 	};

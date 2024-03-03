@@ -7,13 +7,14 @@
 #pragma once
 #include <vector>
 #include <fstream>
+#include "entity_manager.h"
 #include "client_socket.h"
 #include "lf_array.h"
 
 namespace server {
 	class Socket {
 	public:
-		Socket() : threads_{}, clients_{} {
+		Socket() : threads_{}, clients_{}, entity_manager_{} {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
@@ -43,7 +44,7 @@ namespace server {
 			CreateThread();
 		}
 
-		void Disconnect(client::Socket::ID id) {
+		void Disconnect(int id) {
 			clients_->ReserveDelete(id);
 		}
 	private:
@@ -102,6 +103,7 @@ namespace server {
 		SOCKET listen_sock_;
 		HANDLE iocp_;
 		std::shared_ptr<ClientArray> clients_;
+		std::shared_ptr<entity::Manager> entity_manager_;
 	};
 
 	extern Socket sock;

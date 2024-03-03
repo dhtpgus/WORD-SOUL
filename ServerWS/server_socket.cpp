@@ -10,6 +10,9 @@ void server::Socket::AccepterThread(int thread_id)
 	thread::ID(thread_id);
 
 	clients_ = std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1);
+	entity_manager_ = std::make_shared<entity::Manager>(GetMaxClients(), thread::GetNumWorker() + 1);
+
+	std::print("[알림] accept 시작\n");
 
 	int sockaddr_len = sizeof(sockaddr_in);
 	while (true) {
@@ -19,8 +22,16 @@ void server::Socket::AccepterThread(int thread_id)
 			continue;
 		}
 
-		if (ClientArray::kAllocationFailed == clients_->Allocate(client_sock, iocp_)) {
+		auto sock_id = clients_->Allocate<client::Socket>(client_sock, iocp_);
+		if (sock_id == ClientArray::kInvalidID) {
 			closesocket(client_sock);
+			continue;
+		}
+		
+		auto player_id = entity_manager_->AllocatePlayer();
+		if (clients_->TryAccess(sock_id)) {
+			(*clients_)[sock_id].SetPlayerID(player_id);
+			clients_->EndAccess(sock_id);
 		}
 	}
 }
@@ -41,7 +52,7 @@ void server::Socket::WorkerThread(int thread_id)
 			int s;
 			std::cin >> s;
 			if (clients_->Exists(s)) {
-				std::print("{} exists\n", s);
+				std::print("ID: {} has disconnected.\n", s);
 				clients_->ReserveDelete(s);
 			}
 			continue;
@@ -60,7 +71,7 @@ void server::Socket::WorkerThread(int thread_id)
 			std::print("{}({}): [{}] {}\n",
 				id, clients_->Exists(id), transferred, client_ptr->GetBuffer());
 
-			client_ptr->Push<packet::Position>(0, 4.0f, 5.0f, 6.0f);
+			client_ptr->Push<packet::Position>(2, 4.0f, 5.0f, 6.0f);
 
 			client_ptr->Send();
 

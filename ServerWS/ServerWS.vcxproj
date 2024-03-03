@@ -128,7 +128,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ebr.cpp" />
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
@@ -143,6 +142,7 @@
     <ClInclude Include="client_socket.h" />
     <ClInclude Include="ebr.h" />
     <ClInclude Include="entity.h" />
+    <ClInclude Include="entity_manager.h" />
     <ClInclude Include="lf_array.h" />
     <ClInclude Include="lf_node.h" />
     <ClInclude Include="monster.h" />

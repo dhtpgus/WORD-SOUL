@@ -6,7 +6,6 @@
 
 #pragma once
 #include <print>
-#include <tuple>
 #include <memory>
 #include "entity.h"
 
@@ -33,7 +32,7 @@ namespace packet {
 	}
 
 	template<class Packet>
-	void Deserialize(Packet* packet, const Byte* byte)
+	void Deserialize(Packet* packet, Byte* byte)
 	{
 		memcpy(((Byte*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
 	}
@@ -46,7 +45,7 @@ namespace packet {
 		Test(int a, int b, int c)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{ a }, b{ b }, c{ c } {}
 
-		Test(Byte*& byte)
+		Test(Byte* byte)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest } {
 			Deserialize(this, byte);
 		}
@@ -62,7 +61,7 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
 				id{ id }, x{ x }, y{ y }, z{ z } {}
 
-		Position(Byte*& byte)
+		Position(Byte* byte)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition } {
 			Deserialize(this, byte);
 		}
@@ -79,7 +78,7 @@ namespace packet {
 			type = Type::kNewEntity;
 			size = GetPacketSize<decltype(*this)>();
 		}
-		NewEntity(Byte*& byte)  {
+		NewEntity(Byte* byte)  {
 			Deserialize(this, byte);
 			type = Type::kNewEntity;
 			size = GetPacketSize<decltype(*this)>();
@@ -90,7 +89,7 @@ namespace packet {
 
 #pragma pack(pop)
 
-	static std::shared_ptr<Base> Deserialize(Byte*& bytes)
+	static std::shared_ptr<Base> Deserialize(Byte* bytes)
 	{
 		Size size = *(Size*)(bytes++);
 		Type type = *(Type*)(bytes++);
@@ -110,5 +109,14 @@ namespace packet {
 			return std::make_shared<Test>();
 		}
 		}
+	}
+
+	static void Print(char* byte, int size) {
+
+		std::string data;
+		for (int i = 0; i < size; ++i) {
+			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(byte + i)));
+		}
+		std::print("send {} bytes: {}\n", size, data);
 	}
 }

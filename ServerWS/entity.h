@@ -7,8 +7,6 @@
 #pragma once
 
 namespace entity {
-	using ID = int;
-
 	enum class Type : unsigned char {
 		kPlayer, kMonster, kBoss
 	};
@@ -19,7 +17,7 @@ namespace entity {
 
 	class Entity {
 	public:
-		Entity(ID id, float x, float y, float z, short hp) 
+		Entity(int id, float x, float y, float z, short hp) 
 			: id_{ id }, pos_{ x, y, z }, hp_{ hp } {}
 
 		void SetPostion(float x, float y, float z) {
@@ -28,7 +26,7 @@ namespace entity {
 			pos_.z = z;
 		}
 
-		ID GetID() const {
+		int GetID() const {
 			return id_;
 		}
 
@@ -37,7 +35,7 @@ namespace entity {
 		}
 
 	private:
-		ID id_;
+		int id_;
 		Postion pos_;
 		short hp_;
 	};
