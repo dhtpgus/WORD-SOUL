@@ -145,8 +145,6 @@
     <ClInclude Include="entity.h" />
     <ClInclude Include="lf_array.h" />
     <ClInclude Include="lf_node.h" />
-    <ClInclude Include="lf_skip_list.h" />
-    <ClInclude Include="lf_skip_node.h" />
     <ClInclude Include="monster.h" />
     <ClInclude Include="packet.h" />
     <ClInclude Include="player.h" />
