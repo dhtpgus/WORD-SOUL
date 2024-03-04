@@ -57,6 +57,7 @@ void AWORDSOULCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	PlayerInputComponent->BindAction(FName("Jump"), IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction(FName("GetItem"), IE_Pressed, this, &AWORDSOULCharacter::GetItem);
 	PlayerInputComponent->BindAction(FName("Attack"), IE_Pressed, this, &AWORDSOULCharacter::Attack);
+	PlayerInputComponent->BindAction(FName("Dodge"), IE_Pressed, this, &AWORDSOULCharacter::Dodge);
 }
 
 void AWORDSOULCharacter::MoveForward(float value)
@@ -120,6 +121,11 @@ bool AWORDSOULCharacter::CanAttack()
 	return ActionState == EActionState::EAS_Unoccupied and CharacterState != ECharacterState::ECS_Unequipped;
 }
 
+void AWORDSOULCharacter::DodgeEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
 void AWORDSOULCharacter::Attack()
 {
 	if (CanAttack())
@@ -128,6 +134,13 @@ void AWORDSOULCharacter::Attack()
 		ActionState = EActionState::EAS_Attacking;
 	}
 	
+}
+
+void AWORDSOULCharacter::Dodge()
+{
+	if (ActionState != EActionState::EAS_Unoccupied) return;
+	PlayDodgeMontage();
+	ActionState = EActionState::EAS_Dodge;
 }
 
 void AWORDSOULCharacter::AttackEnd()
@@ -158,6 +171,16 @@ void AWORDSOULCharacter::PlayAttackMontage()
 			break;
 		}
 		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
+	}
+}
+
+void AWORDSOULCharacter::PlayDodgeMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance and DodgeMontage)
+	{
+		AnimInstance->Montage_Play(DodgeMontage);
+		AnimInstance->Montage_JumpToSection("Default", DodgeMontage);
 	}
 }
 

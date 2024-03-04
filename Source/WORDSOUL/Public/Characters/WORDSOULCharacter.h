@@ -24,6 +24,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
+	FORCEINLINE EActionState GetActionState() const { return ActionState; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -33,12 +34,18 @@ protected:
 	void MoveRight(float value);
 	void GetItem();
 	void Attack();
+	void Dodge();
 
 	void PlayAttackMontage();
+	void PlayDodgeMontage();
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
+
 	bool CanAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void DodgeEnd();
 
 private:
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -57,4 +64,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* DodgeMontage;
 };

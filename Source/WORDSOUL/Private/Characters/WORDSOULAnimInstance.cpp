@@ -26,5 +26,6 @@ void UWORDSOULAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		GroundSpeed = UKismetMathLibrary::VSizeXY(WORDSOULCharacterMovement->Velocity);
 		IsFalling = WORDSOULCharacterMovement->IsFalling();
 		CharacterState = WORDSOULCharacter->GetCharacterState();
+		ActionState = WORDSOULCharacter->GetActionState();
 	}
 }
