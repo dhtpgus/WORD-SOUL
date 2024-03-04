@@ -24,10 +24,10 @@ namespace client {
 			wsabuf_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, sock_, 0);
 			StartAsyncIO();
-			std::print("ID: {} has joined.\n", id_);
+			std::print("ID: {} has joined.\n", GetID());
 		}
 		~Socket() {
-			std::print("ID: {} has left.\n", id_);
+			std::print("ID: {} has left.\n", GetID());
 			closesocket(sock_);
 		}
 		Socket(const Socket&) = delete;
@@ -100,7 +100,7 @@ namespace client {
 		}
 
 		int GetID() const {
-			return id_;
+			return abs(id_);
 		}
 
 		SOCKET GetSocket() const {
@@ -114,6 +114,15 @@ namespace client {
 		void SetPlayerID(int id) {
 			player_id_ = id;
 		}
+
+		bool IsLogicallyDeleted() const {
+			return id_ < 0;
+		}
+		void DeleteLogically() {
+			id_ *= -1;
+		}
+		static constexpr bool is_dangerous_to_delete{ true };
+
 	private:
 		static constexpr size_t kBufferSize = 1024;
 

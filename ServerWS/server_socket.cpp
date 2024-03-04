@@ -52,7 +52,7 @@ void server::Socket::WorkerThread(int thread_id)
 			int s;
 			std::cin >> s;
 			if (clients_->Exists(s)) {
-				std::print("ID: {} has disconnected.\n", s);
+				std::print("ID: {} has been disconnected.\n", s);
 				clients_->ReserveDelete(s);
 			}
 			continue;
@@ -67,15 +67,19 @@ void server::Socket::WorkerThread(int thread_id)
 			//continue;
 		}
 		else if (transferred != 0) {
-			auto id = client_ptr->GetID();
-			std::print("{}({}): [{}] {}\n",
-				id, clients_->Exists(id), transferred, client_ptr->GetBuffer());
+			if (client_ptr->IsLogicallyDeleted()) {
+				delete client_ptr;
+			}
+			else {
+				auto id = client_ptr->GetID();
 
-			client_ptr->Push<packet::Position>(2, 4.0f, 5.0f, 6.0f);
+				std::print("{}({}): [{}] {}\n",
+					id, clients_->Exists(id), transferred, client_ptr->GetBuffer());
 
-			client_ptr->Send();
-
-			client_ptr->StartAsyncIO();
+				client_ptr->Push<packet::Position>(2, 4.0f, 5.0f, 6.0f);
+				client_ptr->Send();
+				client_ptr->StartAsyncIO();
+			}
 		}
 
 		auto c = timer.GetAccumulatedDuration();

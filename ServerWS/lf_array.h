@@ -33,8 +33,8 @@ namespace lf {
 	class Array {
 	public:
 		Array() = delete;
-		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {
-			for (int i = 0; i < el_num; ++i) {
+		Array(int el_num, int th_num) : elements_(el_num + 1), index_queue_{ th_num } {
+			for (int i = 1; i <= el_num; ++i) {
 				index_queue_.Emplace(i);
 			}
 		}
@@ -97,19 +97,24 @@ namespace lf {
 			}
 			return cnt;
 		}
-		static constexpr int kInvalidID = -1;
+		static constexpr int kInvalidID = 0;
 	private:
 		bool CAS(std::atomic_int& mem, int expected, int desired) {
 			return mem.compare_exchange_strong(expected, desired);
 		}
 		void TryDelete(int i) {
 			if (CAS(elements_[i].ref_cnt, 0, Element<T>::kDeleted)) {
-				delete elements_[i].data;
+				if (elements_[i].data->is_dangerous_to_delete) {
+					elements_[i].data->DeleteLogically();
+				}
+				else {
+					delete elements_[i].data;
+				}
 				index_queue_.Emplace(i);
 			}
 		}
 		bool IsIDValid(int i) const {
-			if (0 <= i and i < elements_.size()) {
+			if (0 < i and i < elements_.size()) {
 				return true;
 			}
 			return false;

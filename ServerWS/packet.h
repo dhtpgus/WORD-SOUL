@@ -111,11 +111,11 @@ namespace packet {
 		}
 	}
 
-	static void Print(char* byte, int size) {
+	static void Print(char* bytes, int size) {
 
 		std::string data;
 		for (int i = 0; i < size; ++i) {
-			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(byte + i)));
+			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(bytes + i)));
 		}
 		std::print("send {} bytes: {}\n", size, data);
 	}
