@@ -8,6 +8,7 @@
 #include <print>
 #include <memory>
 #include "entity.h"
+#include "debug.h"
 
 namespace packet {
 	enum class Type : unsigned char {
@@ -18,9 +19,9 @@ namespace packet {
 	using Size = unsigned char;
 	using Byte = unsigned char;
 
-#pragma pack(push, 1)
-
 	struct Base {
+		Base(Size size, Type type) : size{ size }, type{ type } {}
+		virtual ~Base() {}
 		Size size;
 		Type type;
 	};
@@ -37,6 +38,8 @@ namespace packet {
 		memcpy(((Byte*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
 	}
 
+#pragma pack(push, 1)
+
 	struct Test : Base {
 		Test() : Base{ GetPacketSize<decltype(*this)>(), Type::kTest },
 			a{ 7 }, b{ 8 }, c{ 9 } {
@@ -46,7 +49,7 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{ a }, b{ b }, c{ c } {}
 
 		Test(Byte* byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest } {
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{}, b{}, c{} {
 			Deserialize(this, byte);
 		}
 
@@ -59,10 +62,10 @@ namespace packet {
 
 		Position(int id, float x, float y, float z) 
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
-				id{ id }, x{ x }, y{ y }, z{ z } {}
+			id{ id }, x{ x }, y{ y }, z{ z } {}
 
 		Position(Byte* byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition } {
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition }, id{}, x{}, y{}, z{} {
 			Deserialize(this, byte);
 		}
 
@@ -75,11 +78,6 @@ namespace packet {
 	struct NewEntity : Position {
 		NewEntity(int id, float x, float y, float z, entity::Type et)
 			: Position{ id, x, y, z }, entity_type{ et } {
-			type = Type::kNewEntity;
-			size = GetPacketSize<decltype(*this)>();
-		}
-		NewEntity(Byte* byte)  {
-			Deserialize(this, byte);
 			type = Type::kNewEntity;
 			size = GetPacketSize<decltype(*this)>();
 		}
@@ -99,24 +97,30 @@ namespace packet {
 			return std::make_shared<Test>(bytes);
 		}
 		case Type::kNewEntity: {
-			return std::make_shared<NewEntity>(bytes);
+			break;
 		}
 		case Type::kPosition: {
 			return std::make_shared<Position>(bytes);
 		}
 		default: {
-			std::print("Unknown Packet: {}\n", (int)type);
-			return std::make_shared<Test>();
+			std::print("[Error] Unknown Packet: {}\n", (int)type);
+			exit(1);
 		}
 		}
+		return std::make_shared<Test>();
 	}
 
-	static void Print(char* bytes, int size) {
-
+	static std::string CheckBytes(char* bytes, int size)
+	{
 		std::string data;
 		for (int i = 0; i < size; ++i) {
 			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(bytes + i)));
 		}
-		std::print("send {} bytes: {}\n", size, data);
+		return std::format("send {} bytes: {}", size, data);
+	}
+
+	static std::string CheckBytes(const char* bytes, int size)
+	{
+		return CheckBytes((char*)bytes, size);
 	}
 }

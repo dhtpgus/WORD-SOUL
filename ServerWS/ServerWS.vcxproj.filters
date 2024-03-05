@@ -95,5 +95,8 @@
     <ClInclude Include="entity_manager.h">
       <Filter>헤더 파일\entity</Filter>
     </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -140,6 +140,7 @@
     <ClInclude Include="boss.h" />
     <ClInclude Include="cas_lock.h" />
     <ClInclude Include="client_socket.h" />
+    <ClInclude Include="debug.h" />
     <ClInclude Include="ebr.h" />
     <ClInclude Include="entity.h" />
     <ClInclude Include="entity_manager.h" />

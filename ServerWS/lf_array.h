@@ -7,6 +7,7 @@
 #pragma once
 #include "client_socket.h"
 #include "cas_lock.h"
+#include "debug.h"
 
 namespace lf {
 	template<class T>
@@ -35,7 +36,7 @@ namespace lf {
 		Array() = delete;
 		Array(int el_num, int th_num) : elements_(el_num + 1), index_queue_{ th_num } {
 			for (int i = 1; i <= el_num; ++i) {
-				index_queue_.Emplace(i);
+				index_queue_.Emplace<int>(i);
 			}
 		}
 		T& operator[](int i) {
@@ -76,7 +77,9 @@ namespace lf {
 		int Allocate(Value&&... value) {
 			auto pop = index_queue_.Pop();
 			if (nullptr == pop) {
-				std::print("[경고] 할당 실패 - 허용량 초과\n");
+				if (debug::IsDebugMode()) {
+					std::print("[Warning] Failed to Allocate: Capacity Exceeded\n");
+				}
 				return kInvalidID;
 			}
 			int id = *pop;
@@ -110,7 +113,7 @@ namespace lf {
 				else {
 					delete elements_[i].data;
 				}
-				index_queue_.Emplace(i);
+				index_queue_.Emplace<int>(i);
 			}
 		}
 		bool IsIDValid(int i) const {

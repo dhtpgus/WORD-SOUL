@@ -1,8 +1,10 @@
 #include "server_socket.h"
+#include "debug.h"
 #include "timer.h"
 
 namespace server {
 	Socket sock;
+	constexpr auto kTransferFrequency{ 45.0 };
 }
 
 void server::Socket::AccepterThread(int thread_id)
@@ -12,7 +14,9 @@ void server::Socket::AccepterThread(int thread_id)
 	clients_ = std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1);
 	entity_manager_ = std::make_shared<entity::Manager>(GetMaxClients(), thread::GetNumWorker() + 1);
 
-	std::print("[알림] accept 시작\n");
+	if (debug::IsDebugMode()) {
+		std::print("[Info] Started to Accept\n");
+	}
 
 	int sockaddr_len = sizeof(sockaddr_in);
 	while (true) {
@@ -31,6 +35,7 @@ void server::Socket::AccepterThread(int thread_id)
 		auto player_id = entity_manager_->AllocatePlayer();
 		if (clients_->TryAccess(sock_id)) {
 			(*clients_)[sock_id].SetPlayerID(player_id);
+
 			clients_->EndAccess(sock_id);
 		}
 	}
@@ -52,7 +57,7 @@ void server::Socket::WorkerThread(int thread_id)
 			int s;
 			std::cin >> s;
 			if (clients_->Exists(s)) {
-				std::print("ID: {} has been disconnected.\n", s);
+				std::print("[Info] ID: {} has been disconnected.\n", s);
 				clients_->ReserveDelete(s);
 			}
 			continue;
@@ -73,8 +78,10 @@ void server::Socket::WorkerThread(int thread_id)
 			else {
 				auto id = client_ptr->GetID();
 
-				std::print("{}({}): [{}] {}\n",
-					id, clients_->Exists(id), transferred, client_ptr->GetBuffer());
+				if (debug::IsDebugMode()) {
+					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
+						packet::CheckBytes(client_ptr->GetBuffer(), transferred));
+				}
 
 				client_ptr->Push<packet::Position>(2, 4.0f, 5.0f, 6.0f);
 				client_ptr->Send();
@@ -83,8 +90,7 @@ void server::Socket::WorkerThread(int thread_id)
 		}
 
 		auto c = timer.GetAccumulatedDuration();
-		if (c >= 1.0 / 45) {
-			//...
+		if (c >= 1.0 / kTransferFrequency) {
 			timer.ResetAccumulatedDuration();
 		}
 	}

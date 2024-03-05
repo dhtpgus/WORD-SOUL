@@ -71,28 +71,29 @@ namespace server {
 				th.join();
 			}
 		}
+		
+		void AccepterThread(int id);
+		void WorkerThread(int id);
+
 		int GetMaxClients() const {
 			static int max_clients;
-			if (max_clients != 0) {
+			static bool has_read_file;
+			if (has_read_file) {
 				return max_clients;
 			}
 			std::ifstream in{ "data/max_clients.txt" };
 			if (not in) {
 				in.open("../../data/max_clients.txt");
 				if (not in) {
-					std::print("[오류] data/max_client.txt를 열 수 없습니다.");
+					std::print("[Error] Cannot Open file: data/max_client.txt");
 					exit(1);
 				}
 			}
 			in >> max_clients;
-
-			//std::print("max clients: {}\n", max_clients);
+			has_read_file = true;
 
 			return max_clients;
 		}
-		
-		void AccepterThread(int id);
-		void WorkerThread(int id);
 
 		static constexpr unsigned short kPortNum{ 21155 };
 		static constexpr size_t kBufferSize{ 1024 };

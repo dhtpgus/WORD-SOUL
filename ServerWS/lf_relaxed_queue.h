@@ -144,9 +144,9 @@ namespace lf {
 		RelaxedQueue& operator=(const RelaxedQueue&) = delete;
 		RelaxedQueue& operator=(RelaxedQueue&&) = delete;
 
-		template<class... Value>
+		template<class Type, class... Value>
 		void Emplace(Value&&... value) {
-			Node* e = new Node{ new T{ value... }, 0 };
+			Node* e = new Node{ new Type{ value... }, 0 };
 			ebr_.StartOp();
 
 			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;

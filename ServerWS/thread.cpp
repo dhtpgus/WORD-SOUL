@@ -11,12 +11,12 @@ int thread::ID(int id_to_register)
 {
 	static thread_local int id = id_to_register;
 	if (id == kUnregisteredID) {
-		std::print("[오류] 스레드 아이디를 먼저 등록해야 합니다.\n");
+		std::print("[Error] Must Register Thread ID First.\n");
 		system("pause");
 		exit(1);
 	}
 	if (id_to_register != kUnregisteredID and id != id_to_register) {
-		std::print("[오류] 스레드 아이디가 이미 등록되었습니다.\n");
+		std::print("[Error] Thread ID has already registered\n");
 		system("pause");
 		exit(1);
 	}

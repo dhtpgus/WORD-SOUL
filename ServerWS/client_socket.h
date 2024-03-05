@@ -11,6 +11,7 @@
 #include <ws2tcpip.h>
 #include "packet.h"
 #include "lf_relaxed_queue.h"
+#include "debug.h"
 #pragma comment(lib, "ws2_32")
 
 namespace client {
@@ -24,10 +25,14 @@ namespace client {
 			wsabuf_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, sock_, 0);
 			StartAsyncIO();
-			std::print("ID: {} has joined.\n", GetID());
+			if (debug::IsDebugMode()) {
+				std::print("[Info] ID: {} has joined.\n", GetID());
+			}
 		}
 		~Socket() {
-			std::print("ID: {} has left.\n", GetID());
+			if (debug::IsDebugMode()) {
+				std::print("[Info] ID: {} has left.\n", GetID());
+			}
 			closesocket(sock_);
 		}
 		Socket(const Socket&) = delete;
@@ -42,9 +47,8 @@ namespace client {
 		}
 
 		template<class Packet, class... Value>
-		void Push(Value&&... value) {
-			packet::Base* p{ new Packet{ value... } };
-			rq_.Emplace(p);
+		void Push(Value... value) {
+			rq_.Emplace<Packet>(value...);
 		}
 
 		// WSASend 함수로 재작성 필요
@@ -55,7 +59,7 @@ namespace client {
 			DWORD send_bytes = 0;
 
 			while (true) {
-				packet::Base** pop_value{};
+				packet::Base* pop_value{};
 
 				if (last_packet_ == nullptr) {
 					pop_value = rq_.Pop();
@@ -69,19 +73,18 @@ namespace client {
 					pop_value = last_packet_;
 				}
 
-				size_t size = (*pop_value)->size;
+				size_t size = pop_value->size;
 				
 				if (send_bytes + size > kBufferSize) {
 					last_packet_ = pop_value;
 					break;
 				}
 
-				buf_2[send_bytes] = (unsigned char)(*pop_value)->type;
-				memcpy(&buf_2[send_bytes + 1], ((char*)*pop_value) + sizeof(packet::Base), size);
+				buf_2[send_bytes] = (unsigned char)(pop_value->type);
+				memcpy(&buf_2[send_bytes + 1], ((char*)pop_value) + sizeof(packet::Base), size);
 
 				send_bytes += 1 + (DWORD)size;
 
-				delete *pop_value;
 				delete pop_value;
 			}
 
@@ -89,7 +92,9 @@ namespace client {
 				return;
 			}
 
-			packet::Print(buf_2, send_bytes);
+			if (debug::IsDebugMode()) {
+				std::print("[Info] {}\n", packet::CheckBytes(buf_2, send_bytes));
+			}
 
 			send(sock_, buf_2, send_bytes, 0);
 			//WSASend(sock_, &wsabuf_2, 1, &send_bytes, 0, &overlapped_, nullptr);
@@ -134,7 +139,7 @@ namespace client {
 		WSABUF wsabuf_;
 		int id_;
 		int player_id_;
-		lf::RelaxedQueue<packet::Base*> rq_;
-		packet::Base** last_packet_;
+		lf::RelaxedQueue<packet::Base> rq_;
+		packet::Base* last_packet_;
 	};
 }
