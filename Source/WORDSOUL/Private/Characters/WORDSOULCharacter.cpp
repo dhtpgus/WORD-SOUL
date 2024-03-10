@@ -8,6 +8,8 @@
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Animation/AnimMontage.h"
+#include "HUD/WORDSOULHUD.h"
+#include "HUD/WORDSOULOverlay.h"
 
 // Sets default values
 AWORDSOULCharacter::AWORDSOULCharacter()
@@ -35,6 +37,25 @@ void AWORDSOULCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	InitWORDSOULOverlay();
+}
+
+void AWORDSOULCharacter::InitWORDSOULOverlay()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController)
+	{
+		AWORDSOULHUD* WORDSOULHUD = Cast<AWORDSOULHUD>(PlayerController->GetHUD());
+		if (WORDSOULHUD)
+		{
+			WORDSOULOverlay = WORDSOULHUD->GetWORDSOULOverlay();
+			if (WORDSOULOverlay)
+			{
+				WORDSOULOverlay->SetHealthBarPercent(1.f);
+				WORDSOULOverlay->SetStaminaBarPercent(1.f);
+			}
+		}
+	}
 }
 
 // Called every frame
