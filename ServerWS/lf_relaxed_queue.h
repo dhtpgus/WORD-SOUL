@@ -158,6 +158,7 @@ namespace lf {
 
 			ebr_.EndOp();
 		}
+
 		T* Pop() {
 			ebr_.StartOp();
 			Node::Value ret{};

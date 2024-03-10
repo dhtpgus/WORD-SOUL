@@ -17,13 +17,12 @@ namespace packet {
 		kPosition,
 	};
 	using Size = unsigned char;
-	using Byte = unsigned char;
 
 	struct Base {
 		Base(Size size, Type type) : size{ size }, type{ type } {}
 		virtual ~Base() {}
-		Size size;
-		Type type;
+		Size size{};
+		Type type{};
 	};
 
 	template<class Packet>
@@ -33,9 +32,10 @@ namespace packet {
 	}
 
 	template<class Packet>
-	void Deserialize(Packet* packet, Byte* byte)
+	void Deserialize(Packet* packet, char*& byte)
 	{
-		memcpy(((Byte*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
+		memcpy(((char*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
+		byte += GetPacketSize<Packet>();
 	}
 
 #pragma pack(push, 1)
@@ -48,7 +48,7 @@ namespace packet {
 		Test(int a, int b, int c)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{ a }, b{ b }, c{ c } {}
 
-		Test(Byte* byte)
+		Test(char*& byte)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{}, b{}, c{} {
 			Deserialize(this, byte);
 		}
@@ -64,7 +64,7 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
 			id{ id }, x{ x }, y{ y }, z{ z } {}
 
-		Position(Byte* byte)
+		Position(char*& byte)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition }, id{}, x{}, y{}, z{} {
 			Deserialize(this, byte);
 		}
@@ -86,29 +86,6 @@ namespace packet {
 	};
 
 #pragma pack(pop)
-
-	static std::shared_ptr<Base> Deserialize(Byte* bytes)
-	{
-		Size size = *(Size*)(bytes++);
-		Type type = *(Type*)(bytes++);
-
-		switch (type) {
-		case Type::kTest: {
-			return std::make_shared<Test>(bytes);
-		}
-		case Type::kNewEntity: {
-			break;
-		}
-		case Type::kPosition: {
-			return std::make_shared<Position>(bytes);
-		}
-		default: {
-			std::print("[Error] Unknown Packet: {}\n", (int)type);
-			exit(1);
-		}
-		}
-		return std::make_shared<Test>();
-	}
 
 	static std::string CheckBytes(char* bytes, int size)
 	{

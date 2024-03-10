@@ -8,10 +8,23 @@
 #include <vector>
 #include <fstream>
 #include "entity_manager.h"
+#include "packet.h"
 #include "client_socket.h"
 #include "lf_array.h"
 
 namespace server {
+
+	enum class Operation {
+		kRecv, kSend, kAccept
+	};
+
+	struct OverEx {
+		OVERLAPPED over;
+		WSABUF wsabuf[1];
+		char net_buf[512];
+		Operation op;
+	};
+
 	class Socket {
 	public:
 		Socket() : threads_{}, clients_{}, entity_manager_{} {
@@ -24,7 +37,7 @@ namespace server {
 			if (listen_sock_ == INVALID_SOCKET) {
 				exit(1);
 			}
-
+			
 			memset(&server_addr_, 0, sizeof(server_addr_));
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -74,6 +87,39 @@ namespace server {
 		
 		void AccepterThread(int id);
 		void WorkerThread(int id);
+
+		void Deserialize(char*& bytes, unsigned long& n_bytes)
+		{
+			if (n_bytes <= 0) {
+				return;
+			}
+
+			packet::Size size = *(packet::Size*)(bytes++);
+			packet::Type type = *(packet::Type*)(bytes++);
+
+			n_bytes -= sizeof(size) + sizeof(type) + size;
+
+			switch (type) {
+			case packet::Type::kTest: {
+				auto p{ std::make_unique<packet::Test>(bytes) };
+
+				std::print("{} {} {}\n", p->a, p->b, p->c);
+				break;
+			}
+			case packet::Type::kNewEntity: {
+				break;
+			}
+			case packet::Type::kPosition: {
+				auto p{ std::make_unique<packet::Position>(bytes) };
+				entity_manager_->UpdateEntityPosition(p->id, p->x, p->y, p->z);
+				break;
+			}
+			default: {
+				std::print("[Error] Unknown Packet: {}\n", (int)type);
+				exit(1);
+			}
+			}
+		}
 
 		int GetMaxClients() const {
 			static int max_clients;

@@ -21,6 +21,7 @@ void server::Socket::AccepterThread(int thread_id)
 	int sockaddr_len = sizeof(sockaddr_in);
 	while (true) {
 		sockaddr_in client_sockaddr;
+
 		SOCKET client_sock = accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
 		if (client_sock == INVALID_SOCKET) {
 			continue;
@@ -53,16 +54,6 @@ void server::Socket::WorkerThread(int thread_id)
 	Timer timer;
 
 	while (true) {
-		if (thread::ID() == 0) {
-			int s;
-			std::cin >> s;
-			if (clients_->Exists(s)) {
-				std::print("[Info] ID: {} has been disconnected.\n", s);
-				clients_->ReserveDelete(s);
-			}
-			continue;
-		}
-
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &client_sock,
 			(LPOVERLAPPED*)&client_ptr, 1);
 
@@ -81,6 +72,12 @@ void server::Socket::WorkerThread(int thread_id)
 				if (debug::IsDebugMode()) {
 					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
 						packet::CheckBytes(client_ptr->GetBuffer(), transferred));
+				}
+
+				char* buffer = (char*)client_ptr->GetBuffer();
+
+				while (transferred != 0) {
+					Deserialize(buffer, transferred);
 				}
 
 				client_ptr->Push<packet::Position>(2, 4.0f, 5.0f, 6.0f);

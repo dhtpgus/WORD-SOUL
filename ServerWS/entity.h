@@ -34,6 +34,8 @@ namespace entity {
 			return pos_;
 		}
 
+		void DeleteLogically() const {}
+
 		static constexpr bool is_dangerous_to_delete{ false };
 
 	private:

@@ -10,8 +10,9 @@
 #include "debug.h"
 
 namespace lf {
+
 	template<class T>
-	struct alignas(std::hardware_destructive_interference_size) Element {
+	struct Element {
 		Element() = default;
 		~Element() {
 			if (ref_cnt > 0) {
@@ -23,9 +24,9 @@ namespace lf {
 		Element& operator=(const Element&) = delete;
 		Element& operator=(Element&&) = delete;
 
-		std::atomic_int ref_cnt{ kDeleted };
-		CASLock cas_lock{};
 		T* data{};
+		CASLock cas_lock{};
+		std::atomic_int ref_cnt{ kDeleted };
 
 		static constexpr auto kDeleted{ -1 };
 	};
@@ -39,6 +40,8 @@ namespace lf {
 				index_queue_.Emplace<int>(i);
 			}
 		}
+		// 접근 전 TryAccess 메소드를 먼저 실행하여야 한다.
+		// 사용이 끝나면 EndAccess를 실행하여야 한다.
 		T& operator[](int i) {
 			return *elements_[i].data;
 		}

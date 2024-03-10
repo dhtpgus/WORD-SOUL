@@ -7,12 +7,14 @@
 #pragma once
 #include <thread>
 #include <mutex>
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include <Winsock2.h>
+#include <WS2tcpip.h>
+#include <MSWSock.h>
 #include "packet.h"
 #include "lf_relaxed_queue.h"
 #include "debug.h"
-#pragma comment(lib, "ws2_32")
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Mswsock.lib")
 
 namespace client {
 	class Socket {
