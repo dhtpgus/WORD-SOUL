@@ -5,6 +5,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Components/AttributeComponent.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
 #include "Animation/AnimMontage.h"
@@ -30,6 +31,8 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 
 	ViewCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ViewCamera"));
 	ViewCamera->SetupAttachment(CameraBoom);
+
+	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
 }
 
 // Called when the game starts or when spawned
@@ -63,6 +66,11 @@ void AWORDSOULCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (Attributes and WORDSOULOverlay)
+	{
+		Attributes->RegenStamina(DeltaTime);
+		WORDSOULOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
+	}
 }
 
 // Called to bind functionality to input
@@ -159,9 +167,25 @@ void AWORDSOULCharacter::Attack()
 
 void AWORDSOULCharacter::Dodge()
 {
-	if (ActionState != EActionState::EAS_Unoccupied) return;
+	if (IsOccupied() or !HasEnoughStamina()) return;
+
 	PlayDodgeMontage();
 	ActionState = EActionState::EAS_Dodge;
+	if (Attributes and WORDSOULOverlay)
+	{
+		Attributes->UseStamina(Attributes->GetDodgeCost());
+		WORDSOULOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
+	}
+}
+
+bool AWORDSOULCharacter::HasEnoughStamina()
+{
+	return Attributes and Attributes->GetStamina() > Attributes->GetDodgeCost();
+}
+
+bool AWORDSOULCharacter::IsOccupied()
+{
+	return ActionState != EActionState::EAS_Unoccupied;
 }
 
 void AWORDSOULCharacter::AttackEnd()

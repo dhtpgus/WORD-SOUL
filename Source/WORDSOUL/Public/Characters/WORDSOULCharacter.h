@@ -11,6 +11,8 @@ class USpringArmComponent;
 class UCameraComponent;
 class AItem;
 class UAnimMontage;
+class UWORDSOULOverlay;
+class UAttributeComponent;
 
 
 UCLASS()
@@ -28,6 +30,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
 	void MoveForward(float value);
 	void Turn(float value);
 	void LookUp(float value);
@@ -35,6 +38,9 @@ protected:
 	void GetItem();
 	void Attack();
 	void Dodge();
+
+	bool HasEnoughStamina();
+	bool IsOccupied();
 
 	void PlayAttackMontage();
 	void PlayDodgeMontage();
@@ -48,6 +54,11 @@ protected:
 	void DodgeEnd();
 
 private:
+	UPROPERTY(VisibleAnywhere)
+	UAttributeComponent* Attributes;
+
+	void InitWORDSOULOverlay();
+
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
@@ -67,4 +78,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* DodgeMontage;
+
+	UPROPERTY()
+	UWORDSOULOverlay* WORDSOULOverlay;
 };
