@@ -7,7 +7,6 @@
 #pragma once
 #include <thread>
 #include <mutex>
-#include <Winsock2.h>
 #include <WS2tcpip.h>
 #include <MSWSock.h>
 #include "packet.h"

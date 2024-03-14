@@ -18,11 +18,25 @@ namespace server {
 		kRecv, kSend, kAccept
 	};
 
-	struct OverEx {
+	class OverEx {
 		OVERLAPPED over;
-		WSABUF wsabuf[1];
-		char net_buf[512];
+		WSABUF wsabuf;
+		char buf[512];
 		Operation op;
+
+		OverEx() {
+			wsabuf.len = 512;
+			wsabuf.buf = buf;
+			op = Operation::kRecv;
+			memset(&over, 0, sizeof(over));
+		}
+		OverEx(char* packet) {
+			wsabuf.len = packet[0];
+			wsabuf.buf = buf;
+			memset(&over, 0, sizeof(over));
+			op = Operation::kSend;
+			memcpy(buf, packet, packet[0]);
+		}
 	};
 
 	class Socket {
@@ -33,7 +47,7 @@ namespace server {
 			}
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
-			listen_sock_ = socket(AF_INET, SOCK_STREAM, 0);
+			listen_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 			if (listen_sock_ == INVALID_SOCKET) {
 				exit(1);
 			}
@@ -48,6 +62,7 @@ namespace server {
 		Socket& operator=(const Socket&) = delete;
 		Socket& operator=(Socket&&) = delete;
 		~Socket() {
+			closesocket(listen_sock_);
 			WSACleanup();
 		}
 
