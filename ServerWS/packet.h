@@ -18,9 +18,10 @@ namespace packet {
 	};
 	using Size = unsigned char;
 
+#pragma pack(push, 1)
+
 	struct Base {
 		Base(Size size, Type type) : size{ size }, type{ type } {}
-		virtual ~Base() {}
 		Size size{};
 		Type type{};
 	};
@@ -37,8 +38,6 @@ namespace packet {
 		memcpy(((char*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
 		byte += GetPacketSize<Packet>();
 	}
-
-#pragma pack(push, 1)
 
 	struct Test : Base {
 		Test() : Base{ GetPacketSize<decltype(*this)>(), Type::kTest },
@@ -86,6 +85,24 @@ namespace packet {
 	};
 
 #pragma pack(pop)
+
+	static void Free(char* p)
+	{
+		switch (static_cast<Type>(*p))
+		{
+		case Type::kTest:
+			delete reinterpret_cast<packet::Test*>(p);
+			break;
+		case Type::kPosition:
+			delete reinterpret_cast<packet::Position*>(p);
+			break;
+		case Type::kNewEntity:
+			delete reinterpret_cast<packet::NewEntity*>(p);
+			break;
+		default:
+			break;
+		}
+	}
 
 	static std::string CheckBytes(char* bytes, int size)
 	{

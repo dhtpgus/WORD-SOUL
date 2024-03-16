@@ -21,13 +21,12 @@ namespace server {
 	class OverEx {
 		OVERLAPPED over;
 		WSABUF wsabuf;
-		char buf[512];
+		char buf[1024];
 		Operation op;
 
-		OverEx() {
-			wsabuf.len = 512;
+		OverEx() : buf{}, op{ Operation::kRecv } {
+			wsabuf.len = sizeof(buf);
 			wsabuf.buf = buf;
-			op = Operation::kRecv;
 			memset(&over, 0, sizeof(over));
 		}
 		OverEx(char* packet) {
@@ -41,13 +40,15 @@ namespace server {
 
 	class Socket {
 	public:
-		Socket() : threads_{}, clients_{}, entity_manager_{} {
+		Socket() : threads_{},
+			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1) },
+			entity_manager_{ std::make_shared<entity::Manager>(GetMaxClients(), thread::GetNumWorker() + 1) } {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
-			listen_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+			listen_sock_ = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
 			if (listen_sock_ == INVALID_SOCKET) {
 				exit(1);
 			}
@@ -55,7 +56,7 @@ namespace server {
 			memset(&server_addr_, 0, sizeof(server_addr_));
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
-			server_addr_.sin_port = htons(kPortNum);
+			server_addr_.sin_port = htons(kPort);
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -156,7 +157,7 @@ namespace server {
 			return max_clients;
 		}
 
-		static constexpr unsigned short kPortNum{ 21155 };
+		static constexpr unsigned short kPort{ 21155 };
 		static constexpr size_t kBufferSize{ 1024 };
 
 		WSADATA wsa_;

@@ -6,7 +6,7 @@
 
 #pragma once
 #include <thread>
-#include <mutex>
+#include <shared_mutex>
 #include <WS2tcpip.h>
 #include <MSWSock.h>
 #include "packet.h"
@@ -20,12 +20,11 @@ namespace client {
 	public:
 		Socket() = delete;
 		Socket(int id, SOCKET sock, HANDLE iocp)
-			: overlapped_{}, sock_{ sock }, buf_{}, recv_bytes_{}, send_bytes_{},
-				wsabuf_{}, id_{ id }, player_id_{}, rq_{ thread::GetNumWorker() } {
-			wsabuf_.buf = buf_;
-			wsabuf_.len = (ULONG)kBufferSize;
-			CreateIoCompletionPort((HANDLE)sock_, iocp, sock_, 0);
-			StartAsyncIO();
+			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
+			wsabuf_recv_{}, id_{ id }, player_id_{}, rq_{ thread::GetNumWorker() }, wsabuf_send_{} {
+			wsabuf_recv_.buf = buf_recv_;
+			wsabuf_recv_.len = (ULONG)kBufferSize;
+			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
 			if (debug::IsDebugMode()) {
 				std::print("[Info] ID: {} has joined.\n", GetID());
 			}
@@ -41,10 +40,10 @@ namespace client {
 		Socket& operator=(const Socket&) = delete;
 		Socket& operator=(Socket&&) = default;
 
-		void StartAsyncIO() {
-			DWORD flags = 0;
-			wsabuf_.buf = buf_;
-			WSARecv(sock_, &wsabuf_, 1, &recv_bytes_, &flags, &overlapped_, nullptr);
+		void Receive() {
+			static DWORD flags = 0;
+			wsabuf_recv_.buf = buf_recv_;
+			WSARecv(sock_, &wsabuf_recv_, 1, &recv_bytes_, &flags, &overlapped_, nullptr);
 		}
 
 		template<class Packet, class... Value>
@@ -52,61 +51,36 @@ namespace client {
 			rq_.Emplace<Packet>(value...);
 		}
 
-		// WSASend 함수로 재작성 필요
-		void Send() {
-			char buf_2[kBufferSize]{};
-			//memset(buf_, 0, GetBufferSize());
-
-			DWORD send_bytes = 0;
-
+		int Send() {
+			DWORD num_packet{};
 			while (true) {
-				packet::Base* pop_value{};
-
-				if (last_packet_ == nullptr) {
-					pop_value = rq_.Pop();
-
-					if (pop_value == lf::kPopFailed) {
-						last_packet_ = nullptr;
-						break;
-					}
-				}
-				else {
-					pop_value = last_packet_;
-				}
-
-				size_t size = pop_value->size;
-				
-				if (send_bytes + size > kBufferSize) {
-					last_packet_ = pop_value;
+				packet::Base* packet = rq_.Pop();
+				if (packet == lf::kPopFailed or num_packet >= 100) {
 					break;
 				}
+				wsabuf_send_[num_packet].buf = reinterpret_cast<char*>(packet);
+				wsabuf_send_[num_packet].len = packet->size + sizeof(packet::Base);
+				num_packet += 1;
+			}
+			if (0 == num_packet) {
+				return 0;
+			}
+			int ret = WSASend(sock_, wsabuf_send_, num_packet, &send_bytes_, 0, 0, 0);
 
-				buf_2[send_bytes] = (unsigned char)(pop_value->type);
-				memcpy(&buf_2[send_bytes + 1], ((char*)pop_value) + sizeof(packet::Base), size);
-
-				send_bytes += 1 + (DWORD)size;
-
-				delete pop_value;
+			for (DWORD i = 0; i < num_packet; ++i) {
+				packet::Free(wsabuf_send_[i].buf);
 			}
 
-			if (send_bytes == 0) {
-				return;
-			}
-
-			if (debug::IsDebugMode()) {
-				std::print("[Info] {}\n", packet::CheckBytes(buf_2, send_bytes));
-			}
-
-			send(sock_, buf_2, send_bytes, 0);
-			//WSASend(sock_, &wsabuf_2, 1, &send_bytes, 0, &overlapped_, nullptr);
+			return ret;
 		}
 
 		const char* GetBuffer() const {
-			return buf_;
+			return buf_recv_;
 		}
 
 		int GetID() const {
-			return abs(id_);
+			//return (id_ & 0x7FFF'FFFF);
+			return id_;
 		}
 
 		SOCKET GetSocket() const {
@@ -121,26 +95,26 @@ namespace client {
 			player_id_ = id;
 		}
 
-		bool IsLogicallyDeleted() const {
-			return id_ < 0;
+		/*bool IsLogicallyDeleted() const {
+			return (id_ & 0x8000'0000) != 0;
 		}
 		void DeleteLogically() {
-			id_ *= -1;
+			id_ |= 0x8000'0000;
 		}
-		static constexpr bool is_dangerous_to_delete{ true };
+		static constexpr bool is_dangerous_to_delete{ true };*/
 
 	private:
 		static constexpr size_t kBufferSize = 1024;
 
 		OVERLAPPED overlapped_;
 		SOCKET sock_;
-		char buf_[kBufferSize];
+		char buf_recv_[kBufferSize];
 		DWORD recv_bytes_;
 		DWORD send_bytes_;
-		WSABUF wsabuf_;
+		WSABUF wsabuf_recv_;
+		WSABUF wsabuf_send_[100];
 		int id_;
 		int player_id_;
 		lf::RelaxedQueue<packet::Base> rq_;
-		packet::Base* last_packet_;
 	};
 }

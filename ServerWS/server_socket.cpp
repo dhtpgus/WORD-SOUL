@@ -11,9 +11,6 @@ void server::Socket::AccepterThread(int thread_id)
 {
 	thread::ID(thread_id);
 
-	clients_ = std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1);
-	entity_manager_ = std::make_shared<entity::Manager>(GetMaxClients(), thread::GetNumWorker() + 1);
-
 	if (debug::IsDebugMode()) {
 		std::print("[Info] Started to Accept\n");
 	}
@@ -22,7 +19,7 @@ void server::Socket::AccepterThread(int thread_id)
 	while (true) {
 		sockaddr_in client_sockaddr;
 
-		SOCKET client_sock = accept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len);
+		SOCKET client_sock = WSAAccept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len, 0, 0);
 		if (client_sock == INVALID_SOCKET) {
 			continue;
 		}
@@ -36,7 +33,7 @@ void server::Socket::AccepterThread(int thread_id)
 		auto player_id = entity_manager_->AllocatePlayer();
 		if (clients_->TryAccess(sock_id)) {
 			(*clients_)[sock_id].SetPlayerID(player_id);
-
+			(*clients_)[sock_id].Receive();
 			clients_->EndAccess(sock_id);
 		}
 	}
@@ -47,48 +44,55 @@ void server::Socket::WorkerThread(int thread_id)
 	thread::ID(thread_id);
 
 	DWORD transferred{};
-	SOCKET client_sock{};
+	ULONG_PTR key;
 	client::Socket* client_ptr{};
 	int retval{};
 
 	Timer timer;
 
 	while (true) {
-		retval = GetQueuedCompletionStatus(iocp_, &transferred, &client_sock,
+		retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
 			(LPOVERLAPPED*)&client_ptr, 1);
 
+		int id = static_cast<int>(key);
 		auto duration{ timer.GetDuration() };
 
-		if (retval == 0) {
-			//continue;
+		if (0 == retval) {
 		}
 		else if (transferred != 0) {
-			if (client_ptr->IsLogicallyDeleted()) {
-				delete client_ptr;
-			}
-			else {
-				auto id = client_ptr->GetID();
-
+			if (clients_->TryAccess(id)) {
 				if (debug::IsDebugMode()) {
 					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
-						packet::CheckBytes(client_ptr->GetBuffer(), transferred));
+						packet::CheckBytes((*clients_)[id].GetBuffer(), transferred));
 				}
 
-				char* buffer = (char*)client_ptr->GetBuffer();
+				char* buffer = (char*)((*clients_)[id].GetBuffer());
 
 				while (transferred != 0) {
 					Deserialize(buffer, transferred);
 				}
 
-				client_ptr->Push<packet::Position>(2, 4.0f, 5.0f, 6.0f);
-				client_ptr->Send();
-				client_ptr->StartAsyncIO();
+				(*clients_)[id].Push<packet::Test>(1, 2, 3);
+				(*clients_)[id].Receive();
+
+				clients_->EndAccess(id);
 			}
 		}
 
 		auto c = timer.GetAccumulatedDuration();
 		if (c >= 1.0 / kTransferFrequency) {
 			timer.ResetAccumulatedDuration();
+
+			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
+				if (clients_->TryAccess(i)) {
+					(*clients_)[i].Push<packet::Position>(2, 2.0f, 3.0f, 4.0f);
+					int ret = (*clients_)[i].Send();
+					if (ret != 0) {
+						clients_->ReserveDelete(i);
+					}
+					clients_->EndAccess(i);
+				}
+			}
 		}
 	}
 }

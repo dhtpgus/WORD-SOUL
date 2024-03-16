@@ -10,7 +10,6 @@
 #include "debug.h"
 
 namespace lf {
-
 	template<class T>
 	struct Element {
 		Element() = default;
@@ -35,9 +34,18 @@ namespace lf {
 	class Array {
 	public:
 		Array() = delete;
-		Array(int el_num, int th_num) : elements_(el_num + 1), index_queue_{ th_num } {
-			for (int i = 1; i <= el_num; ++i) {
-				index_queue_.Emplace<int>(i);
+		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {
+			std::vector<std::thread> threads;
+			for (int i = 0; i < th_num; ++i) {
+				threads.emplace_back([i, el_num, th_num, this]() {
+					thread::ID(i);
+					for (int j = i; j < el_num; j += th_num) {
+						index_queue_.Emplace<int>(j);
+					}
+					});
+			}
+			for (auto& th : threads) {
+				th.join();
 			}
 		}
 		// 접근 전 TryAccess 메소드를 먼저 실행하여야 한다.
@@ -103,24 +111,24 @@ namespace lf {
 			}
 			return cnt;
 		}
-		static constexpr int kInvalidID = 0;
+		static constexpr int kInvalidID = -1;
 	private:
 		bool CAS(std::atomic_int& mem, int expected, int desired) {
 			return mem.compare_exchange_strong(expected, desired);
 		}
 		void TryDelete(int i) {
 			if (CAS(elements_[i].ref_cnt, 0, Element<T>::kDeleted)) {
-				if (elements_[i].data->is_dangerous_to_delete) {
+				/*if (false and elements_[i].data->is_dangerous_to_delete) {
 					elements_[i].data->DeleteLogically();
 				}
-				else {
-					delete elements_[i].data;
-				}
+				else {*/
+				delete elements_[i].data;
+				//}
 				index_queue_.Emplace<int>(i);
 			}
 		}
 		bool IsIDValid(int i) const {
-			if (0 < i and i < elements_.size()) {
+			if (0 <= i and i < elements_.size()) {
 				return true;
 			}
 			return false;
