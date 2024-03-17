@@ -2,9 +2,12 @@ Binaries
 DerivedDataCache
 Intermediate
 Build
-Content
 Saved
 **/StarterContent
+**/Characters
+**/Collections
+**/Developers
+**/ThirdPerson
 
 .vscode
 .vs
