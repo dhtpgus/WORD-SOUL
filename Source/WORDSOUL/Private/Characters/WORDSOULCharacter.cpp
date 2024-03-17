@@ -11,6 +11,7 @@
 #include "Animation/AnimMontage.h"
 #include "HUD/WORDSOULHUD.h"
 #include "HUD/WORDSOULOverlay.h"
+#include "Components/BoxComponent.h"
 
 // Sets default values
 AWORDSOULCharacter::AWORDSOULCharacter()
@@ -33,6 +34,14 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 	ViewCamera->SetupAttachment(CameraBoom);
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+}
+
+void AWORDSOULCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (EquippedWeapon and EquippedWeapon->GetWeaponBox())
+	{
+		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+	}
 }
 
 // Called when the game starts or when spawned
@@ -128,21 +137,18 @@ void AWORDSOULCharacter::MoveRight(float value)
 void AWORDSOULCharacter::GetItem()
 {
 	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
-	if (OverlappingItem)
+	if (OverlappingWeapon)
 	{
-		if (OverlappingWeapon)
+		if (GEngine)
 		{
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, "GetItem");
-			}
-
-			OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"));
-			CharacterState = ECharacterState::ECS_EquippedWeapon;
+			GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, "GetItem");
 		}
-	}
 
-	
+		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"));
+		CharacterState = ECharacterState::ECS_EquippedWeapon;
+		EquippedWeapon = OverlappingWeapon;
+		OverlappingItem = nullptr;
+	}
 }
 
 bool AWORDSOULCharacter::CanAttack()

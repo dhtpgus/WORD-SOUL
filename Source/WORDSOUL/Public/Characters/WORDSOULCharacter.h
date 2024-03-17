@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class AItem;
+class AWeapon;
 class UAnimMontage;
 class UWORDSOULOverlay;
 class UAttributeComponent;
@@ -24,9 +25,13 @@ public:
 	AWORDSOULCharacter();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() const { return ActionState; }
+
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
 protected:
 	virtual void BeginPlay() override;
@@ -73,6 +78,9 @@ private:
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
 
+	UPROPERTY(VisibleAnywhere, Category = Weapon)
+	AWeapon* EquippedWeapon;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontage;
 
@@ -81,4 +89,6 @@ private:
 
 	UPROPERTY()
 	UWORDSOULOverlay* WORDSOULOverlay;
+
+	
 };
