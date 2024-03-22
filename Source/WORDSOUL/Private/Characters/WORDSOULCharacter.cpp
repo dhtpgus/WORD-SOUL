@@ -41,6 +41,7 @@ void AWORDSOULCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type Colli
 	if (EquippedWeapon and EquippedWeapon->GetWeaponBox())
 	{
 		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		EquippedWeapon->IgnoreActors.Empty();
 	}
 }
 
