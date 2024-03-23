@@ -24,17 +24,10 @@ void server::Socket::AccepterThread(int thread_id)
 			continue;
 		}
 
-		auto sock_id = clients_->Allocate<client::Socket>(client_sock, iocp_);
+		auto sock_id = clients_->Allocate<client::Session>(client_sock, iocp_);
 		if (sock_id == ClientArray::kInvalidID) {
 			closesocket(client_sock);
 			continue;
-		}
-		
-		auto player_id = entity_manager_->AllocatePlayer();
-		if (clients_->TryAccess(sock_id)) {
-			(*clients_)[sock_id].SetPlayerID(player_id);
-			(*clients_)[sock_id].Receive();
-			clients_->EndAccess(sock_id);
 		}
 	}
 }
@@ -45,7 +38,7 @@ void server::Socket::WorkerThread(int thread_id)
 
 	DWORD transferred{};
 	ULONG_PTR key;
-	client::Socket* client_ptr{};
+	client::Session* client_ptr{};
 	int retval{};
 
 	Timer timer;

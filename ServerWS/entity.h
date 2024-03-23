@@ -15,9 +15,9 @@ namespace entity {
 		float x, y, z;
 	};
 
-	class Entity {
+	class Base {
 	public:
-		Entity(int id, float x, float y, float z, short hp) 
+		Base(int id, float x, float y, float z, short hp) 
 			: id_{ id }, pos_{ x, y, z }, hp_{ hp } {}
 
 		void SetPostion(float x, float y, float z) {
@@ -26,17 +26,9 @@ namespace entity {
 			pos_.z = z;
 		}
 
-		int GetID() const {
-			return id_;
-		}
+		int GetID() const {	return id_; }
 
-		const Postion& GetPostion() const {
-			return pos_;
-		}
-
-		/*void DeleteLogically() const {}
-
-		static constexpr bool is_dangerous_to_delete{ false };*/
+		const Postion& GetPostion() const { return pos_; }
 
 	private:
 		int id_;

@@ -14,11 +14,8 @@ namespace entity {
 	class Manager {
 	public:
 		Manager() = delete;
-		Manager(int client_num, int thread_num)
-			: entities_{ client_num * 100, thread_num } {
-		}
-		int AllocatePlayer() {
-			return entities_.Allocate<Player>();
+		Manager(int enitity_num, int thread_num)
+			: entities_{ enitity_num, thread_num } {
 		}
 		void UpdateEntityPosition(int id, float x, float y, float z) {
 			if (entities_.TryAccess(id)) {
@@ -27,7 +24,7 @@ namespace entity {
 			}
 		}
 	private:
-		using EntityArray = lf::Array<Entity>;
+		using EntityArray = lf::Array<Base>;
 
 		EntityArray entities_;
 	};

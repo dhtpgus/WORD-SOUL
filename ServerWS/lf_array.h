@@ -5,7 +5,7 @@
 //---------------------------------------------------
 
 #pragma once
-#include "client_socket.h"
+#include "session.h"
 #include "cas_lock.h"
 #include "debug.h"
 

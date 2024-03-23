@@ -139,7 +139,7 @@
   <ItemGroup>
     <ClInclude Include="boss.h" />
     <ClInclude Include="cas_lock.h" />
-    <ClInclude Include="client_socket.h" />
+    <ClInclude Include="session.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="ebr.h" />
     <ClInclude Include="entity.h" />
@@ -151,6 +151,7 @@
     <ClInclude Include="player.h" />
     <ClInclude Include="lf_relaxed_queue.h" />
     <ClInclude Include="random_number_generator.h" />
+    <ClInclude Include="party.h" />
     <ClInclude Include="server_socket.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="timer.h" />

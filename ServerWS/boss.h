@@ -8,7 +8,7 @@
 #include "entity.h"
 
 namespace entity {
-	class Boss : public Entity {
+	class Boss : public Base {
 
 	};
 }

@@ -7,10 +7,10 @@
 #pragma once
 #include <vector>
 #include <fstream>
-#include "entity_manager.h"
+#include <array>
 #include "packet.h"
-#include "client_socket.h"
-#include "lf_array.h"
+#include "session.h"
+#include "party.h"
 
 namespace server {
 
@@ -42,7 +42,7 @@ namespace server {
 	public:
 		Socket() : threads_{},
 			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1) },
-			entity_manager_{ std::make_shared<entity::Manager>(GetMaxClients(), thread::GetNumWorker() + 1) } {
+			parties_(GetMaxClients() / 2) {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
@@ -57,6 +57,10 @@ namespace server {
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
 			server_addr_.sin_port = htons(kPort);
+
+			for (Party& party : parties_) {
+				party.InitEntityManager(100, thread::GetNumWorker() + 1);
+			}
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -77,7 +81,7 @@ namespace server {
 			clients_->ReserveDelete(id);
 		}
 	private:
-		using ClientArray = lf::Array<client::Socket>;
+		using ClientArray = lf::Array<client::Session>;
 
 		void Bind() {
 			if (bind(listen_sock_, (sockaddr*)&server_addr_, sizeof(server_addr_)) == SOCKET_ERROR) {
@@ -104,7 +108,7 @@ namespace server {
 		void AccepterThread(int id);
 		void WorkerThread(int id);
 
-		void Deserialize(char*& bytes, unsigned long& n_bytes)
+		void Deserialize(char*& bytes, DWORD& n_bytes)
 		{
 			if (n_bytes <= 0) {
 				return;
@@ -127,7 +131,6 @@ namespace server {
 			}
 			case packet::Type::kPosition: {
 				auto p{ std::make_unique<packet::Position>(bytes) };
-				entity_manager_->UpdateEntityPosition(p->id, p->x, p->y, p->z);
 				break;
 			}
 			default: {
@@ -166,7 +169,7 @@ namespace server {
 		SOCKET listen_sock_;
 		HANDLE iocp_;
 		std::shared_ptr<ClientArray> clients_;
-		std::shared_ptr<entity::Manager> entity_manager_;
+		std::vector<Party> parties_;
 	};
 
 	extern Socket sock;

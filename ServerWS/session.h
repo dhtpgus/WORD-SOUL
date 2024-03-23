@@ -16,12 +16,13 @@
 #pragma comment(lib, "Mswsock.lib")
 
 namespace client {
-	class Socket {
+	class Session {
 	public:
-		Socket() = delete;
-		Socket(int id, SOCKET sock, HANDLE iocp)
+		Session() = delete;
+		Session(int id, SOCKET sock, HANDLE iocp)
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
-			wsabuf_recv_{}, id_{ id }, player_id_{}, rq_{ thread::GetNumWorker() }, wsabuf_send_{} {
+			wsabuf_recv_{}, id_{ id }, player_{}, party_id_{ -1 },
+			rq_ {thread::GetNumWorker() }, wsabuf_send_{} {
 			wsabuf_recv_.buf = buf_recv_;
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
@@ -29,16 +30,16 @@ namespace client {
 				std::print("[Info] ID: {} has joined.\n", GetID());
 			}
 		}
-		~Socket() {
+		~Session() {
 			if (debug::IsDebugMode()) {
 				std::print("[Info] ID: {} has left.\n", GetID());
 			}
 			closesocket(sock_);
 		}
-		Socket(const Socket&) = delete;
-		Socket(Socket&&) = default;
-		Socket& operator=(const Socket&) = delete;
-		Socket& operator=(Socket&&) = default;
+		Session(const Session&) = delete;
+		Session(Session&&) = default;
+		Session& operator=(const Session&) = delete;
+		Session& operator=(Session&&) = default;
 
 		void Receive() {
 			static DWORD flags = 0;
@@ -74,38 +75,13 @@ namespace client {
 			return ret;
 		}
 
-		const char* GetBuffer() const {
-			return buf_recv_;
-		}
-
-		int GetID() const {
-			//return (id_ & 0x7FFF'FFFF);
-			return id_;
-		}
-
-		SOCKET GetSocket() const {
-			return sock_;
-		}
-
-		int GetPlayerID(int id) const {
-			return player_id_;
-		}
-
-		void SetPlayerID(int id) {
-			player_id_ = id;
-		}
-
-		/*bool IsLogicallyDeleted() const {
-			return (id_ & 0x8000'0000) != 0;
-		}
-		void DeleteLogically() {
-			id_ |= 0x8000'0000;
-		}
-		static constexpr bool is_dangerous_to_delete{ true };*/
-
+		const char* GetBuffer() const { return buf_recv_; }
+		int GetID() const { return id_; }
+		SOCKET GetSocket() const { return sock_; }
+		int GetPartyID() const { return party_id_; }
+		void SetPartyID(int id) { party_id_ = id; }
 	private:
 		static constexpr size_t kBufferSize = 1024;
-
 		OVERLAPPED overlapped_;
 		SOCKET sock_;
 		char buf_recv_[kBufferSize];
@@ -114,7 +90,8 @@ namespace client {
 		WSABUF wsabuf_recv_;
 		WSABUF wsabuf_send_[100];
 		int id_;
-		int player_id_;
+		int party_id_;
+		entity::Player player_;
 		lf::RelaxedQueue<packet::Base> rq_;
 	};
 }

@@ -47,7 +47,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="client_socket.h">
+    <ClInclude Include="session.h">
       <Filter>헤더 파일\network</Filter>
     </ClInclude>
     <ClInclude Include="server_socket.h">
@@ -96,6 +96,9 @@
       <Filter>헤더 파일\entity</Filter>
     </ClInclude>
     <ClInclude Include="debug.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
+    <ClInclude Include="party.h">
       <Filter>헤더 파일\others</Filter>
     </ClInclude>
   </ItemGroup>
