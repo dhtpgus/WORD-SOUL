@@ -34,6 +34,9 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 	ViewCamera->SetupAttachment(CameraBoom);
 
 	Attributes = CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+
+	AttackComboCnt = 0;
+	bIsAttackButtonClickedWhileAttack = false;
 }
 
 void AWORDSOULCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -169,6 +172,10 @@ void AWORDSOULCharacter::Attack()
 		PlayAttackMontage();
 		ActionState = EActionState::EAS_Attacking;
 	}
+	else if (ActionState == EActionState::EAS_Attacking) 
+	{
+		bIsAttackButtonClickedWhileAttack = true;
+	}
 	
 }
 
@@ -200,6 +207,21 @@ void AWORDSOULCharacter::AttackEnd()
 	ActionState = EActionState::EAS_Unoccupied;
 }
 
+void AWORDSOULCharacter::AttackInputChecking()
+{
+	if (AttackComboCnt >= MAX_ATTACK_COMBO)
+	{
+		AttackComboCnt = 0;
+	}
+
+	if (bIsAttackButtonClickedWhileAttack == true)
+	{
+		AttackComboCnt += 1;
+		bIsAttackButtonClickedWhileAttack = false;
+		PlayAttackMontage();
+	}
+}
+
 
 
 void AWORDSOULCharacter::PlayAttackMontage()
@@ -207,24 +229,17 @@ void AWORDSOULCharacter::PlayAttackMontage()
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance and AttackMontage)
 	{
-		AnimInstance->Montage_Play(AttackMontage);
-		const int32 MontageSelection = FMath::RandRange(0, 2);
-		FName SectionName = FName();
+		const TArray<FName> AttackComboList = { "Attack1", "Attack2", "Attack3" };
 
-		switch (MontageSelection)
+		if (!(AnimInstance->Montage_IsPlaying(AttackMontage)))
 		{
-		case 0:
-			SectionName = FName("Attack1");
-			break;
-		case 1:
-			SectionName = FName("Attack2");
-			break;
-		case 2:
-			SectionName = FName("Attack3");
-		default:
-			break;
+			AnimInstance->Montage_Play(AttackMontage);
 		}
-		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
+		else if (AnimInstance->Montage_IsPlaying(AttackMontage))
+		{
+			AnimInstance->Montage_Play(AttackMontage);
+			AnimInstance->Montage_JumpToSection(AttackComboList[AttackComboCnt], AttackMontage);
+		}
 	}
 }
 

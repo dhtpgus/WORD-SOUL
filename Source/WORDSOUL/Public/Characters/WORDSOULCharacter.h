@@ -7,6 +7,8 @@
 #include "CharacterType.h"
 #include "WORDSOULCharacter.generated.h"
 
+#define MAX_ATTACK_COMBO 2
+
 class USpringArmComponent;
 class UCameraComponent;
 class AItem;
@@ -53,6 +55,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
 
+	UFUNCTION(BlueprintCallable)
+	void AttackInputChecking();
+
 	bool CanAttack();
 
 	UFUNCTION(BlueprintCallable)
@@ -89,6 +94,10 @@ private:
 
 	UPROPERTY()
 	UWORDSOULOverlay* WORDSOULOverlay;
+
+	int32 AttackComboCnt;
+
+	bool bIsAttackButtonClickedWhileAttack;
 
 	
 };
