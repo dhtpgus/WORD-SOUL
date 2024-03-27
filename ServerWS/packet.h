@@ -15,6 +15,9 @@ namespace packet {
 		kTest,
 		kNewEntity,
 		kPosition,
+		kEnterParty,
+		kRemoveEntity,
+		kResult
 	};
 	using Size = unsigned char;
 
@@ -82,6 +85,22 @@ namespace packet {
 		}
 
 		entity::Type entity_type;
+	};
+
+	struct EnterParty : Base {
+		EnterParty(int id)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kEnterParty }, id{ id } {}
+		EnterParty(char*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kEnterParty }, id{} {
+			Deserialize(this, byte);
+		}
+		int id;
+	};
+
+	struct Result : Base {
+		Result(bool value)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kResult }, value{ value } {}
+		bool value;
 	};
 
 #pragma pack(pop)

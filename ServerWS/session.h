@@ -80,6 +80,10 @@ namespace client {
 		SOCKET GetSocket() const { return sock_; }
 		int GetPartyID() const { return party_id_; }
 		void SetPartyID(int id) { party_id_ = id; }
+
+		void SetPosition(float x, float y, float z) {
+			player_->SetPostion(x, y, z);
+		}
 	private:
 		static constexpr size_t kBufferSize = 1024;
 		OVERLAPPED overlapped_;
@@ -91,7 +95,7 @@ namespace client {
 		WSABUF wsabuf_send_[100];
 		int id_;
 		int party_id_;
-		entity::Player player_;
+		entity::Player* player_;
 		lf::RelaxedQueue<packet::Base> rq_;
 	};
 }

@@ -58,14 +58,12 @@ void server::Socket::WorkerThread(int thread_id)
 					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
 						packet::CheckBytes((*clients_)[id].GetBuffer(), transferred));
 				}
-
+				
 				char* buffer = (char*)((*clients_)[id].GetBuffer());
 
 				while (transferred != 0) {
-					Deserialize(buffer, transferred);
+					Deserialize(buffer, transferred, id);
 				}
-
-				(*clients_)[id].Push<packet::Test>(1, 2, 3);
 				(*clients_)[id].Receive();
 
 				clients_->EndAccess(id);

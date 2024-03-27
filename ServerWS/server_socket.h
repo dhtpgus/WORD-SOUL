@@ -108,7 +108,7 @@ namespace server {
 		void AccepterThread(int id);
 		void WorkerThread(int id);
 
-		void Deserialize(char*& bytes, DWORD& n_bytes)
+		void Deserialize(char*& bytes, DWORD& n_bytes, int session_id)
 		{
 			if (n_bytes <= 0) {
 				return;
@@ -122,7 +122,6 @@ namespace server {
 			switch (type) {
 			case packet::Type::kTest: {
 				auto p{ std::make_unique<packet::Test>(bytes) };
-
 				std::print("{} {} {}\n", p->a, p->b, p->c);
 				break;
 			}
@@ -131,7 +130,18 @@ namespace server {
 			}
 			case packet::Type::kPosition: {
 				auto p{ std::make_unique<packet::Position>(bytes) };
+				(*clients_)[session_id].SetPosition(p->x, p->y, p->z);
 				break;
+			}
+			case packet::Type::kEnterParty: {
+				auto p{ std::make_unique<packet::EnterParty>(bytes) };
+				if (parties_[p->id].Enter(session_id)) {
+					(*clients_)[session_id].Push<packet::Result>(true);
+					(*clients_)[session_id].SetPartyID(p->id);
+				}
+				else {
+					(*clients_)[session_id].Push<packet::Result>(false);
+				}
 			}
 			default: {
 				std::print("[Error] Unknown Packet: {}\n", (int)type);

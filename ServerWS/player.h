@@ -10,6 +10,6 @@
 namespace entity {
 	class Player : public Base {
 	public:
-		Player(int id) : Base{ id, 0.0f, 0.0f, 0.0f, 0 } {}
+		Player() : Base{ -1, 0.0f, 0.0f, 0.0f, 0 } {}
 	};
 }

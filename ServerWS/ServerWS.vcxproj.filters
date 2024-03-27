@@ -28,6 +28,9 @@
     <Filter Include="헤더 파일\others">
       <UniqueIdentifier>{1d79f983-1172-4fc9-89b4-38665214e53e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\ai">
+      <UniqueIdentifier>{0111a73d-e69c-473b-a0a1-956d3298f87b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -100,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="party.h">
       <Filter>헤더 파일\others</Filter>
+    </ClInclude>
+    <ClInclude Include="fsm.h">
+      <Filter>헤더 파일\ai</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
