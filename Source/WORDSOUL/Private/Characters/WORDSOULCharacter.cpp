@@ -37,6 +37,16 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 
 	AttackComboCnt = 0;
 	bIsAttackButtonClickedWhileAttack = false;
+
+	Socket.InitSocket();
+	if (Socket.ConnectToServer("127.0.0.1", 9000))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT SUCCESS"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT FAILED"));
+	}
 }
 
 void AWORDSOULCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)

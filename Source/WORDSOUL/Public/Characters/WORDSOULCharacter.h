@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "CharacterType.h"
+#include "NetWork/ClientSocket.h"
 #include "WORDSOULCharacter.generated.h"
 
 #define MAX_ATTACK_COMBO 2
@@ -98,6 +99,9 @@ private:
 	int32 AttackComboCnt;
 
 	bool bIsAttackButtonClickedWhileAttack;
+
+	//임시 테스트용 소켓 변수. 일단 캐릭터에서
+	ClientSocket Socket;
 
 	
 };
