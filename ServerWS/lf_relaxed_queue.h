@@ -152,7 +152,6 @@ namespace lf {
 			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;
 
 			if (false == queues_[num_thread_].TryPush(e, top_level)) {
-				
 				queues_[thread::ID()].Push(e, queues_[num_thread_]);
 			}
 

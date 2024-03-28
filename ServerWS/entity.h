@@ -20,7 +20,7 @@ namespace entity {
 		Base(int id, float x, float y, float z, short hp) 
 			: id_{ id }, pos_{ x, y, z }, hp_{ hp } {}
 
-		void SetPostion(float x, float y, float z) {
+		void SetPosition(float x, float y, float z) {
 			pos_.x = x;
 			pos_.y = y;
 			pos_.z = z;

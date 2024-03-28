@@ -19,7 +19,7 @@ namespace entity {
 		}
 		void UpdateEntityPosition(int id, float x, float y, float z) {
 			if (entities_.TryAccess(id)) {
-				entities_[id].SetPostion(x, y, z);
+				entities_[id].SetPosition(x, y, z);
 				entities_.EndAccess(id);
 			}
 		}

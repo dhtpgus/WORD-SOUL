@@ -9,7 +9,7 @@ public:
 	void InitEntityManager(int entity_num, int thread_num) {
 		entities_ = std::make_shared<entity::Manager>(entity_num, thread_num);
 	}
-	bool Enter(int id) {
+	bool TryEnter(int id) {
 		if (num_player_ >= kMaxPlayer) {
 			return false;
 		}
@@ -21,6 +21,14 @@ public:
 		}
 		return false;
 	}
+	int GetPartnerID(int id) const {
+		for (auto i : player_id_) {
+			if (i != id) {
+				return id;
+			}
+		}
+		return -1;
+	}
 private:
 	bool CAS(volatile int* mem, int expected, int desired) {
 		return std::atomic_compare_exchange_strong(
@@ -28,6 +36,6 @@ private:
 	}
 	static constexpr auto kMaxPlayer{ 2 };
 	volatile int player_id_[kMaxPlayer];
-	std::atomic<char> num_player_;
+	std::atomic_uchar num_player_;
 	std::shared_ptr<entity::Manager> entities_;
 };

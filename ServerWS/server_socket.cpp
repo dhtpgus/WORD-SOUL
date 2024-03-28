@@ -24,10 +24,16 @@ void server::Socket::AccepterThread(int thread_id)
 			continue;
 		}
 
-		auto sock_id = clients_->Allocate<client::Session>(client_sock, iocp_);
-		if (sock_id == ClientArray::kInvalidID) {
+		auto session_id = clients_->Allocate<client::Session>(client_sock, iocp_);
+		if (session_id == ClientArray::kInvalidID) {
 			closesocket(client_sock);
 			continue;
+		}
+
+		if (clients_->TryAccess(session_id)) {
+			(*clients_)[session_id].Receive();
+			(*clients_)[session_id].Push<packet::NewEntity>(session_id, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
+			clients_->EndAccess(session_id);
 		}
 	}
 }
@@ -76,7 +82,6 @@ void server::Socket::WorkerThread(int thread_id)
 
 			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
 				if (clients_->TryAccess(i)) {
-					(*clients_)[i].Push<packet::Position>(2, 2.0f, 3.0f, 4.0f);
 					int ret = (*clients_)[i].Send();
 					if (ret != 0) {
 						clients_->ReserveDelete(i);

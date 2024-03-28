@@ -10,6 +10,7 @@
 #include <WS2tcpip.h>
 #include <MSWSock.h>
 #include "packet.h"
+#include "player.h"
 #include "lf_relaxed_queue.h"
 #include "debug.h"
 #pragma comment(lib, "Ws2_32.lib")
@@ -21,7 +22,7 @@ namespace client {
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp)
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
-			wsabuf_recv_{}, id_{ id }, player_{}, party_id_{ -1 },
+			wsabuf_recv_{}, id_{ id }, player_{ new entity::Player }, party_id_{ -1 },
 			rq_ {thread::GetNumWorker() }, wsabuf_send_{} {
 			wsabuf_recv_.buf = buf_recv_;
 			wsabuf_recv_.len = (ULONG)kBufferSize;
@@ -80,10 +81,7 @@ namespace client {
 		SOCKET GetSocket() const { return sock_; }
 		int GetPartyID() const { return party_id_; }
 		void SetPartyID(int id) { party_id_ = id; }
-
-		void SetPosition(float x, float y, float z) {
-			player_->SetPostion(x, y, z);
-		}
+		auto& GetPlayer() { return *player_; }
 	private:
 		static constexpr size_t kBufferSize = 1024;
 		OVERLAPPED overlapped_;

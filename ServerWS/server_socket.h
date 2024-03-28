@@ -59,7 +59,7 @@ namespace server {
 			server_addr_.sin_port = htons(kPort);
 
 			for (Party& party : parties_) {
-				party.InitEntityManager(100, thread::GetNumWorker() + 1);
+				party.InitEntityManager(100, thread::GetNumWorker());
 			}
 		}
 		Socket(const Socket&) = delete;
@@ -130,18 +130,36 @@ namespace server {
 			}
 			case packet::Type::kPosition: {
 				auto p{ std::make_unique<packet::Position>(bytes) };
-				(*clients_)[session_id].SetPosition(p->x, p->y, p->z);
+				(*clients_)[session_id].GetPlayer().SetPosition(p->x, p->y, p->z);
+				auto party_id{ (*clients_)[session_id].GetPartyID() };
+				auto partner_id = parties_[party_id].GetPartnerID(session_id);
+
+				if ((*clients_).TryAccess(partner_id)) {
+					(*clients_)[partner_id].Push<packet::Position>(bytes);
+					(*clients_).EndAccess(partner_id);
+				}
 				break;
 			}
 			case packet::Type::kEnterParty: {
 				auto p{ std::make_unique<packet::EnterParty>(bytes) };
-				if (parties_[p->id].Enter(session_id)) {
+				if (parties_[p->id].TryEnter(session_id)) {
+
+					std::print("{}가 {}번 파티에 입장.\n", session_id, p->id);
+
 					(*clients_)[session_id].Push<packet::Result>(true);
 					(*clients_)[session_id].SetPartyID(p->id);
+					auto partner_id = parties_[p->id].GetPartnerID(session_id);
+					if ((*clients_).TryAccess(partner_id)) {
+						auto& pos = (*clients_)[session_id].GetPlayer().GetPostion();
+						(*clients_)[partner_id].Push<packet::NewEntity>(
+							-1, pos.x, pos.y, pos.z, entity::Type::kPlayer);
+						(*clients_).EndAccess(partner_id);
+					}
 				}
 				else {
 					(*clients_)[session_id].Push<packet::Result>(false);
 				}
+				break;
 			}
 			default: {
 				std::print("[Error] Unknown Packet: {}\n", (int)type);
