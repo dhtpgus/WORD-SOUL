@@ -188,7 +188,8 @@ namespace server {
 			return max_clients;
 		}
 
-		static constexpr unsigned short kPort{ 21155 };
+		//static constexpr unsigned short kPort{ 21155 };
+		static constexpr unsigned short kPort{ 9000 };
 		static constexpr size_t kBufferSize{ 1024 };
 
 		WSADATA wsa_;
