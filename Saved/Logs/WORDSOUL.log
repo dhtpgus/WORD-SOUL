@@ -1244,3 +1244,4 @@ LogConfig: Set CVar [[r.Shadow.DetectVertexShaderLayerAtRuntime:1]]
 [2024.03.28-11.15.56:808][476]LogAudioMixer: Display: Audio Buffer Underrun (starvation) detected. InstanceID=1
 [2024.03.28-11.25.01:833][674]LogAudioMixer: Display: Audio Buffer Underrun (starvation) detected. InstanceID=1
 [2024.03.28-11.36.43:772][832]LogAssetRegistry: Warning: ScanPathsSynchronous: Package /Game/ThirdPerson/Maps/ThirdPersonMap does not exist, will not scan.
+[2024.03.28-11.39.59:090][419]LogAudioMixer: Display: Audio Buffer Underrun (starvation) detected. InstanceID=1
