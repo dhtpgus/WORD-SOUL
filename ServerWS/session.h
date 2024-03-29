@@ -7,14 +7,11 @@
 #pragma once
 #include <thread>
 #include <shared_mutex>
-#include <WS2tcpip.h>
-#include <MSWSock.h>
 #include "packet.h"
 #include "player.h"
 #include "lf_relaxed_queue.h"
 #include "debug.h"
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "Mswsock.lib")
+#include "over_ex.h"
 
 namespace client {
 	class Session {
