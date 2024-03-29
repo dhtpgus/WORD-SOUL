@@ -17,6 +17,7 @@ namespace packet {
 		kSCPosition,
 		kSCRemoveEntity,
 		kSCResult,
+		kSCCheckConnection,
 
 		kCSEnterParty = 128,
 		kCSPosition,
@@ -103,6 +104,12 @@ namespace packet {
 		SCResult(bool value)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, value{ value } {}
 		bool value;
+	};
+
+	struct SCCheckConnection : Base {
+		SCCheckConnection()
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x55 } {}
+		char value;
 	};
 
 #pragma pack(pop)

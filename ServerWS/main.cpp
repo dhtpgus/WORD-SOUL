@@ -2,5 +2,8 @@
 
 int main()
 {
+	if (debug::IsDebugMode()) {
+		std::print("[Info] Started in Debug Mode\n");
+	}
 	server::sock.Start();
 }

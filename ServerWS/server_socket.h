@@ -15,15 +15,15 @@
 namespace server {
 	class Socket {
 	public:
-		Socket() : threads_{},
+		Socket() : threads_{}, accept_over_{}, accept_sock_{},
 			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1) },
 			parties_(GetMaxClients() / 2) {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
-			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 
-			listen_sock_ = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+			listen_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+			accept_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 			if (listen_sock_ == INVALID_SOCKET) {
 				exit(1);
 			}
@@ -32,6 +32,11 @@ namespace server {
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
 			server_addr_.sin_port = htons(kPort);
+
+			accept_over_.op = Operation::kAccept;
+
+			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+			CreateIoCompletionPort(reinterpret_cast<HANDLE>(listen_sock_), iocp_, 9999, 0);
 
 			for (Party& party : parties_) {
 				party.InitEntityManager(100, thread::GetNumWorker());
@@ -49,6 +54,12 @@ namespace server {
 		void Start() {
 			Bind();
 			Listen();
+
+			int addr_len = sizeof(sockaddr_in);
+			AcceptEx(listen_sock_, accept_sock_, accept_over_.buf, 0,
+				addr_len + 16, addr_len + 16, 0, &accept_over_.over);
+
+			std::print("[Info] Server Starts\n");
 			CreateThread();
 		}
 
@@ -92,16 +103,15 @@ namespace server {
 			threads_.reserve(thread::GetNumWorker() + 1);
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
-			}
-			threads_.emplace_back([this]() { AccepterThread(thread::GetNumWorker()); });
+			};
 
 			for (std::thread& th : threads_) {
 				th.join();
 			}
 		}
-		
-		void AccepterThread(int id);
+
 		void WorkerThread(int id);
+		void ProcessAccept();
 
 		void Deserialize(char*& bytes, DWORD& n_bytes, int session_id)
 		{
@@ -170,7 +180,9 @@ namespace server {
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		SOCKET listen_sock_;
+		SOCKET accept_sock_;
 		HANDLE iocp_;
+		OverEx accept_over_;
 		std::shared_ptr<ClientArray> clients_;
 		std::vector<Party> parties_;
 	};

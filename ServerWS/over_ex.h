@@ -8,12 +8,8 @@ enum class Operation {
 	kRecv, kSend, kAccept
 };
 
-class OverEx {
-	OVERLAPPED over;
-	WSABUF wsabuf;
-	char buf[1024];
-	Operation op;
-
+struct OverEx {
+public:
 	OverEx() : buf{}, op{ Operation::kRecv } {
 		wsabuf.len = sizeof(buf);
 		wsabuf.buf = buf;
@@ -26,4 +22,8 @@ class OverEx {
 		op = Operation::kSend;
 		memcpy(buf, packet, packet[0]);
 	}
+	OVERLAPPED over;
+	WSABUF wsabuf;
+	char buf[1024];
+	Operation op;
 };

@@ -7,34 +7,24 @@ namespace server {
 	constexpr auto kTransferFrequency{ 45.0 };
 }
 
-void server::Socket::AccepterThread(int thread_id)
+void server::Socket::ProcessAccept()
 {
-	thread::ID(thread_id);
+	static int addr_len = sizeof(sockaddr_in);
+	auto client_sock = accept_sock_;
+	accept_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
+	AcceptEx(listen_sock_, accept_sock_, accept_over_.buf, 0,
+		addr_len + 16, addr_len + 16, 0, &accept_over_.over);
 
-	if (debug::IsDebugMode()) {
-		std::print("[Info] Started to Accept\n");
+	auto session_id = clients_->Allocate<client::Session>(client_sock, iocp_);
+	if (session_id == ClientArray::kInvalidID) {
+		closesocket(client_sock);
+		return;
 	}
 
-	int sockaddr_len = sizeof(sockaddr_in);
-	while (true) {
-		sockaddr_in client_sockaddr;
-
-		SOCKET client_sock = WSAAccept(listen_sock_, (sockaddr*)&client_sockaddr, &sockaddr_len, 0, 0);
-		if (client_sock == INVALID_SOCKET) {
-			continue;
-		}
-
-		auto session_id = clients_->Allocate<client::Session>(client_sock, iocp_);
-		if (session_id == ClientArray::kInvalidID) {
-			closesocket(client_sock);
-			continue;
-		}
-
-		if (clients_->TryAccess(session_id)) {
-			(*clients_)[session_id].Receive();
-			(*clients_)[session_id].Push<packet::SCNewEntity>(session_id, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
-			clients_->EndAccess(session_id);
-		}
+	if (clients_->TryAccess(session_id)) {
+		(*clients_)[session_id].Receive();
+		(*clients_)[session_id].Push<packet::SCNewEntity>(session_id, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
+		clients_->EndAccess(session_id);
 	}
 }
 
@@ -44,19 +34,22 @@ void server::Socket::WorkerThread(int thread_id)
 
 	DWORD transferred{};
 	ULONG_PTR key;
-	client::Session* client_ptr{};
+	OverEx* over_ex{};
 	int retval{};
 
 	Timer timer;
 
 	while (true) {
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
-			(LPOVERLAPPED*)&client_ptr, 1);
+			reinterpret_cast<LPOVERLAPPED*>(&over_ex), 1);
 
 		int id = static_cast<int>(key);
 		auto duration{ timer.GetDuration() };
 
 		if (0 == retval) {
+		}
+		else if (over_ex->op == Operation::kAccept) {
+			ProcessAccept();
 		}
 		else if (transferred != 0) {
 			if (clients_->TryAccess(id)) {
