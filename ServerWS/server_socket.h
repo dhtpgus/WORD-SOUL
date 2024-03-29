@@ -80,6 +80,26 @@ namespace server {
 		void Disconnect(int id) {
 			clients_->ReserveDelete(id);
 		}
+
+		int GetMaxClients() const {
+			static int max_clients;
+			static bool has_read_file;
+			if (has_read_file) {
+				return max_clients;
+			}
+			std::ifstream in{ "data/max_clients.txt" };
+			if (not in) {
+				in.open("../../data/max_clients.txt");
+				if (not in) {
+					std::print("[Error] Cannot Open file: data/max_client.txt");
+					exit(1);
+				}
+			}
+			in >> max_clients;
+			has_read_file = true;
+
+			return max_clients;
+		}
 	private:
 		using ClientArray = lf::Array<client::Session>;
 
@@ -125,39 +145,39 @@ namespace server {
 				std::print("{} {} {}\n", p->a, p->b, p->c);
 				break;
 			}
-			case packet::Type::kNewEntity: {
+			case packet::Type::kSCNewEntity: {
 				break;
 			}
-			case packet::Type::kPosition: {
-				auto p{ std::make_unique<packet::Position>(bytes) };
+			case packet::Type::kSCPosition: {
+				auto p{ std::make_unique<packet::SCPosition>(bytes) };
 				(*clients_)[session_id].GetPlayer().SetPosition(p->x, p->y, p->z);
 				auto party_id{ (*clients_)[session_id].GetPartyID() };
 				auto partner_id = parties_[party_id].GetPartnerID(session_id);
 
 				if ((*clients_).TryAccess(partner_id)) {
-					(*clients_)[partner_id].Push<packet::Position>(bytes);
+					(*clients_)[partner_id].Push<packet::SCPosition>(bytes);
 					(*clients_).EndAccess(partner_id);
 				}
 				break;
 			}
-			case packet::Type::kEnterParty: {
-				auto p{ std::make_unique<packet::EnterParty>(bytes) };
+			case packet::Type::kCSEnterParty: {
+				auto p{ std::make_unique<packet::CSEnterParty>(bytes) };
 				if (parties_[p->id].TryEnter(session_id)) {
 
 					std::print("{}가 {}번 파티에 입장.\n", session_id, p->id);
 
-					(*clients_)[session_id].Push<packet::Result>(true);
+					(*clients_)[session_id].Push<packet::SCResult>(true);
 					(*clients_)[session_id].SetPartyID(p->id);
 					auto partner_id = parties_[p->id].GetPartnerID(session_id);
 					if ((*clients_).TryAccess(partner_id)) {
 						auto& pos = (*clients_)[session_id].GetPlayer().GetPostion();
-						(*clients_)[partner_id].Push<packet::NewEntity>(
+						(*clients_)[partner_id].Push<packet::SCNewEntity>(
 							-1, pos.x, pos.y, pos.z, entity::Type::kPlayer);
 						(*clients_).EndAccess(partner_id);
 					}
 				}
 				else {
-					(*clients_)[session_id].Push<packet::Result>(false);
+					(*clients_)[session_id].Push<packet::SCResult>(false);
 				}
 				break;
 			}
@@ -166,26 +186,6 @@ namespace server {
 				exit(1);
 			}
 			}
-		}
-
-		int GetMaxClients() const {
-			static int max_clients;
-			static bool has_read_file;
-			if (has_read_file) {
-				return max_clients;
-			}
-			std::ifstream in{ "data/max_clients.txt" };
-			if (not in) {
-				in.open("../../data/max_clients.txt");
-				if (not in) {
-					std::print("[Error] Cannot Open file: data/max_client.txt");
-					exit(1);
-				}
-			}
-			in >> max_clients;
-			has_read_file = true;
-
-			return max_clients;
 		}
 
 		static constexpr unsigned short kPort{ 21155 };

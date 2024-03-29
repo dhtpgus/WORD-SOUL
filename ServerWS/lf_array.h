@@ -5,6 +5,7 @@
 //---------------------------------------------------
 
 #pragma once
+#include "free_list.h"
 #include "session.h"
 #include "cas_lock.h"
 #include "debug.h"
@@ -118,12 +119,7 @@ namespace lf {
 		}
 		void TryDelete(int i) {
 			if (CAS(elements_[i].ref_cnt, 0, Element<T>::kDeleted)) {
-				/*if (false and elements_[i].data->is_dangerous_to_delete) {
-					elements_[i].data->DeleteLogically();
-				}
-				else {*/
 				delete elements_[i].data;
-				//}
 				index_queue_.Emplace<int>(i);
 			}
 		}

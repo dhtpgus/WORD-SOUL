@@ -129,6 +129,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="entity.cpp" />
+    <ClCompile Include="free_list.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
@@ -139,6 +140,7 @@
   <ItemGroup>
     <ClInclude Include="boss.h" />
     <ClInclude Include="cas_lock.h" />
+    <ClInclude Include="free_list.h" />
     <ClInclude Include="fsm.h" />
     <ClInclude Include="session.h" />
     <ClInclude Include="debug.h" />

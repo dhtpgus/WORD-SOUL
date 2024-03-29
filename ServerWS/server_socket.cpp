@@ -32,7 +32,7 @@ void server::Socket::AccepterThread(int thread_id)
 
 		if (clients_->TryAccess(session_id)) {
 			(*clients_)[session_id].Receive();
-			(*clients_)[session_id].Push<packet::NewEntity>(session_id, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
+			(*clients_)[session_id].Push<packet::SCNewEntity>(session_id, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
 			clients_->EndAccess(session_id);
 		}
 	}

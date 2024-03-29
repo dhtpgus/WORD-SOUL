@@ -23,7 +23,7 @@ namespace client {
 		Session(int id, SOCKET sock, HANDLE iocp)
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
 			wsabuf_recv_{}, id_{ id }, player_{ new entity::Player }, party_id_{ -1 },
-			rq_ {thread::GetNumWorker() }, wsabuf_send_{} {
+			rq_ { thread::GetNumWorker() }, wsabuf_send_{} {
 			wsabuf_recv_.buf = buf_recv_;
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
@@ -32,6 +32,7 @@ namespace client {
 			}
 		}
 		~Session() {
+			delete player_;
 			if (debug::IsDebugMode()) {
 				std::print("[Info] ID: {} has left.\n", GetID());
 			}

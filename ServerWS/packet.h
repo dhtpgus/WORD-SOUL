@@ -13,11 +13,13 @@
 namespace packet {
 	enum class Type : unsigned char {
 		kTest,
-		kNewEntity,
-		kPosition,
-		kEnterParty,
-		kRemoveEntity,
-		kResult
+		kSCNewEntity,
+		kSCPosition,
+		kSCRemoveEntity,
+		kSCResult,
+
+		kCSEnterParty = 128,
+		kCSPosition,
 	};
 	using Size = unsigned char;
 
@@ -58,16 +60,16 @@ namespace packet {
 		int a, b, c;
 	};
 
-	struct Position : Base {
-		Position() : Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
+	struct SCPosition : Base {
+		SCPosition() : Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
 			id{}, x{}, y{}, z{} {}
 
-		Position(int id, float x, float y, float z) 
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition },
+		SCPosition(int id, float x, float y, float z) 
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
 			id{ id }, x{ x }, y{ y }, z{ z } {}
 
-		Position(char*& byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kPosition }, id{}, x{}, y{}, z{} {
+		SCPosition(char*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }, id{}, x{}, y{}, z{} {
 			Deserialize(this, byte);
 		}
 
@@ -77,29 +79,29 @@ namespace packet {
 		float z;
 	};
 
-	struct NewEntity : Position {
-		NewEntity(int id, float x, float y, float z, entity::Type et)
-			: Position{ id, x, y, z }, entity_type{ et } {
-			type = Type::kNewEntity;
+	struct SCNewEntity : SCPosition {
+		SCNewEntity(int id, float x, float y, float z, entity::Type et)
+			: SCPosition{ id, x, y, z }, entity_type{ et } {
+			type = Type::kSCNewEntity;
 			size = GetPacketSize<decltype(*this)>();
 		}
 
 		entity::Type entity_type;
 	};
 
-	struct EnterParty : Base {
-		EnterParty(int id)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kEnterParty }, id{ id } {}
-		EnterParty(char*& byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kEnterParty }, id{} {
+	struct CSEnterParty : Base {
+		CSEnterParty(int id)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSEnterParty }, id(id) {}
+		CSEnterParty(char*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSEnterParty }, id{} {
 			Deserialize(this, byte);
 		}
-		int id;
+		unsigned short id;
 	};
 
-	struct Result : Base {
-		Result(bool value)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kResult }, value{ value } {}
+	struct SCResult : Base {
+		SCResult(bool value)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, value{ value } {}
 		bool value;
 	};
 
@@ -112,11 +114,11 @@ namespace packet {
 		case Type::kTest:
 			delete reinterpret_cast<packet::Test*>(p);
 			break;
-		case Type::kPosition:
-			delete reinterpret_cast<packet::Position*>(p);
+		case Type::kSCPosition:
+			delete reinterpret_cast<packet::SCPosition*>(p);
 			break;
-		case Type::kNewEntity:
-			delete reinterpret_cast<packet::NewEntity*>(p);
+		case Type::kSCNewEntity:
+			delete reinterpret_cast<packet::SCNewEntity*>(p);
 			break;
 		default:
 			break;
