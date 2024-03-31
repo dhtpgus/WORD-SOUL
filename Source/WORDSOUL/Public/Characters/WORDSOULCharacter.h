@@ -102,6 +102,6 @@ private:
 
 	//임시 테스트용 소켓 변수. 일단 캐릭터에서
 	ClientSocket Socket;
-
+	bool bIsConnected;
 	
 };

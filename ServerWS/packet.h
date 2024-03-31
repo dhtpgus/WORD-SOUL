@@ -14,7 +14,7 @@ namespace packet {
 	enum class Type : unsigned char {
 		kTest,
 		kNewEntity,
-		kPosition,
+		kPosition = 129,
 		kEnterParty,
 		kRemoveEntity,
 		kResult

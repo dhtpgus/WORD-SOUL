@@ -39,7 +39,8 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 	bIsAttackButtonClickedWhileAttack = false;
 
 	Socket.InitSocket();
-	if (Socket.ConnectToServer("127.0.0.1", 9000))
+	bIsConnected = Socket.ConnectToServer("127.0.0.1", 9000);
+	if (bIsConnected)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT SUCCESS"));
 	}
@@ -93,6 +94,11 @@ void AWORDSOULCharacter::Tick(float DeltaTime)
 	{
 		Attributes->RegenStamina(DeltaTime);
 		WORDSOULOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
+	}
+
+	if (bIsConnected)
+	{
+		Socket.SendCharacterLocation(GetActorLocation());
 	}
 }
 

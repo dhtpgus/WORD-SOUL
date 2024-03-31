@@ -11,6 +11,14 @@
 #define SERVER_IP "127.0.0.1"
 #define BUFSIZE 1024
 
+struct CSCharacterLocation
+{
+	uint8 length;
+	uint8 packetNum;
+	float x;
+	float y;
+	float z;
+};
 /**
  * 
  */
@@ -27,6 +35,7 @@ public:
 
 	bool InitSocket();
 	bool ConnectToServer(const char* serverIP, int serverPort);
+	void SendCharacterLocation(const FVector& CharacterLocation);
 private:
 	//=============================================================
 	FRunnableThread* Thread;

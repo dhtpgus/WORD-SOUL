@@ -73,3 +73,15 @@ bool ClientSocket::ConnectToServer(const char* serverIP, int serverPort)
 	}
 	return true;
 }
+
+void ClientSocket::SendCharacterLocation(const FVector& CharacterLocation)
+{
+	CSCharacterLocation CharacterLoc;
+	CharacterLoc.length = 12;
+	CharacterLoc.packetNum = 129;
+	CharacterLoc.x = CharacterLocation.X;
+	CharacterLoc.y = CharacterLocation.Y;
+	CharacterLoc.z = CharacterLocation.Z;
+
+	send(sock, (char*)&CharacterLoc, sizeof(CSCharacterLocation), 0);
+}
