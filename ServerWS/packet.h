@@ -19,8 +19,9 @@ namespace packet {
 		kSCResult,
 		kSCCheckConnection,
 
-		kCSEnterParty = 128,
+		kCSJoinParty = 128,
 		kCSPosition,
+		kCSLeaveParty,
 	};
 	using Size = unsigned char;
 
@@ -69,11 +70,6 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
 			id{ id }, x{ x }, y{ y }, z{ z } {}
 
-		SCPosition(char*& byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }, id{}, x{}, y{}, z{} {
-			Deserialize(this, byte);
-		}
-
 		int id;
 		float x;
 		float y;
@@ -90,14 +86,14 @@ namespace packet {
 		entity::Type entity_type;
 	};
 
-	struct CSEnterParty : Base {
-		CSEnterParty(int id)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSEnterParty }, id(id) {}
-		CSEnterParty(char*& byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSEnterParty }, id{} {
-			Deserialize(this, byte);
-		}
-		unsigned short id;
+	struct SCRemoveEntity : Base {
+		SCRemoveEntity() : Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity },
+			id{} {}
+
+		SCRemoveEntity(int id)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity }, id{ id } {}
+
+		int id;
 	};
 
 	struct SCResult : Base {
@@ -110,6 +106,43 @@ namespace packet {
 		SCCheckConnection()
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x55 } {}
 		char value;
+	};
+
+	struct CSJoinParty : Base {
+		CSJoinParty(int id)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id(id) {}
+		CSJoinParty(char*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id{} {
+			Deserialize(this, byte);
+		}
+		unsigned short id;
+	};
+
+	struct CSLeaveParty : Base {
+		CSLeaveParty(int id)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSLeaveParty }, id(id) {}
+		CSLeaveParty(char*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSLeaveParty }, id{} {
+			Deserialize(this, byte);
+		}
+		unsigned short id;
+	};
+
+	struct CSPosition : Base {
+		CSPosition() : Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition },
+			x{}, y{}, z{} {}
+
+		CSPosition(float x, float y, float z)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }, x{ x }, y{ y }, z{ z } {}
+
+		CSPosition(char*& byte)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }, x{}, y{}, z{} {
+			Deserialize(this, byte);
+		}
+
+		float x;
+		float y;
+		float z;
 	};
 
 #pragma pack(pop)

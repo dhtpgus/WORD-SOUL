@@ -1,6 +1,6 @@
 //---------------------------------------------------
 // 
-// client_socket.h - client::Socket 클래스 정의
+// session.h - client::Session 클래스 정의
 // 
 //---------------------------------------------------
 
@@ -25,7 +25,7 @@ namespace client {
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
 			if (debug::IsDebugMode()) {
-				std::print("[Info] ID: {} has joined.\n", GetID());
+				std::print("[Info] ID: {} has joined the game.\n", GetID());
 			}
 			wsabuf_send_[0].buf = reinterpret_cast<char*>(new packet::SCCheckConnection{});
 			wsabuf_send_[0].len = sizeof(packet::SCCheckConnection);
@@ -34,7 +34,7 @@ namespace client {
 			delete player_;
 			delete wsabuf_send_[0].buf;
 			if (debug::IsDebugMode()) {
-				std::print("[Info] ID: {} has left.\n", GetID());
+				std::print("[Info] ID: {} has left the game.\n", GetID());
 			}
 			closesocket(sock_);
 		}
@@ -77,7 +77,7 @@ namespace client {
 				packet::Free(wsabuf_send_[i].buf);
 			}
 
-			return ret;
+			return ret == 0;
 		}
 
 		const char* GetBuffer() const { return buf_recv_; }

@@ -5,10 +5,11 @@
 //---------------------------------------------------
 
 #pragma once
-#include "free_list.h"
+#include <numeric>
 #include "session.h"
 #include "cas_lock.h"
 #include "debug.h"
+#include "random_number_generator.h"
 
 namespace lf {
 	template<class T>
@@ -36,12 +37,16 @@ namespace lf {
 	public:
 		Array() = delete;
 		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {
+			std::vector<int> indexes(el_num);
+			std::iota(indexes.begin(), indexes.end(), 0);
+			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
+
 			std::vector<std::thread> threads;
 			for (int i = 0; i < th_num; ++i) {
-				threads.emplace_back([i, el_num, th_num, this]() {
+				threads.emplace_back([i, el_num, th_num, indexes, this]() {
 					thread::ID(i);
 					for (int j = i; j < el_num; j += th_num) {
-						index_queue_.Emplace<int>(j);
+						index_queue_.Emplace<int>(indexes[j]);
 					}
 					});
 			}

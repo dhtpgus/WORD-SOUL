@@ -16,7 +16,7 @@ namespace server {
 	class Socket {
 	public:
 		Socket() : threads_{}, accept_over_{}, accept_sock_{},
-			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker() + 1) },
+			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker()) },
 			parties_(GetMaxClients() / 2) {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
@@ -64,6 +64,13 @@ namespace server {
 		}
 
 		void Disconnect(int id) {
+			auto& party = parties_[(*clients_)[id].GetPartyID()];
+			party.Exit(id);
+			auto partner_id = party.GetPartnerID(id);
+			if (clients_->TryAccess(partner_id)) {
+				(*clients_)[partner_id].Push<packet::SCRemoveEntity>(-1);
+				clients_->EndAccess(partner_id);
+			}
 			clients_->ReserveDelete(id);
 		}
 
@@ -130,30 +137,17 @@ namespace server {
 				std::print("{} {} {}\n", p->a, p->b, p->c);
 				break;
 			}
-			case packet::Type::kSCNewEntity: {
-				break;
-			}
-			case packet::Type::kSCPosition: {
-				auto p{ std::make_unique<packet::SCPosition>(bytes) };
-				(*clients_)[session_id].GetPlayer().SetPosition(p->x, p->y, p->z);
-				auto party_id{ (*clients_)[session_id].GetPartyID() };
-				auto partner_id = parties_[party_id].GetPartnerID(session_id);
-
-				if ((*clients_).TryAccess(partner_id)) {
-					(*clients_)[partner_id].Push<packet::SCPosition>(bytes);
-					(*clients_).EndAccess(partner_id);
-				}
-				break;
-			}
-			case packet::Type::kCSEnterParty: {
-				auto p{ std::make_unique<packet::CSEnterParty>(bytes) };
+			case packet::Type::kCSJoinParty: {
+				auto p{ std::make_unique<packet::CSJoinParty>(bytes) };
 				if (parties_[p->id].TryEnter(session_id)) {
-
-					std::print("{}가 {}번 파티에 입장.\n", session_id, p->id);
+					if (debug::IsDebugMode()) {
+						std::print("{}가 {}번 파티에 입장.\n", session_id, p->id);
+					}
 
 					(*clients_)[session_id].Push<packet::SCResult>(true);
 					(*clients_)[session_id].SetPartyID(p->id);
 					auto partner_id = parties_[p->id].GetPartnerID(session_id);
+
 					if ((*clients_).TryAccess(partner_id)) {
 						auto& pos = (*clients_)[session_id].GetPlayer().GetPostion();
 						(*clients_)[partner_id].Push<packet::SCNewEntity>(
@@ -163,6 +157,18 @@ namespace server {
 				}
 				else {
 					(*clients_)[session_id].Push<packet::SCResult>(false);
+				}
+				break;
+			}
+			case packet::Type::kCSPosition: {
+				auto p{ std::make_unique<packet::CSPosition>(bytes) };
+				(*clients_)[session_id].GetPlayer().SetPosition(p->x, p->y, p->z);
+				auto party_id{ (*clients_)[session_id].GetPartyID() };
+				auto partner_id = parties_[party_id].GetPartnerID(session_id);
+
+				if ((*clients_).TryAccess(partner_id)) {
+					(*clients_)[partner_id].Push<packet::CSPosition>(bytes);
+					(*clients_).EndAccess(partner_id);
 				}
 				break;
 			}

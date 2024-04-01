@@ -75,9 +75,8 @@ void server::Socket::WorkerThread(int thread_id)
 
 			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
 				if (clients_->TryAccess(i)) {
-					int ret = (*clients_)[i].Send();
-					if (ret != 0) {
-						clients_->ReserveDelete(i);
+					if (false == (*clients_)[i].Send()) {
+						Disconnect(i);
 					}
 					clients_->EndAccess(i);
 				}
