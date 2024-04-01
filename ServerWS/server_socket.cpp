@@ -34,21 +34,24 @@ void server::Socket::WorkerThread(int thread_id)
 
 	DWORD transferred{};
 	ULONG_PTR key;
-	OverEx* over_ex{};
+	OverEx* ox{};
 	int retval{};
 
 	Timer timer;
 
 	while (true) {
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
-			reinterpret_cast<LPOVERLAPPED*>(&over_ex), 1);
+			reinterpret_cast<LPOVERLAPPED*>(&ox), 1);
 
 		int id = static_cast<int>(key);
 		auto duration{ timer.GetDuration() };
 
 		if (0 == retval) {
 		}
-		else if (over_ex->op == Operation::kAccept) {
+		else if (ox->op == Operation::kSend) {
+			delete ox; // FreeList 사용하도록 변경
+		}
+		else if (ox->op == Operation::kAccept) {
 			ProcessAccept();
 		}
 		else if (transferred != 0) {

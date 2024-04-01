@@ -15,18 +15,10 @@ enum class Operation {
 };
 
 struct OverEx {
-public:
-	OverEx() : buf{}, op{ Operation::kRecv } {
+	OverEx(Operation op) : buf{}, op{ op } {
 		wsabuf.len = sizeof(buf);
 		wsabuf.buf = buf;
 		memset(&over, 0, sizeof(over));
-	}
-	OverEx(char* packet) {
-		wsabuf.len = packet[0];
-		wsabuf.buf = buf;
-		memset(&over, 0, sizeof(over));
-		op = Operation::kSend;
-		memcpy(buf, packet, packet[0]);
 	}
 	OVERLAPPED over;
 	WSABUF wsabuf;

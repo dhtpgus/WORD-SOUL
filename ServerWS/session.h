@@ -71,7 +71,9 @@ namespace client {
 			if (0 == num_packet) {
 				return 0;
 			}
-			int ret = WSASend(sock_, wsabuf_send_, num_packet, &send_bytes_, 0, 0, 0);
+
+			auto ox{ new OverEx{ Operation::kSend } };
+			int ret = WSASend(sock_, wsabuf_send_, num_packet, &send_bytes_, 0, &ox->over, 0);
 
 			for (DWORD i = 1; i < num_packet; ++i) {
 				packet::Free(wsabuf_send_[i].buf);

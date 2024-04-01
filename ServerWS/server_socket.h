@@ -15,7 +15,7 @@
 namespace server {
 	class Socket {
 	public:
-		Socket() : threads_{}, accept_over_{}, accept_sock_{},
+		Socket() : threads_{}, accept_over_{ Operation::kAccept }, accept_sock_{},
 			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker()) },
 			parties_(GetMaxClients() / 2) {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
