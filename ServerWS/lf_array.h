@@ -14,12 +14,6 @@
 namespace lf {
 	namespace array {
 		using ID = unsigned short;
-		struct ElementID {
-			void Reset(ID rs_id) {
-				id = rs_id;
-			}
-			ID id;
-		};
 
 		template<class T>
 		struct Element {
@@ -41,6 +35,13 @@ namespace lf {
 
 			static constexpr auto kDeleted{ -1 };
 		};
+
+		struct ElementID {
+			void Reset(ID rs_id) {
+				id = rs_id;
+			}
+			ID id;
+		};
 	}
 
 	template<class T>
@@ -49,7 +50,7 @@ namespace lf {
 		using ID = array::ID;
 		Array() = delete;
 		Array(int el_num, int th_num) noexcept : elements_(el_num), id_queue_{ th_num } {
-			std::vector<unsigned short> indexes(el_num);
+			std::vector<ID> indexes(el_num);
 			std::iota(indexes.begin(), indexes.end(), 0);
 			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
 
@@ -113,7 +114,7 @@ namespace lf {
 				return kInvalidID;
 			}
 			ID id = pop->id;
-			delete pop;
+			free_list<array::ElementID>.Collect(pop);
 
 			elements_[id].data = new Type{ id, value... };
 			elements_[id].cas_lock.Unlock();

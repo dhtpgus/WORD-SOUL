@@ -1,7 +1,5 @@
 #include "random_number_generator.h"
 
-RandomNumberGenerator rng;
-
 RandomNumberGenerator::RandomNumberGenerator() noexcept
 {
 	rd_ = std::make_unique<std::random_device>();

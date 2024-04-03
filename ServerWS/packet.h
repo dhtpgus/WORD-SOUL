@@ -85,7 +85,6 @@ namespace packet {
 			z = rs_z;
 		}
 
-
 		entity::ID id;
 		float x;
 		float y;

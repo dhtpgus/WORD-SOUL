@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
-#include <atomic>
+#include <print>
+#include <concepts>
 #include "thread.h"
 
 template<class T>
@@ -48,4 +49,4 @@ private:
 };
 
 template <class T>
-inline thread_local FreeList<T> free_list{ 100 };
+inline thread_local FreeList<T> free_list{ sizeof(T) <= 2 ? 3000 : 100};

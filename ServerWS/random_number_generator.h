@@ -26,4 +26,4 @@ private:
 	std::unique_ptr<std::uniform_int_distribution<long long>> uid_;
 };
 
-extern RandomNumberGenerator rng;
+inline thread_local RandomNumberGenerator rng;

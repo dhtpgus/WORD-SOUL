@@ -31,7 +31,7 @@ namespace server {
 	private:
 		OverEx ox_;
 		Buffer buf_;
-		SOCKET accept_sock_;
 		SOCKET listen_sock_;
+		SOCKET accept_sock_;
 	};
 }

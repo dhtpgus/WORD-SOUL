@@ -12,8 +12,8 @@
 #include "ebr.h"
 
 namespace lf {
-	const Node::Value kRetryRequired = reinterpret_cast<Node::Value>(1);
-	constexpr Node::Value kPopFailed = nullptr;
+	const inline Node::Value kRetryRequired = reinterpret_cast<Node::Value>(1);
+	constexpr inline Node::Value kPopFailed = nullptr;
 
 	class alignas(std::hardware_destructive_interference_size) LFQueue {
 	public:
@@ -215,7 +215,6 @@ namespace lf {
 			}
 		}
 	private:
-	public:
 		int num_thread_;
 		std::vector<LFQueue> queues_;
 		EBR<Node> ebr_;

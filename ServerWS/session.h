@@ -20,7 +20,7 @@ namespace client {
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
-			wsabuf_recv_{}, id_{ id }, player_{ new entity::Player }, party_id_{ -1 },
+			wsabuf_recv_{}, id_{ id }, player_{}, party_id_{ -1 },
 			rq_{ thread::GetNumWorker() }, wsabuf_send_{} {
 			wsabuf_recv_.buf = buf_recv_.data();
 			wsabuf_recv_.len = (ULONG)kBufferSize;
@@ -28,7 +28,7 @@ namespace client {
 			if (debug::IsDebugMode()) {
 				std::print("[Info] ID: {} has joined the game.\n", GetID());
 			}
-			wsabuf_send_[0].buf = reinterpret_cast<char*>(new packet::SCCheckConnection{});
+			wsabuf_send_[0].buf = reinterpret_cast<char*>(free_list<packet::SCCheckConnection>.Get());
 			wsabuf_send_[0].len = sizeof(packet::SCCheckConnection);
 		}
 		~Session() noexcept {
@@ -36,8 +36,7 @@ namespace client {
 			if (debug::IsDebugMode()) {
 				std::print("[Info] ID: {} has left the game.\n", GetID());
 			}
-			delete player_;
-			delete wsabuf_send_[0].buf;
+			packet::Free(wsabuf_send_[0].buf);
 			packet::Base* packet{};
 			while (true) {
 				packet = rq_.Pop();
@@ -96,7 +95,7 @@ namespace client {
 		SOCKET GetSocket() const noexcept { return sock_; }
 		int GetPartyID() const noexcept { return party_id_; }
 		void SetPartyID(int id) noexcept { party_id_ = id; }
-		auto& GetPlayer() noexcept { return *player_; }
+		auto& GetPlayer() noexcept { return player_; }
 	private:
 		OVERLAPPED overlapped_;
 		SOCKET sock_;
@@ -107,7 +106,7 @@ namespace client {
 		std::array<WSABUF, 100> wsabuf_send_;
 		int id_;
 		int party_id_;
-		entity::Player* player_;
+		entity::Player player_;
 		lf::RelaxedQueue<packet::Base> rq_;
 	};
 }
