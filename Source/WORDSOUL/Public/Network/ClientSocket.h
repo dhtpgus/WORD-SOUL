@@ -19,6 +19,16 @@ struct CSCharacterLocation
 	float y;
 	float z;
 };
+
+struct SCCharacterInfo
+{
+	uint8 length;
+	uint8 packetNum;
+	uint16 id;
+	float x;
+	float y;
+	float z;
+};
 /**
  * 
  */
@@ -36,6 +46,8 @@ public:
 	bool InitSocket();
 	bool ConnectToServer(const char* serverIP, int serverPort);
 	void SendCharacterLocation(const FVector& CharacterLocation);
+	TUniquePtr<SCCharacterInfo> RecvCharacterInfo();
+
 private:
 	//=============================================================
 	FRunnableThread* Thread;

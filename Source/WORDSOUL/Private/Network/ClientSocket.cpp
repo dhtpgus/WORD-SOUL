@@ -85,3 +85,24 @@ void ClientSocket::SendCharacterLocation(const FVector& CharacterLocation)
 
 	send(sock, (char*)&CharacterLoc, sizeof(CSCharacterLocation), 0);
 }
+
+TUniquePtr<SCCharacterInfo> ClientSocket::RecvCharacterInfo()
+{
+	TUniquePtr<SCCharacterInfo> CharacterInfo = MakeUnique<SCCharacterInfo>();
+	int recvLen = recv(sock, (char*)CharacterInfo.Get(), sizeof(SCCharacterInfo), 0);
+	
+	if (recvLen != sizeof(SCCharacterInfo))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Return nullptr : recvLen = %d"), recvLen);
+		return nullptr;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("recvLen = %d"), recvLen);
+	}
+		
+	return CharacterInfo;
+}
+
+
+

@@ -12,6 +12,7 @@
 #include "HUD/WORDSOULHUD.h"
 #include "HUD/WORDSOULOverlay.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AWORDSOULCharacter::AWORDSOULCharacter()
@@ -37,6 +38,8 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 
 	AttackComboCnt = 0;
 	bIsAttackButtonClickedWhileAttack = false;
+
+	id = FMath::RandRange(1, 100);
 
 	Socket.InitSocket();
 	bIsConnected = Socket.ConnectToServer("127.0.0.1", 9000);
@@ -96,9 +99,58 @@ void AWORDSOULCharacter::Tick(float DeltaTime)
 		WORDSOULOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
 	}
 
-	if (bIsConnected)
+	if (!bIsConnected) return;
+
+	Socket.SendCharacterLocation(GetActorLocation());
+
+	OtherCharacter = Socket.RecvCharacterInfo();
+
+	if (!OtherCharacter) return;
+	SCCharacterInfo* CharacterInfo = OtherCharacter.Get();
+
+	if (CharacterInfo)
 	{
-		Socket.SendCharacterLocation(GetActorLocation());
+		TArray<AActor*> SpawnedCharacters;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AWORDSOULCharacter::StaticClass(), SpawnedCharacters);
+
+		SpawnedCharacters.RemoveSingle(this);
+
+		const uint16 OtherCharacterId = CharacterInfo->id;
+		UE_LOG(LogTemp, Warning, TEXT("Other Character id : %d"), CharacterInfo->id);
+		UE_LOG(LogTemp, Warning, TEXT("MyCharacter id : %d"), this->id);
+		UE_LOG(LogTemp, Warning, TEXT("Other Character x y z : %f  %f  %f"), CharacterInfo->x, CharacterInfo->y, CharacterInfo->z);
+		UE_LOG(LogTemp, Warning, TEXT("Length : %d"), CharacterInfo->length);
+		UE_LOG(LogTemp, Warning, TEXT("packetNum : %d"), CharacterInfo->packetNum);
+
+		//for (AActor* Actor : SpawnedCharacters)
+		//{
+		//	AWORDSOULCharacter* Character = Cast<AWORDSOULCharacter>(Actor);
+		//	if (Character and Character->id == OtherCharacterId)	// if find character id -> sync location
+		//	{
+		//		FVector CharacterLocation;
+		//		CharacterLocation.X = OtherCharacter->x;
+		//		CharacterLocation.Y = OtherCharacter->y;
+		//		CharacterLocation.Z = OtherCharacter->z;
+
+		//		Character->SetActorLocation(CharacterLocation);
+		//	}
+		//	else if(Character and Character->id != OtherCharacterId) // spawn character and set id
+		//	{
+		//		FVector SpawnLocation;
+		//		SpawnLocation.X = OtherCharacter->x;
+		//		SpawnLocation.Y = OtherCharacter->y;
+		//		SpawnLocation.Z = OtherCharacter->z;
+
+		//		Character->id = OtherCharacterId;
+		//		FActorSpawnParameters SpawnParams;
+		//		SpawnParams.Name = FName("PlayerCharacter %d", Character->id);
+
+		//		AWORDSOULCharacter* CharacterSpawn = GetWorld()->SpawnActor<AWORDSOULCharacter>(SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+		//		UE_LOG(LogTemp, Warning, TEXT("ChracterSpawned"));
+		//		
+		//		Character->SetActorLocation(SpawnLocation);
+		//	}
+		//}
 	}
 }
 
