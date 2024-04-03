@@ -18,10 +18,7 @@ namespace lf {
 	class alignas(std::hardware_destructive_interference_size) LFQueue {
 	public:
 		LFQueue() noexcept {
-			head = tail = new Node{ Node::Value{}, 0 };
-		}
-		~LFQueue() noexcept {
-			Clear();
+			head = tail = free_list<Node>.Get(Node::Value{}, Node::Level{});
 		}
 		void Push(Node* e, const LFQueue& main_queue) noexcept {
 			while (true) {
@@ -115,10 +112,12 @@ namespace lf {
 			return nullptr == head->next;
 		}
 
+		template<class T>
 		void Clear() noexcept {
 			while (nullptr != head->next) {
 				Node* t = head;
 				head = head->next;
+				delete reinterpret_cast<T*>(t->v);
 				delete t;
 			}
 			tail = head;
@@ -140,6 +139,11 @@ namespace lf {
 		RelaxedQueue() = delete;
 		RelaxedQueue(int num_thread) noexcept : num_thread_{ num_thread },
 			queues_(num_thread + 1), ebr_{ num_thread } {}
+		~RelaxedQueue() noexcept {
+			for (auto& lfq : queues_) {
+				lfq.Clear<T>();
+			}
+		}
 		RelaxedQueue(const RelaxedQueue&) = delete;
 		RelaxedQueue(RelaxedQueue&&) = delete;
 		RelaxedQueue& operator=(const RelaxedQueue&) = delete;

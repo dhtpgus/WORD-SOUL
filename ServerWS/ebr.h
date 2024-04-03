@@ -72,7 +72,7 @@ namespace lf {
 					break;
 				retired_[thread::ID()].pop();
 
-				delete f;
+				free_list<T>.Collect(f);
 			}
 		}
 

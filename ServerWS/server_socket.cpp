@@ -31,7 +31,7 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 	thread::ID(thread_id);
 
 	DWORD transferred{};
-	ULONG_PTR key;
+	ULONG_PTR key{};
 	OverEx* ox{};
 	int retval{};
 
