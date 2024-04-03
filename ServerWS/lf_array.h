@@ -12,6 +12,13 @@
 #include "random_number_generator.h"
 
 namespace lf {
+	struct ElementID {
+		void Reset(int rs_id) {
+			id = rs_id;
+		}
+		int id;
+	};
+
 	template<class T>
 	struct Element {
 		Element() noexcept = default;
@@ -26,8 +33,9 @@ namespace lf {
 		Element& operator=(Element&&) = delete;
 
 		T* data{};
-		CASLock cas_lock{};
 		std::atomic_int ref_cnt{ kDeleted };
+		CASLock cas_lock{};
+		volatile bool is_deleted{};
 
 		static constexpr auto kDeleted{ -1 };
 	};
@@ -36,7 +44,7 @@ namespace lf {
 	class Array {
 	public:
 		Array() = delete;
-		Array(int el_num, int th_num) noexcept : elements_(el_num), index_queue_{ th_num } {
+		Array(int el_num, int th_num) noexcept : elements_(el_num), id_queue_{ th_num } {
 			std::vector<int> indexes(el_num);
 			std::iota(indexes.begin(), indexes.end(), 0);
 			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
@@ -46,7 +54,7 @@ namespace lf {
 				threads.emplace_back([i, el_num, th_num, indexes, this]() {
 					thread::ID(i);
 					for (int j = i; j < el_num; j += th_num) {
-						index_queue_.Emplace<int>(indexes[j]);
+						id_queue_.Emplace<ElementID>(indexes[j]);
 					}
 					});
 			}
@@ -60,7 +68,7 @@ namespace lf {
 			return *elements_[index].data;
 		}
 		bool TryAccess(int index) noexcept {
-			if (not IsIDValid(index)) {
+			if ((not IsIDValid(index)) or elements_[index].is_deleted) {
 				return false;
 			}
 			while (true) {
@@ -87,35 +95,30 @@ namespace lf {
 			if (not elements_[index].cas_lock.TryLock()) {
 				return;
 			}
+			elements_[index].is_deleted = true;
 			elements_[index].ref_cnt -= 1;
 			TryDelete(index);
 		}
 		template<class Type, class... Value>
 		int Allocate(Value&&... value) noexcept {
-			auto pop = index_queue_.Pop();
+			auto pop = id_queue_.Pop();
 			if (nullptr == pop) {
 				if (debug::IsDebugMode()) {
 					std::print("[Warning] Failed to Allocate: Capacity Exceeded\n");
 				}
 				return kInvalidID;
 			}
-			int id = *pop;
+			int id = pop->id;
 			delete pop;
 
 			elements_[id].data = new Type{ id, value... };
 			elements_[id].cas_lock.Unlock();
+			elements_[id].is_deleted = false;
 			elements_[id].ref_cnt = 1;
 			return id;
 		}
 		bool Exists(int id) const noexcept {
-			return IsIDValid(id) and elements_[id].ref_cnt > 0;
-		}
-		int Count() const noexcept {
-			int cnt = 0;
-			for (const auto& e : elements_) {
-				cnt += (e.ref_cnt > 0 ? 1 : 0);
-			}
-			return cnt;
+			return IsIDValid(id) and (not elements_[id].is_deleted) and elements_[id].ref_cnt > 0;
 		}
 		static constexpr int kInvalidID = -1;
 	private:
@@ -125,7 +128,7 @@ namespace lf {
 		void TryDelete(int index) noexcept {
 			if (CAS(elements_[index].ref_cnt, 0, Element<T>::kDeleted)) {
 				delete elements_[index].data;
-				index_queue_.Emplace<int>(index);
+				id_queue_.Emplace<ElementID>(index);
 			}
 		}
 		bool IsIDValid(int index) const noexcept {
@@ -135,6 +138,6 @@ namespace lf {
 			return false;
 		}
 		std::vector<Element<T>> elements_;
-		RelaxedQueue<int> index_queue_;
+		RelaxedQueue<ElementID> id_queue_;
 	};
 }

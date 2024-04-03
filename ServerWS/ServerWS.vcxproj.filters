@@ -119,5 +119,11 @@
     <ClInclude Include="over_ex.h">
       <Filter>헤더 파일\network</Filter>
     </ClInclude>
+    <ClInclude Include="accepter.h">
+      <Filter>헤더 파일\network</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer.h">
+      <Filter>헤더 파일\network</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

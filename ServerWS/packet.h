@@ -29,12 +29,13 @@ namespace packet {
 
 	struct Base {
 		Base(Size size, Type type) : size{ size }, type{ type } {}
+		void Reset(char*&) const noexcept {};
 		Size size{};
 		Type type{};
 	};
 
 	template<class Packet>
-	static constexpr Size GetPacketSize() noexcept
+	inline constexpr Size GetPacketSize() noexcept
 	{
 		return sizeof(Packet) - sizeof(Base);
 	}
@@ -59,6 +60,12 @@ namespace packet {
 			Deserialize(this, byte);
 		}
 
+		void Reset(int rs_a, int rs_b, int rs_c) noexcept {
+			a = rs_a;
+			b = rs_b;
+			c = rs_c;
+		}
+
 		int a, b, c;
 	};
 
@@ -69,6 +76,14 @@ namespace packet {
 		SCPosition(entity::ID id, float x, float y, float z) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
 			id(id), x{ x }, y{ y }, z{ z } {}
+
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z) noexcept {
+			id = rs_id;
+			x = rs_x;
+			y = rs_y;
+			z = rs_z;
+		}
+
 
 		entity::ID id;
 		float x;
@@ -82,6 +97,13 @@ namespace packet {
 			type = Type::kSCNewEntity;
 			size = GetPacketSize<decltype(*this)>();
 		}
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, entity::Type rs_et) noexcept {
+			id = rs_id;
+			x = rs_x;
+			y = rs_y;
+			z = rs_z;
+			entity_type = rs_et;
+		}
 		entity::Type entity_type;
 	};
 
@@ -92,6 +114,10 @@ namespace packet {
 		SCRemoveEntity(entity::ID id) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity }, id{ id } {}
 
+		void Reset(entity::ID rs_id) noexcept {
+			id = rs_id;
+		}
+
 		entity::ID id;
 	};
 
@@ -101,12 +127,18 @@ namespace packet {
 			data |= (static_cast<char>(value) << 7);
 			data |= flag;
 		}
+		void Reset(bool value, char flag = 0) noexcept {
+			data |= (static_cast<char>(value) << 7);
+			data |= flag;
+		}
+
 		char data;
 	};
 
 	struct SCCheckConnection : Base {
 		SCCheckConnection() noexcept
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x55 } {}
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x12 } {}
+		void Reset() noexcept {}
 		char value;
 	};
 
@@ -137,7 +169,7 @@ namespace packet {
 
 #pragma pack(pop)
 
-	static void Free(char* p) noexcept
+	inline void Free(char* p) noexcept
 	{
 		switch (static_cast<Type>(*p))
 		{
@@ -155,17 +187,12 @@ namespace packet {
 		}
 	}
 
-	static std::string CheckBytes(char* bytes, int size) noexcept
+	inline std::string CheckBytes(char* bytes, int size) noexcept
 	{
 		std::string data;
 		for (int i = 0; i < size; ++i) {
 			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(bytes + i)));
 		}
 		return std::format("send {} bytes: {}", size, data);
-	}
-
-	static std::string CheckBytes(const char* bytes, int size) noexcept
-	{
-		return CheckBytes((char*)bytes, size);
 	}
 }

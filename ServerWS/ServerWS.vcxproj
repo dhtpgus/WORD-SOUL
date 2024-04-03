@@ -139,7 +139,9 @@
     <ClCompile Include="thread.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="accepter.h" />
     <ClInclude Include="boss.h" />
+    <ClInclude Include="buffer.h" />
     <ClInclude Include="cas_lock.h" />
     <ClInclude Include="free_list.h" />
     <ClInclude Include="fsm.h" />

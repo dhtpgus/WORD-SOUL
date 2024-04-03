@@ -162,7 +162,7 @@ namespace server {
 		}
 
 		static constexpr unsigned short kPort{ 21155 };
-		static constexpr size_t kBufferSize{ 1024 };
+		static constexpr auto kTransferFrequency{ 45.0 };
 
 		WSADATA wsa_;
 		std::vector<std::thread> threads_;

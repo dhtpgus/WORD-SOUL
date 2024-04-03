@@ -32,7 +32,6 @@ namespace entity {
 		ID GetID() const noexcept {	return id_; }
 
 		const Postion& GetPostion() const noexcept { return pos_; }
-
 	private:
 		ID id_;
 		Postion pos_;

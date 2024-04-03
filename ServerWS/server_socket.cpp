@@ -5,7 +5,6 @@
 
 namespace server {
 	Socket sock;
-	constexpr auto kTransferFrequency{ 45.0 };
 }
 
 void server::Socket::ProcessAccept() noexcept
@@ -48,7 +47,7 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 		if (0 == retval) {
 		}
 		else if (ox->op == Operation::kSend) {
-			free_list::ox.Collect(ox);
+			free_list<OverEx>.Collect(ox);
 		}
 		else if (ox->op == Operation::kAccept) {
 			ProcessAccept();
@@ -57,10 +56,10 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 			if (clients_->TryAccess(id)) {
 				if (debug::IsDebugMode()) {
 					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
-						packet::CheckBytes((*clients_)[id].GetBuffer(), transferred));
+						packet::CheckBytes(const_cast<char*>((*clients_)[id].GetBuffer()), transferred));
 				}
 				
-				char* buffer = (char*)((*clients_)[id].GetBuffer());
+				char* buffer = const_cast<char*>((*clients_)[id].GetBuffer());
 
 				while (transferred != 0) {
 					Deserialize(buffer, transferred, id);

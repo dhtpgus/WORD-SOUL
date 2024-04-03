@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <array>
 #include "lf_array.h"
 #include "entity_manager.h"
 
@@ -45,7 +46,7 @@ private:
 	}
 	static constexpr auto kEmpty{ -1 };
 	static constexpr auto kMaxPlayer{ 2 };
-	volatile int player_id_[kMaxPlayer];
+	std::array<volatile int, kMaxPlayer> player_id_;
 	std::atomic_uchar num_player_;
 	std::shared_ptr<entity::Manager> entities_;
 };

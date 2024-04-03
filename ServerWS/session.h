@@ -7,10 +7,10 @@
 #pragma once
 #include <thread>
 #include <shared_mutex>
+#include "buffer.h"
 #include "packet.h"
 #include "player.h"
 #include "lf_relaxed_queue.h"
-#include "free_list.h"
 #include "debug.h"
 #include "over_ex.h"
 
@@ -22,7 +22,7 @@ namespace client {
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
 			wsabuf_recv_{}, id_{ id }, player_{ new entity::Player }, party_id_{ -1 },
 			rq_{ thread::GetNumWorker() }, wsabuf_send_{} {
-			wsabuf_recv_.buf = buf_recv_;
+			wsabuf_recv_.buf = buf_recv_.data();
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
 			if (debug::IsDebugMode()) {
@@ -46,8 +46,8 @@ namespace client {
 
 		void Receive() noexcept {
 			static DWORD flags = 0;
-			wsabuf_recv_.buf = buf_recv_;
-			WSARecv(sock_, &wsabuf_recv_, 1, &recv_bytes_, &flags, &overlapped_, nullptr);
+			wsabuf_recv_.buf = buf_recv_.data();
+			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &overlapped_, nullptr);
 		}
 
 		template<class Packet, class... Value>
@@ -73,8 +73,8 @@ namespace client {
 				return true;
 			}*/
 
-			auto ox = free_list::ox.Get<OverEx>(Operation::kSend);
-			int ret = WSASend(sock_, wsabuf_send_, num_packet, nullptr, 0, &ox->over, 0);
+			auto ox = free_list<OverEx>.Get(Operation::kSend);
+			int ret = WSASend(sock_, &wsabuf_send_[0], num_packet, nullptr, 0, &ox->over, 0);
 
 			for (DWORD i = 1; i < num_packet; ++i) {
 				packet::Free(wsabuf_send_[i].buf);
@@ -83,21 +83,20 @@ namespace client {
 			return ret == 0;
 		}
 
-		const char* GetBuffer() const noexcept { return buf_recv_; }
+		const char* GetBuffer() const noexcept { return buf_recv_.data(); }
 		int GetID() const noexcept { return id_; }
 		SOCKET GetSocket() const noexcept { return sock_; }
 		int GetPartyID() const noexcept { return party_id_; }
 		void SetPartyID(int id) noexcept { party_id_ = id; }
 		auto& GetPlayer() noexcept { return *player_; }
 	private:
-		static constexpr size_t kBufferSize = 1024;
 		OVERLAPPED overlapped_;
 		SOCKET sock_;
-		char buf_recv_[kBufferSize];
+		Buffer buf_recv_;
 		DWORD recv_bytes_;
 		DWORD send_bytes_;
 		WSABUF wsabuf_recv_;
-		WSABUF wsabuf_send_[100];
+		std::array<WSABUF, 100> wsabuf_send_;
 		int id_;
 		int party_id_;
 		entity::Player* player_;

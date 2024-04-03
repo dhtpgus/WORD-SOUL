@@ -2,7 +2,6 @@
 #include <vector>
 #include <print>
 #include "thread.h"
-#include "over_ex.h"
 
 template<class T>
 class FreeList {
@@ -16,23 +15,23 @@ public:
 			delete p;
 		}
 	}
-	template<class Type>
+
 	auto Get() noexcept {
 		if (pointers_.empty()) {
-			return new Type{};
+			return new T{};
 		}
-		auto p = reinterpret_cast<Type*>(pointers_.back());
+		auto p =  pointers_.back();
 		pointers_.pop_back();
 		p->Reset();
 		return p;
 	}
 
-	template<class Type, class... Value>
+	template<class... Value>
 	auto Get(Value... values) noexcept {
 		if (pointers_.empty()) {
-			return new Type{ values... };
+			return new T{ values... };
 		}
-		auto p = reinterpret_cast<Type*>(pointers_.back());
+		auto p = pointers_.back();
 		pointers_.pop_back();
 		p->Reset(values...);
 		return p;
@@ -48,6 +47,5 @@ private:
 	std::vector<T*> pointers_;
 };
 
-namespace free_list {
-	inline thread_local FreeList<OverEx> ox{ 100 };
-}
+template <class T>
+inline thread_local FreeList<T> free_list{ 100 };

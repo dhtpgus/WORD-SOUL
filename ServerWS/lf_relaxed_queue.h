@@ -6,6 +6,7 @@
 
 #pragma once
 #include <atomic>
+#include "free_list.h"
 #include "thread.h"
 #include "lf_node.h"
 #include "ebr.h"
@@ -146,7 +147,8 @@ namespace lf {
 
 		template<class Type, class... Value>
 		void Emplace(Value&&... value) noexcept {
-			Node* e = new Node{ new Type{ value... }, 0 };
+			//Node* e = new Node{ new Type{ value... }, 0 };
+			Node* e = new Node{ free_list<Type>.Get(value...), 0 };
 			ebr_.StartOp();
 
 			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;
@@ -168,7 +170,6 @@ namespace lf {
 			while (true) {
 				int id = thread::ID();
 				for (int i = 0; i < num_thread_; ++i) {
-
 					main_head_level = queues_[num_thread_].GetHeadLevel();
 					if (main_head_level == 0) {
 						ebr_.EndOp();
