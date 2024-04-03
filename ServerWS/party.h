@@ -5,11 +5,11 @@
 
 class Party {
 public:
-	Party() : num_player_{}, player_id_{ kEmpty, kEmpty }, entities_{} {}
+	Party() noexcept : num_player_{}, player_id_{ kEmpty, kEmpty }, entities_{} {}
 	void InitEntityManager(int entity_num, int thread_num) {
 		entities_ = std::make_shared<entity::Manager>(entity_num, thread_num);
 	}
-	bool TryEnter(int id) {
+	bool TryEnter(int id) noexcept {
 		if (num_player_ >= kMaxPlayer) {
 			return false;
 		}
@@ -21,7 +21,7 @@ public:
 		}
 		return false;
 	}
-	int GetPartnerID(int id) const {
+	int GetPartnerID(int id) const noexcept {
 		for (auto i : player_id_) {
 			if (i != id) {
 				return id;
@@ -29,7 +29,7 @@ public:
 		}
 		return kEmpty;
 	}
-	void Exit(int id) {
+	void Exit(int id) noexcept {
 		for (auto& i : player_id_) {
 			if (i == id and CAS(&i, id, kEmpty)) {
 				if (debug::IsDebugMode()) {
@@ -39,7 +39,7 @@ public:
 		}
 	}
 private:
-	bool CAS(volatile int* mem, int expected, int desired) {
+	bool CAS(volatile int* mem, int expected, int desired) noexcept {
 		return std::atomic_compare_exchange_strong(
 			reinterpret_cast<volatile std::atomic_int*>(mem), &expected, desired);
 	}

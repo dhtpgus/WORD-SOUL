@@ -11,10 +11,10 @@
 
 class RandomNumberGenerator {
 public:
-	RandomNumberGenerator();
+	RandomNumberGenerator() noexcept;
 
 	template<class T>
-	T Rand(T min, T max) {
+	T Rand(T min, T max) noexcept {
 		double rand_num = static_cast<double>((*uid_)(*dre_));
 		rand_num /= std::numeric_limits<long long>::max();
 

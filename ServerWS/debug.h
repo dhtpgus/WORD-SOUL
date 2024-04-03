@@ -7,5 +7,5 @@
 #pragma once
 
 namespace debug {
-	bool IsDebugMode();
+	bool IsDebugMode() noexcept;
 }

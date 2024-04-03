@@ -1,44 +1,53 @@
 #pragma once
 #include <vector>
+#include <print>
+#include "thread.h"
+#include "over_ex.h"
 
 template<class T>
 class FreeList {
 public:
 	FreeList() = delete;
-	FreeList(int el_num)
-		: pointers_{ new T*[el_num]{} }, current_el_num_{ -1 }, max_el_num_{ el_num } {}
+	FreeList(int el_num) : pointers_{} {
+		pointers_.reserve(el_num);
+	}
 	~FreeList() {
-		for (int i = 0; i < max_el_num_; ++i) {
-			delete pointers_[i];
+		for (auto p : pointers_) {
+			delete p;
 		}
-		delete[] pointers_;
 	}
 	template<class Type>
-	auto Allocate() noexcept {
-		if (-1 == current_el_num_) {
+	auto Get() noexcept {
+		if (pointers_.empty()) {
 			return new Type{};
 		}
-		auto p = pointers_[current_el_num_--];
+		auto p = reinterpret_cast<Type*>(pointers_.back());
+		pointers_.pop_back();
+		p->Reset();
 		return p;
 	}
+
 	template<class Type, class... Value>
-	auto Allocate(Value... values) noexcept {
-		if (-1 == current_el_num_) {
+	auto Get(Value... values) noexcept {
+		if (pointers_.empty()) {
 			return new Type{ values... };
 		}
-		auto p = pointers_[current_el_num_--];
-		p->Reallocate(values...);
+		auto p = reinterpret_cast<Type*>(pointers_.back());
+		pointers_.pop_back();
+		p->Reset(values...);
 		return p;
 	}
 	void Collect(T* ptr) noexcept {
-		if (current_el_num_ == max_el_num_) {
+		if (pointers_.size() == pointers_.capacity()) {
 			delete ptr;
 			return;
 		}
-		pointers_[current_el_num_++] = ptr;
+		pointers_.push_back(ptr);
 	}
 private:
-	T** pointers_;
-	int current_el_num_;
-	int max_el_num_;
+	std::vector<T*> pointers_;
 };
+
+namespace free_list {
+	inline thread_local FreeList<OverEx> ox{ 100 };
+}

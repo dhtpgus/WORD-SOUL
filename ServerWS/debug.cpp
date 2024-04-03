@@ -3,7 +3,7 @@
 #include "debug.h"
 
 namespace debug {
-	bool IsDebugMode() {
+	bool IsDebugMode() noexcept {
 		static bool is_debug_mode;
 		static bool has_read_file;
 

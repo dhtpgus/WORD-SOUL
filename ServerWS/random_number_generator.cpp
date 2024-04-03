@@ -2,7 +2,7 @@
 
 RandomNumberGenerator rng;
 
-RandomNumberGenerator::RandomNumberGenerator()
+RandomNumberGenerator::RandomNumberGenerator() noexcept
 {
 	rd_ = std::make_unique<std::random_device>();
 	dre_ = std::make_unique<std::default_random_engine>((*rd_)());

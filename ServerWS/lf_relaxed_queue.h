@@ -16,13 +16,13 @@ namespace lf {
 
 	class alignas(std::hardware_destructive_interference_size) LFQueue {
 	public:
-		LFQueue() {
+		LFQueue() noexcept {
 			head = tail = new Node{ Node::Value{}, 0 };
 		}
-		~LFQueue() {
+		~LFQueue() noexcept {
 			Clear();
 		}
-		void Push(Node* e, const LFQueue& main_queue) {
+		void Push(Node* e, const LFQueue& main_queue) noexcept {
 			while (true) {
 				Node* last = tail;
 				Node* next = last->next;
@@ -44,7 +44,7 @@ namespace lf {
 			}
 		}
 
-		bool TryPush(Node* e, Node::Level lv) {
+		bool TryPush(Node* e, Node::Level lv) noexcept {
 			e->level = lv;
 
 			Node* last = tail;
@@ -69,7 +69,7 @@ namespace lf {
 			return false;
 		}
 
-		Node::Value Pop(EBR<Node>& ebr, Node::Level level = 0) {
+		Node::Value Pop(EBR<Node>& ebr, Node::Level level = 0) noexcept {
 			while (true) {
 				Node* first = head;
 				Node* last = tail;
@@ -98,11 +98,11 @@ namespace lf {
 			}
 		}
 
-		Node::Level GetTailLevel() const {
+		Node::Level GetTailLevel() const noexcept {
 			return tail->level;
 		}
 
-		Node::Level GetHeadLevel() const {
+		Node::Level GetHeadLevel() const noexcept {
 			Node* next = head->next;
 			if (next == nullptr) {
 				return 0;
@@ -110,11 +110,11 @@ namespace lf {
 			return next->level;
 		}
 
-		bool IsEmpty() const {
+		bool IsEmpty() const noexcept {
 			return nullptr == head->next;
 		}
 
-		void Clear() {
+		void Clear() noexcept {
 			while (nullptr != head->next) {
 				Node* t = head;
 				head = head->next;
@@ -123,7 +123,7 @@ namespace lf {
 			tail = head;
 		}
 	private:
-		bool CAS(Node* volatile* next, Node* old_p, Node* new_p) {
+		bool CAS(Node* volatile* next, Node* old_p, Node* new_p) noexcept {
 			return std::atomic_compare_exchange_strong(
 				reinterpret_cast<volatile std::atomic_llong*>(next),
 				reinterpret_cast<long long*>(&old_p),
@@ -137,7 +137,7 @@ namespace lf {
 	class RelaxedQueue {
 	public:
 		RelaxedQueue() = delete;
-		RelaxedQueue(int num_thread) : num_thread_{ num_thread },
+		RelaxedQueue(int num_thread) noexcept : num_thread_{ num_thread },
 			queues_(num_thread + 1), ebr_{ num_thread } {}
 		RelaxedQueue(const RelaxedQueue&) = delete;
 		RelaxedQueue(RelaxedQueue&&) = delete;
@@ -145,7 +145,7 @@ namespace lf {
 		RelaxedQueue& operator=(RelaxedQueue&&) = delete;
 
 		template<class Type, class... Value>
-		void Emplace(Value&&... value) {
+		void Emplace(Value&&... value) noexcept {
 			Node* e = new Node{ new Type{ value... }, 0 };
 			ebr_.StartOp();
 
@@ -158,7 +158,7 @@ namespace lf {
 			ebr_.EndOp();
 		}
 
-		T* Pop() {
+		T* Pop() noexcept {
 			ebr_.StartOp();
 			Node::Value ret{};
 			Node::Level main_head_level{};

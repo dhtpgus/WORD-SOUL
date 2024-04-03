@@ -8,35 +8,28 @@
 #include <vector>
 #include <fstream>
 #include <array>
+#include "accepter.h"
 #include "packet.h"
-#include "session.h"
 #include "party.h"
 
 namespace server {
 	class Socket {
 	public:
-		Socket() : threads_{}, accept_over_{ Operation::kAccept }, accept_sock_{},
+		Socket() noexcept : threads_{}, accepter_{},
 			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker()) },
 			parties_(GetMaxClients() / 2) {
 			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
 				exit(1);
 			}
-
-			listen_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-			accept_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-			if (listen_sock_ == INVALID_SOCKET) {
-				exit(1);
-			}
-			
 			memset(&server_addr_, 0, sizeof(server_addr_));
 			server_addr_.sin_family = AF_INET;
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
 			server_addr_.sin_port = htons(kPort);
 
-			accept_over_.op = Operation::kAccept;
+			accepter_ = std::make_shared<Accepter>();
 
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
-			CreateIoCompletionPort(reinterpret_cast<HANDLE>(listen_sock_), iocp_, 9999, 0);
+			accepter_->LinkIOCP(iocp_);
 
 			for (Party& party : parties_) {
 				party.InitEntityManager(100, thread::GetNumWorker());
@@ -46,29 +39,24 @@ namespace server {
 		Socket(Socket&&) = delete;
 		Socket& operator=(const Socket&) = delete;
 		Socket& operator=(Socket&&) = delete;
-		~Socket() {
-			closesocket(listen_sock_);
+		~Socket() noexcept {
 			WSACleanup();
 		}
 
-		void Start() {
-			Bind();
-			Listen();
-
-			int addr_len = sizeof(sockaddr_in);
-			AcceptEx(listen_sock_, accept_sock_, accept_over_.buf, 0,
-				addr_len + 16, addr_len + 16, 0, &accept_over_.over);
+		void Start() noexcept {
+			accepter_->BindAndListen(server_addr_);
+			accepter_->Accept();
 
 			std::print("[Info] Server Starts\n");
 			CreateThread();
 		}
 
-		void Disconnect(int id) {
+		void Disconnect(int id) noexcept {
 			auto& party = parties_[(*clients_)[id].GetPartyID()];
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
 			if (clients_->TryAccess(partner_id)) {
-				(*clients_)[partner_id].Push<packet::SCRemoveEntity>(-1);
+				(*clients_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID);
 				clients_->EndAccess(partner_id);
 			}
 			clients_->ReserveDelete(id);
@@ -95,18 +83,7 @@ namespace server {
 		}
 	private:
 		using ClientArray = lf::Array<client::Session>;
-
-		void Bind() {
-			if (bind(listen_sock_, (sockaddr*)&server_addr_, sizeof(server_addr_)) == SOCKET_ERROR) {
-				exit(1);
-			}
-		}
-		void Listen() {
-			if (listen(listen_sock_, SOMAXCONN) == SOCKET_ERROR) {
-				exit(1);
-			}
-		}
-		void CreateThread() {
+		void CreateThread() noexcept {
 			threads_.reserve(thread::GetNumWorker() + 1);
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
@@ -117,10 +94,10 @@ namespace server {
 			}
 		}
 
-		void WorkerThread(int id);
-		void ProcessAccept();
+		void WorkerThread(int id) noexcept;
+		void ProcessAccept() noexcept;
 
-		void Deserialize(char*& bytes, DWORD& n_bytes, int session_id)
+		void Deserialize(char*& bytes, DWORD& n_bytes, int session_id) noexcept
 		{
 			if (n_bytes <= 0) {
 				return;
@@ -141,7 +118,7 @@ namespace server {
 				auto p{ std::make_unique<packet::CSJoinParty>(bytes) };
 				if (parties_[p->id].TryEnter(session_id)) {
 					if (debug::IsDebugMode()) {
-						std::print("{}가 {}번 파티에 입장.\n", session_id, p->id);
+						std::print("ID: {} has joined Party: {}.\n", session_id, p->id);
 					}
 
 					(*clients_)[session_id].Push<packet::SCResult>(true);
@@ -151,7 +128,7 @@ namespace server {
 					if ((*clients_).TryAccess(partner_id)) {
 						auto& pos = (*clients_)[session_id].GetPlayer().GetPostion();
 						(*clients_)[partner_id].Push<packet::SCNewEntity>(
-							-1, pos.x, pos.y, pos.z, entity::Type::kPlayer);
+							entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer);
 						(*clients_).EndAccess(partner_id);
 					}
 				}
@@ -172,6 +149,11 @@ namespace server {
 				}
 				break;
 			}
+			case packet::Type::kCSLeaveParty: {
+				auto& party = parties_[(*clients_)[session_id].GetPartyID()];
+				party.Exit(session_id);
+				break;
+			}
 			default: {
 				std::print("[Error] Unknown Packet: {}\n", (int)type);
 				exit(1);
@@ -185,10 +167,8 @@ namespace server {
 		WSADATA wsa_;
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
-		SOCKET listen_sock_;
-		SOCKET accept_sock_;
 		HANDLE iocp_;
-		OverEx accept_over_;
+		std::shared_ptr<Accepter> accepter_;
 		std::shared_ptr<ClientArray> clients_;
 		std::vector<Party> parties_;
 	};

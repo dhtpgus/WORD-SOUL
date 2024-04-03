@@ -10,6 +10,6 @@
 namespace thread {
 	constexpr inline int kUnregisteredID = -1;
 
-	int GetNumWorker();
-	int ID(int id_to_register = kUnregisteredID);
+	int GetNumWorker() noexcept;
+	int ID(int id_to_register = kUnregisteredID) noexcept;
 }

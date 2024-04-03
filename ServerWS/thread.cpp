@@ -2,12 +2,12 @@
 #include <print>
 #include "thread.h"
 
-int thread::GetNumWorker()
+int thread::GetNumWorker() noexcept
 {
 	return (int)std::thread::hardware_concurrency();
 }
 
-int thread::ID(int id_to_register)
+int thread::ID(int id_to_register) noexcept
 {
 	static thread_local const int id{ id_to_register };
 	if (id == kUnregisteredID) {

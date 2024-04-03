@@ -14,8 +14,8 @@
 namespace lf {
 	template<class T>
 	struct Element {
-		Element() = default;
-		~Element() {
+		Element() noexcept = default;
+		~Element() noexcept {
 			if (ref_cnt > 0) {
 				delete data;
 			}
@@ -36,7 +36,7 @@ namespace lf {
 	class Array {
 	public:
 		Array() = delete;
-		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {
+		Array(int el_num, int th_num) noexcept : elements_(el_num), index_queue_{ th_num } {
 			std::vector<int> indexes(el_num);
 			std::iota(indexes.begin(), indexes.end(), 0);
 			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
@@ -56,10 +56,10 @@ namespace lf {
 		}
 		// 접근 전 TryAccess 메소드를 먼저 실행하여야 한다.
 		// 사용이 끝나면 EndAccess를 실행하여야 한다.
-		T& operator[](int index) {
+		T& operator[](int index) noexcept {
 			return *elements_[index].data;
 		}
-		bool TryAccess(int index) {
+		bool TryAccess(int index) noexcept {
 			if (not IsIDValid(index)) {
 				return false;
 			}
@@ -73,14 +73,14 @@ namespace lf {
 				}
 			}
 		}
-		void EndAccess(int index) {
+		void EndAccess(int index) noexcept {
 			if (not IsIDValid(index)) {
 				return;
 			}
 			elements_[index].ref_cnt -= 1;
 			TryDelete(index);
 		}
-		void ReserveDelete(int index) {
+		void ReserveDelete(int index) noexcept {
 			if (not IsIDValid(index)) {
 				return;
 			}
@@ -91,7 +91,7 @@ namespace lf {
 			TryDelete(index);
 		}
 		template<class Type, class... Value>
-		int Allocate(Value&&... value) {
+		int Allocate(Value&&... value) noexcept {
 			auto pop = index_queue_.Pop();
 			if (nullptr == pop) {
 				if (debug::IsDebugMode()) {
@@ -107,10 +107,10 @@ namespace lf {
 			elements_[id].ref_cnt = 1;
 			return id;
 		}
-		bool Exists(int id) const {
+		bool Exists(int id) const noexcept {
 			return IsIDValid(id) and elements_[id].ref_cnt > 0;
 		}
-		int Count() const {
+		int Count() const noexcept {
 			int cnt = 0;
 			for (const auto& e : elements_) {
 				cnt += (e.ref_cnt > 0 ? 1 : 0);
@@ -119,16 +119,16 @@ namespace lf {
 		}
 		static constexpr int kInvalidID = -1;
 	private:
-		bool CAS(std::atomic_int& mem, int expected, int desired) {
+		bool CAS(std::atomic_int& mem, int expected, int desired) noexcept {
 			return mem.compare_exchange_strong(expected, desired);
 		}
-		void TryDelete(int index) {
+		void TryDelete(int index) noexcept {
 			if (CAS(elements_[index].ref_cnt, 0, Element<T>::kDeleted)) {
 				delete elements_[index].data;
 				index_queue_.Emplace<int>(index);
 			}
 		}
-		bool IsIDValid(int index) const {
+		bool IsIDValid(int index) const noexcept {
 			if (0 <= index and index < elements_.size()) {
 				return true;
 			}

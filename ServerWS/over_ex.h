@@ -11,17 +11,20 @@
 #pragma comment(lib, "Mswsock.lib")
 
 enum class Operation {
-	kRecv, kSend, kAccept
+	kNone, kSend, kRecv, kAccept
 };
 
 struct OverEx {
-	OverEx(Operation op) : buf{}, op{ op } {
-		wsabuf.len = sizeof(buf);
-		wsabuf.buf = buf;
+	OverEx() noexcept : op{ Operation::kNone } {
+		memset(&over, 0, sizeof(over));
+	}
+	OverEx(Operation op) noexcept : op{ op } {
+		memset(&over, 0, sizeof(over));
+	}
+	void Reset(Operation reset_op) noexcept {
+		op = reset_op;
 		memset(&over, 0, sizeof(over));
 	}
 	OVERLAPPED over;
-	WSABUF wsabuf;
-	char buf[1024];
 	Operation op;
 };
