@@ -1,20 +1,17 @@
 //---------------------------------------------------
 // 
-// client_socket.h - client::Socket 클래스 정의
+// session.h - client::Session 클래스 정의
 // 
 //---------------------------------------------------
 
 #pragma once
 #include <thread>
 #include <shared_mutex>
-#include <WS2tcpip.h>
-#include <MSWSock.h>
 #include "packet.h"
 #include "player.h"
 #include "lf_relaxed_queue.h"
 #include "debug.h"
-#pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib, "Mswsock.lib")
+#include "over_ex.h"
 
 namespace client {
 	class Session {
@@ -23,17 +20,21 @@ namespace client {
 		Session(int id, SOCKET sock, HANDLE iocp)
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
 			wsabuf_recv_{}, id_{ id }, player_{ new entity::Player }, party_id_{ -1 },
-			rq_ {thread::GetNumWorker() }, wsabuf_send_{} {
+			rq_ { thread::GetNumWorker() }, wsabuf_send_{} {
 			wsabuf_recv_.buf = buf_recv_;
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
 			if (debug::IsDebugMode()) {
-				std::print("[Info] ID: {} has joined.\n", GetID());
+				std::print("[Info] ID: {} has joined the game.\n", GetID());
 			}
+			wsabuf_send_[0].buf = reinterpret_cast<char*>(new packet::SCCheckConnection{});
+			wsabuf_send_[0].len = sizeof(packet::SCCheckConnection);
 		}
 		~Session() {
+			delete player_;
+			delete wsabuf_send_[0].buf;
 			if (debug::IsDebugMode()) {
-				std::print("[Info] ID: {} has left.\n", GetID());
+				std::print("[Info] ID: {} has left the game.\n", GetID());
 			}
 			closesocket(sock_);
 		}
@@ -54,10 +55,13 @@ namespace client {
 		}
 
 		int Send() {
-			DWORD num_packet{};
+			DWORD num_packet{ 1 };
 			while (true) {
+				if (num_packet >= 100) {
+					break;
+				}
 				packet::Base* packet = rq_.Pop();
-				if (packet == lf::kPopFailed or num_packet >= 100) {
+				if (packet == lf::kPopFailed) {
 					break;
 				}
 				wsabuf_send_[num_packet].buf = reinterpret_cast<char*>(packet);
@@ -67,13 +71,15 @@ namespace client {
 			if (0 == num_packet) {
 				return 0;
 			}
-			int ret = WSASend(sock_, wsabuf_send_, num_packet, &send_bytes_, 0, 0, 0);
 
-			for (DWORD i = 0; i < num_packet; ++i) {
+			auto ox{ new OverEx{ Operation::kSend } };
+			int ret = WSASend(sock_, wsabuf_send_, num_packet, &send_bytes_, 0, &ox->over, 0);
+
+			for (DWORD i = 1; i < num_packet; ++i) {
 				packet::Free(wsabuf_send_[i].buf);
 			}
 
-			return ret;
+			return ret == 0;
 		}
 
 		const char* GetBuffer() const { return buf_recv_; }

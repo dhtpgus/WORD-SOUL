@@ -48,6 +48,12 @@
     <ClCompile Include="entity.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="free_list.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="debug.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="session.h">
@@ -106,6 +112,12 @@
     </ClInclude>
     <ClInclude Include="fsm.h">
       <Filter>헤더 파일\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="free_list.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
+    <ClInclude Include="over_ex.h">
+      <Filter>헤더 파일\network</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

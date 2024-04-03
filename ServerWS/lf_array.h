@@ -5,9 +5,11 @@
 //---------------------------------------------------
 
 #pragma once
+#include <numeric>
 #include "session.h"
 #include "cas_lock.h"
 #include "debug.h"
+#include "random_number_generator.h"
 
 namespace lf {
 	template<class T>
@@ -35,12 +37,16 @@ namespace lf {
 	public:
 		Array() = delete;
 		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {
+			std::vector<int> indexes(el_num);
+			std::iota(indexes.begin(), indexes.end(), 0);
+			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
+
 			std::vector<std::thread> threads;
 			for (int i = 0; i < th_num; ++i) {
-				threads.emplace_back([i, el_num, th_num, this]() {
+				threads.emplace_back([i, el_num, th_num, indexes, this]() {
 					thread::ID(i);
 					for (int j = i; j < el_num; j += th_num) {
-						index_queue_.Emplace<int>(j);
+						index_queue_.Emplace<int>(indexes[j]);
 					}
 					});
 			}
@@ -50,39 +56,39 @@ namespace lf {
 		}
 		// 접근 전 TryAccess 메소드를 먼저 실행하여야 한다.
 		// 사용이 끝나면 EndAccess를 실행하여야 한다.
-		T& operator[](int i) {
-			return *elements_[i].data;
+		T& operator[](int index) {
+			return *elements_[index].data;
 		}
-		bool TryAccess(int i) {
-			if (not IsIDValid(i)) {
+		bool TryAccess(int index) {
+			if (not IsIDValid(index)) {
 				return false;
 			}
 			while (true) {
-				int ref_cnt = elements_[i].ref_cnt.load();
+				int ref_cnt = elements_[index].ref_cnt.load();
 				if (ref_cnt <= 0) {
 					return false;
 				}
-				if (CAS(elements_[i].ref_cnt, ref_cnt, ref_cnt + 1)) {
+				if (CAS(elements_[index].ref_cnt, ref_cnt, ref_cnt + 1)) {
 					return true;
 				}
 			}
 		}
-		void EndAccess(int i) {
-			if (not IsIDValid(i)) {
+		void EndAccess(int index) {
+			if (not IsIDValid(index)) {
 				return;
 			}
-			elements_[i].ref_cnt -= 1;
-			TryDelete(i);
+			elements_[index].ref_cnt -= 1;
+			TryDelete(index);
 		}
-		void ReserveDelete(int i) {
-			if (not IsIDValid(i)) {
+		void ReserveDelete(int index) {
+			if (not IsIDValid(index)) {
 				return;
 			}
-			if (not elements_[i].cas_lock.TryLock()) {
+			if (not elements_[index].cas_lock.TryLock()) {
 				return;
 			}
-			elements_[i].ref_cnt -= 1;
-			TryDelete(i);
+			elements_[index].ref_cnt -= 1;
+			TryDelete(index);
 		}
 		template<class Type, class... Value>
 		int Allocate(Value&&... value) {
@@ -116,19 +122,14 @@ namespace lf {
 		bool CAS(std::atomic_int& mem, int expected, int desired) {
 			return mem.compare_exchange_strong(expected, desired);
 		}
-		void TryDelete(int i) {
-			if (CAS(elements_[i].ref_cnt, 0, Element<T>::kDeleted)) {
-				/*if (false and elements_[i].data->is_dangerous_to_delete) {
-					elements_[i].data->DeleteLogically();
-				}
-				else {*/
-				delete elements_[i].data;
-				//}
-				index_queue_.Emplace<int>(i);
+		void TryDelete(int index) {
+			if (CAS(elements_[index].ref_cnt, 0, Element<T>::kDeleted)) {
+				delete elements_[index].data;
+				index_queue_.Emplace<int>(index);
 			}
 		}
-		bool IsIDValid(int i) const {
-			if (0 <= i and i < elements_.size()) {
+		bool IsIDValid(int index) const {
+			if (0 <= index and index < elements_.size()) {
 				return true;
 			}
 			return false;
