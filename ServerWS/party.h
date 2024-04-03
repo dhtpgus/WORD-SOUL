@@ -1,11 +1,13 @@
 #pragma once
 #include <atomic>
 #include <array>
+#include <tuple>
 #include "lf_array.h"
 #include "entity_manager.h"
 
 class Party {
 public:
+	using ID = unsigned short;
 	Party() noexcept : num_player_{}, player_id_{ kEmpty, kEmpty }, entities_{} {}
 	void InitEntityManager(int entity_num, int thread_num) {
 		entities_ = std::make_shared<entity::Manager>(entity_num, thread_num);
@@ -39,14 +41,17 @@ public:
 			}
 		}
 	}
-private:
-	bool CAS(volatile int* mem, int expected, int desired) noexcept {
-		return std::atomic_compare_exchange_strong(
-			reinterpret_cast<volatile std::atomic_int*>(mem), &expected, desired);
+	auto GetPartyMembers() const noexcept {
+		return player_id_;
 	}
-	static constexpr auto kEmpty{ -1 };
-	static constexpr auto kMaxPlayer{ 2 };
-	std::array<volatile int, kMaxPlayer> player_id_;
+private:
+	bool CAS(volatile ID* mem, ID expected, ID desired) noexcept {
+		return std::atomic_compare_exchange_strong(
+			reinterpret_cast<volatile std::atomic<ID>*>(mem), &expected, desired);
+	}
+	static constexpr ID kEmpty{ 0xFFFF };
+	static constexpr ID kMaxPlayer{ 2 };
+	std::array<volatile ID, kMaxPlayer> player_id_;
 	std::atomic_uchar num_player_;
 	std::shared_ptr<entity::Manager> entities_;
 };

@@ -48,7 +48,6 @@ namespace lf {
 			Node* last = tail;
 			Node* next = last->next;
 			if (last != tail) {
-				//continue;
 				return false;
 			}
 
@@ -117,7 +116,6 @@ namespace lf {
 			while (nullptr != head->next) {
 				Node* t = head;
 				head = head->next;
-				delete reinterpret_cast<T*>(t->v);
 				delete t;
 			}
 			tail = head;
@@ -152,7 +150,7 @@ namespace lf {
 		template<class Type, class... Value>
 		void Emplace(Value&&... value) noexcept {
 			//Node* e = new Node{ new Type{ value... }, 0 };
-			Node* e = new Node{ free_list<Type>.Get(value...), 0 };
+			Node* e = free_list<Node>.Get(free_list<Type>.Get(value...), Node::Level{});
 			ebr_.StartOp();
 
 			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;

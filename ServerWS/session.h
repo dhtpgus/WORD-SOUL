@@ -32,12 +32,20 @@ namespace client {
 			wsabuf_send_[0].len = sizeof(packet::SCCheckConnection);
 		}
 		~Session() noexcept {
-			delete player_;
-			delete wsabuf_send_[0].buf;
+			closesocket(sock_);
 			if (debug::IsDebugMode()) {
 				std::print("[Info] ID: {} has left the game.\n", GetID());
 			}
-			closesocket(sock_);
+			delete player_;
+			delete wsabuf_send_[0].buf;
+			packet::Base* packet{};
+			while (true) {
+				packet = rq_.Pop();
+				if (nullptr == packet) {
+					break;
+				}
+				packet::Free(packet);
+			}
 		}
 		Session(const Session&) = delete;
 		Session(Session&&) noexcept = default;

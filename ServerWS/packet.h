@@ -7,6 +7,7 @@
 #pragma once
 #include <print>
 #include <memory>
+#include "free_list.h"
 #include "entity.h"
 #include "debug.h"
 
@@ -169,19 +170,25 @@ namespace packet {
 
 #pragma pack(pop)
 
-	inline void Free(char* p) noexcept
+	inline void Free(void* p) noexcept
 	{
-		switch (static_cast<Type>(*p))
+		switch (*reinterpret_cast<Type*>(p))
 		{
-		case Type::kTest:
-			delete reinterpret_cast<packet::Test*>(p);
+		case Type::kTest: {
+			using Packet = Test;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
-		case Type::kSCPosition:
-			delete reinterpret_cast<packet::SCPosition*>(p);
+		}
+		case Type::kSCPosition: {
+			using Packet = SCPosition;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
-		case Type::kSCNewEntity:
-			delete reinterpret_cast<packet::SCNewEntity*>(p);
+		}
+		case Type::kSCNewEntity: {
+			using Packet = SCNewEntity;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
+		}
 		default:
 			break;
 		}

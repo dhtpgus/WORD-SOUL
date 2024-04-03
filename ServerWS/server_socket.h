@@ -18,7 +18,8 @@ namespace server {
 		Socket() noexcept : threads_{}, accepter_{},
 			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker()) },
 			parties_(GetMaxClients() / 2) {
-			if (WSAStartup(MAKEWORD(2, 2), &wsa_) != 0) {
+			WSAData wsa;
+			if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
 				exit(1);
 			}
 			memset(&server_addr_, 0, sizeof(server_addr_));
@@ -150,8 +151,11 @@ namespace server {
 				break;
 			}
 			case packet::Type::kCSLeaveParty: {
-				auto& party = parties_[(*clients_)[session_id].GetPartyID()];
-				party.Exit(session_id);
+				auto party_id = (*clients_)[session_id].GetPartyID();
+				if (party_id < 0 or party_id >= parties_.size()) {
+					break;
+				}
+				parties_[party_id].Exit(session_id);
 				break;
 			}
 			default: {
@@ -162,9 +166,8 @@ namespace server {
 		}
 
 		static constexpr unsigned short kPort{ 21155 };
-		static constexpr auto kTransferFrequency{ 45.0 };
+		static constexpr auto kTransferFrequency{ 1.0 / 45.0 };
 
-		WSADATA wsa_;
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		HANDLE iocp_;

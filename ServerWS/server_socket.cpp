@@ -71,7 +71,7 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 		}
 
 		auto c = timer.GetAccumulatedDuration();
-		if (c >= 1.0 / kTransferFrequency) {
+		if (c >= kTransferFrequency) {
 			timer.ResetAccumulatedDuration();
 
 			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {

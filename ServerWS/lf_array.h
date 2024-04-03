@@ -12,40 +12,44 @@
 #include "random_number_generator.h"
 
 namespace lf {
-	struct ElementID {
-		void Reset(int rs_id) {
-			id = rs_id;
-		}
-		int id;
-	};
-
-	template<class T>
-	struct Element {
-		Element() noexcept = default;
-		~Element() noexcept {
-			if (ref_cnt > 0) {
-				delete data;
+	namespace array {
+		using ID = unsigned short;
+		struct ElementID {
+			void Reset(ID rs_id) {
+				id = rs_id;
 			}
-		}
-		Element(const Element&) = delete;
-		Element(Element&&) = delete;
-		Element& operator=(const Element&) = delete;
-		Element& operator=(Element&&) = delete;
+			ID id;
+		};
 
-		T* data{};
-		std::atomic_int ref_cnt{ kDeleted };
-		CASLock cas_lock{};
-		volatile bool is_deleted{};
+		template<class T>
+		struct Element {
+			Element() noexcept = default;
+			~Element() noexcept {
+				if (ref_cnt > 0) {
+					delete data;
+				}
+			}
+			Element(const Element&) = delete;
+			Element(Element&&) = delete;
+			Element& operator=(const Element&) = delete;
+			Element& operator=(Element&&) = delete;
 
-		static constexpr auto kDeleted{ -1 };
-	};
+			T* data{};
+			std::atomic_int ref_cnt{ kDeleted };
+			CASLock cas_lock{};
+			volatile bool is_deleted{};
+
+			static constexpr auto kDeleted{ -1 };
+		};
+	}
 
 	template<class T>
 	class Array {
 	public:
+		using ID = array::ID;
 		Array() = delete;
 		Array(int el_num, int th_num) noexcept : elements_(el_num), id_queue_{ th_num } {
-			std::vector<int> indexes(el_num);
+			std::vector<unsigned short> indexes(el_num);
 			std::iota(indexes.begin(), indexes.end(), 0);
 			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
 
@@ -54,7 +58,7 @@ namespace lf {
 				threads.emplace_back([i, el_num, th_num, indexes, this]() {
 					thread::ID(i);
 					for (int j = i; j < el_num; j += th_num) {
-						id_queue_.Emplace<ElementID>(indexes[j]);
+						id_queue_.Emplace<array::ElementID>(indexes[j]);
 					}
 					});
 			}
@@ -64,10 +68,10 @@ namespace lf {
 		}
 		// 접근 전 TryAccess 메소드를 먼저 실행하여야 한다.
 		// 사용이 끝나면 EndAccess를 실행하여야 한다.
-		T& operator[](int index) noexcept {
+		T& operator[](ID index) noexcept {
 			return *elements_[index].data;
 		}
-		bool TryAccess(int index) noexcept {
+		bool TryAccess(ID index) noexcept {
 			if ((not IsIDValid(index)) or elements_[index].is_deleted) {
 				return false;
 			}
@@ -81,14 +85,14 @@ namespace lf {
 				}
 			}
 		}
-		void EndAccess(int index) noexcept {
+		void EndAccess(ID index) noexcept {
 			if (not IsIDValid(index)) {
 				return;
 			}
 			elements_[index].ref_cnt -= 1;
 			TryDelete(index);
 		}
-		void ReserveDelete(int index) noexcept {
+		void ReserveDelete(ID index) noexcept {
 			if (not IsIDValid(index)) {
 				return;
 			}
@@ -108,7 +112,7 @@ namespace lf {
 				}
 				return kInvalidID;
 			}
-			int id = pop->id;
+			ID id = pop->id;
 			delete pop;
 
 			elements_[id].data = new Type{ id, value... };
@@ -117,7 +121,7 @@ namespace lf {
 			elements_[id].ref_cnt = 1;
 			return id;
 		}
-		bool Exists(int id) const noexcept {
+		bool Exists(ID id) const noexcept {
 			return IsIDValid(id) and (not elements_[id].is_deleted) and elements_[id].ref_cnt > 0;
 		}
 		static constexpr int kInvalidID = -1;
@@ -125,19 +129,19 @@ namespace lf {
 		bool CAS(std::atomic_int& mem, int expected, int desired) noexcept {
 			return mem.compare_exchange_strong(expected, desired);
 		}
-		void TryDelete(int index) noexcept {
-			if (CAS(elements_[index].ref_cnt, 0, Element<T>::kDeleted)) {
+		void TryDelete(ID index) noexcept {
+			if (CAS(elements_[index].ref_cnt, 0, array::Element<T>::kDeleted)) {
 				delete elements_[index].data;
-				id_queue_.Emplace<ElementID>(index);
+				id_queue_.Emplace<array::ElementID>(index);
 			}
 		}
-		bool IsIDValid(int index) const noexcept {
+		bool IsIDValid(ID index) const noexcept {
 			if (0 <= index and index < elements_.size()) {
 				return true;
 			}
 			return false;
 		}
-		std::vector<Element<T>> elements_;
-		RelaxedQueue<ElementID> id_queue_;
+		std::vector<array::Element<T>> elements_;
+		RelaxedQueue<array::ElementID> id_queue_;
 	};
 }

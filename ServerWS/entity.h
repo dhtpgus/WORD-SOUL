@@ -23,6 +23,10 @@ namespace entity {
 		Base(ID id, float x, float y, float z, short hp) noexcept
 			: id_(id), pos_{ x, y, z }, hp_{ hp } {}
 
+		void Reset(ID) {
+
+		}
+
 		void SetPosition(float x, float y, float z) noexcept {
 			pos_.x = x;
 			pos_.y = y;
