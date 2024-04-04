@@ -12,9 +12,6 @@ public:
 		return &buf_[cursor_];
 	}
 	void SaveRemains(int size_remains) noexcept {
-		if (size_remains + cursor_ < kStartPoint) {
-			return;
-		}
 		memcpy(&buf_[kStartPoint - size_remains], &buf_[cursor_], size_remains);
 		cursor_ = kStartPoint - size_remains;
 	}

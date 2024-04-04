@@ -5,11 +5,8 @@
 //---------------------------------------------------
 
 #pragma once
-#include <print>
-#include <memory>
 #include "free_list.h"
 #include "entity.h"
-#include "debug.h"
 
 namespace packet {
 	enum class Type : unsigned char {
@@ -167,42 +164,5 @@ namespace packet {
 
 #pragma pack(pop)
 
-	inline void Collect(void* p) noexcept
-	{
-		switch (*reinterpret_cast<Type*>(p))
-		{
-		case Type::kTest: {
-			using Packet = Test;
-			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
-			break;
-		}
-		case Type::kSCNewEntity: {
-			using Packet = SCNewEntity;
-			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
-			break;
-		}
-		case Type::kSCPosition: {
-			using Packet = SCPosition;
-			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
-			break;
-		}
-		case Type::kSCRemoveEntity: {
-			using Packet = SCRemoveEntity;
-			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
-			break;
-		}
-		case Type::kSCResult: {
-			using Packet = SCRemoveEntity;
-			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
-			break;
-		}
-		case Type::kSCCheckConnection: {
-			using Packet = SCCheckConnection;
-			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
-			break;
-		}
-		default:
-			break;
-		}
-	}
+	void Collect(void* p) noexcept;
 }

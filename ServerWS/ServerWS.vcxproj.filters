@@ -31,28 +31,40 @@
     <Filter Include="헤더 파일\ai">
       <UniqueIdentifier>{0111a73d-e69c-473b-a0a1-956d3298f87b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\others">
+      <UniqueIdentifier>{d59f8e11-5e0a-4af5-85bb-8efedad36b3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\network">
+      <UniqueIdentifier>{9ea701f5-d579-4ccc-ad5f-6b9cb1cd9560}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\entity">
+      <UniqueIdentifier>{4279b006-210b-4a92-aae1-9c3f50382eca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\thread">
+      <UniqueIdentifier>{2a6e6e81-f3cb-47b8-a872-d7dcc051d1e8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="thread.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="random_number_generator.cpp">
+      <Filter>소스 파일\others</Filter>
     </ClCompile>
     <ClCompile Include="server_socket.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="random_number_generator.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="entity.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\network</Filter>
     </ClCompile>
     <ClCompile Include="debug.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\others</Filter>
     </ClCompile>
-    <ClCompile Include="free_list.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="entity.cpp">
+      <Filter>소스 파일\entity</Filter>
+    </ClCompile>
+    <ClCompile Include="thread.cpp">
+      <Filter>소스 파일\thread</Filter>
+    </ClCompile>
+    <ClCompile Include="packet.cpp">
+      <Filter>소스 파일\network</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -130,10 +130,10 @@
   <ItemGroup>
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="entity.cpp" />
-    <ClCompile Include="free_list.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
+    <ClCompile Include="packet.cpp" />
     <ClCompile Include="random_number_generator.cpp" />
     <ClCompile Include="server_socket.cpp" />
     <ClCompile Include="thread.cpp" />
