@@ -153,7 +153,7 @@ namespace server {
 				auto partner_id = parties_[party_id].GetPartnerID(session_id);
 
 				if ((*clients_).TryAccess(partner_id)) {
-					(*clients_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p->x, p->y, p->z);
+					(*clients_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z);
 					(*clients_).EndAccess(partner_id);
 				}
 				break;

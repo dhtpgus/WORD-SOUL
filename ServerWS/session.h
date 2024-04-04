@@ -37,7 +37,7 @@ namespace client {
 
 		void Receive() noexcept {
 			static DWORD flags = 0;
-			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetBuffer());
+			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
 			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &overlapped_, nullptr);
 		}
 
@@ -80,7 +80,7 @@ namespace client {
 			id_ = id;
 			party_id_ = -1;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id_, 0);
-			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetBuffer());
+			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
 		}
 
 		void Delete() noexcept {
