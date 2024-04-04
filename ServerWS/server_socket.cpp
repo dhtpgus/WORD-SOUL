@@ -36,13 +36,16 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 	int retval{};
 
 	Timer timer;
+	Timer::Duration duration{};
+	Timer::Duration ac_duration{};
+
+	const DWORD kDelay{ debug::DisplaysMSG() ? 1UL : 0UL };
 
 	while (true) {
 		retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
-			reinterpret_cast<LPOVERLAPPED*>(&ox), 1);
+			reinterpret_cast<LPOVERLAPPED*>(&ox), kDelay);
 
 		int id = static_cast<int>(key);
-		auto duration{ timer.GetDuration() };
 
 		if (0 == retval) {
 		}
@@ -54,15 +57,15 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 		}
 		else if (transferred != 0) {
 			if (clients_->TryAccess(id)) {
-				if (debug::IsDebugMode()) {
+				auto& buffer = (*clients_)[id].GetBuffer();
+
+				if (debug::DisplaysMSG()) {
 					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
-						packet::CheckBytes(const_cast<char*>((*clients_)[id].GetBuffer()), transferred));
+						buffer.GetBinary(transferred));
 				}
-				
-				char* buffer = const_cast<char*>((*clients_)[id].GetBuffer());
 
 				while (transferred != 0) {
-					Deserialize(buffer, transferred, id);
+					ProcessPacket(buffer, transferred, id);
 				}
 				(*clients_)[id].Receive();
 
@@ -70,10 +73,10 @@ void server::Socket::WorkerThread(int thread_id) noexcept
 			}
 		}
 
-		auto c = timer.GetAccumulatedDuration();
-		if (c >= kTransferFrequency) {
-			timer.ResetAccumulatedDuration();
-
+		duration = timer.GetDuration();
+		ac_duration += duration;
+		if (ac_duration >= kTransferFrequency) {
+			ac_duration = 0;
 			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
 				if (clients_->TryAccess(i)) {
 					if (false == (*clients_)[i].Send()) {

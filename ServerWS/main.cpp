@@ -2,7 +2,7 @@
 
 int main()
 {
-	if (debug::IsDebugMode()) {
+	if (debug::DisplaysMSG()) {
 		std::print("[Info] Started in Debug Mode\n");
 	}
 	server::sock.Start();

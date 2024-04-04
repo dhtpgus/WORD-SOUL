@@ -28,6 +28,13 @@ namespace lf {
 			}
 		}
 		~EBR() noexcept {
+			for (auto& q : retired_) {
+				while (not q.empty()) {
+					auto f = q.front();
+					q.pop();
+					free_list<T>.Collect(f);
+				}
+			}
 			delete[] reservations_;
 		}
 		EBR(const EBR&) = delete;

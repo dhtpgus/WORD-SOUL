@@ -28,12 +28,11 @@ namespace lf {
 			Element& operator=(const Element&) = delete;
 			Element& operator=(Element&&) = delete;
 
+			static constexpr auto kDeleted{ -1 };
 			T* data{};
 			std::atomic_int ref_cnt{ kDeleted };
 			CASLock cas_lock{};
 			volatile bool is_deleted{};
-
-			static constexpr auto kDeleted{ -1 };
 		};
 
 		struct ElementID {
@@ -108,7 +107,7 @@ namespace lf {
 		int Allocate(Value&&... value) noexcept {
 			auto pop = id_queue_.Pop();
 			if (nullptr == pop) {
-				if (debug::IsDebugMode()) {
+				if (debug::DisplaysMSG()) {
 					std::print("[Warning] Failed to Allocate: Capacity Exceeded\n");
 				}
 				return kInvalidID;
@@ -116,10 +115,15 @@ namespace lf {
 			ID id = pop->id;
 			free_list<array::ElementID>.Collect(pop);
 
-			elements_[id].data = new Type{ id, value... };
+			if (false == elements_[id].is_deleted) {
+				elements_[id].data = new Type{ id, value... };
+			}
+			else {
+				elements_[id].data->Reset(id, value...);
+			}
 			elements_[id].cas_lock.Unlock();
-			elements_[id].is_deleted = false;
 			elements_[id].ref_cnt = 1;
+			elements_[id].is_deleted = false;
 			return id;
 		}
 		bool Exists(ID id) const noexcept {
@@ -132,7 +136,7 @@ namespace lf {
 		}
 		void TryDelete(ID index) noexcept {
 			if (CAS(elements_[index].ref_cnt, 0, array::Element<T>::kDeleted)) {
-				delete elements_[index].data;
+				elements_[index].data->Delete();
 				id_queue_.Emplace<array::ElementID>(index);
 			}
 		}

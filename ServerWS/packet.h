@@ -30,7 +30,6 @@ namespace packet {
 
 	struct Base {
 		Base(Size size, Type type) : size{ size }, type{ type } {}
-		void Reset(char*&) const noexcept {};
 		Size size{};
 		Type type{};
 	};
@@ -42,10 +41,9 @@ namespace packet {
 	}
 
 	template<class Packet>
-	void Deserialize(Packet* packet, char*& byte) noexcept
+	void Deserialize(Packet* packet, const char* byte) noexcept
 	{
-		memcpy(((char*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
-		byte += GetPacketSize<Packet>();
+		memcpy(packet, byte, GetPacketSize<Packet>() + sizeof(Base));
 	}
 
 	struct Test : Base {
@@ -56,7 +54,7 @@ namespace packet {
 		Test(int a, int b, int c) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{ a }, b{ b }, c{ c } {}
 
-		Test(char*& byte) noexcept
+		Test(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{}, b{}, c{} {
 			Deserialize(this, byte);
 		}
@@ -145,7 +143,7 @@ namespace packet {
 	struct CSJoinParty : Base {
 		/*CSJoinParty(int id)
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id(id) {}*/
-		CSJoinParty(char*& byte) noexcept
+		CSJoinParty(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id{} {
 			Deserialize(this, byte);
 		}
@@ -157,7 +155,7 @@ namespace packet {
 	};
 
 	struct CSPosition : Base {
-		CSPosition(char*& byte) noexcept
+		CSPosition(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }, x{}, y{}, z{} {
 			Deserialize(this, byte);
 		}
@@ -169,7 +167,7 @@ namespace packet {
 
 #pragma pack(pop)
 
-	inline void Free(void* p) noexcept
+	inline void Collect(void* p) noexcept
 	{
 		switch (*reinterpret_cast<Type*>(p))
 		{
@@ -178,27 +176,33 @@ namespace packet {
 			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
 		}
+		case Type::kSCNewEntity: {
+			using Packet = SCNewEntity;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
+			break;
+		}
 		case Type::kSCPosition: {
 			using Packet = SCPosition;
 			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
 		}
-		case Type::kSCNewEntity: {
-			using Packet = SCNewEntity;
+		case Type::kSCRemoveEntity: {
+			using Packet = SCRemoveEntity;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
+			break;
+		}
+		case Type::kSCResult: {
+			using Packet = SCRemoveEntity;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
+			break;
+		}
+		case Type::kSCCheckConnection: {
+			using Packet = SCCheckConnection;
 			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
 		}
 		default:
 			break;
 		}
-	}
-
-	inline std::string CheckBytes(char* bytes, int size) noexcept
-	{
-		std::string data;
-		for (int i = 0; i < size; ++i) {
-			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(bytes + i)));
-		}
-		return std::format("send {} bytes: {}", size, data);
 	}
 }

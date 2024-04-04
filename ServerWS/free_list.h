@@ -1,7 +1,11 @@
+//---------------------------------------------------
+// 
+// free_list.h - free list 클래스 정의
+// 
+//---------------------------------------------------
+
 #pragma once
 #include <vector>
-#include <print>
-#include <concepts>
 #include "thread.h"
 
 template<class T>
@@ -48,5 +52,5 @@ private:
 	std::vector<T*> pointers_;
 };
 
-template <class T>
+template<class T>
 inline thread_local FreeList<T> free_list{ sizeof(T) <= 2 ? 3000 : 100};

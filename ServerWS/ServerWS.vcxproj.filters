@@ -126,4 +126,12 @@
       <Filter>헤더 파일\network</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="data\max_clients.txt">
+      <Filter>리소스 파일</Filter>
+    </Text>
+    <Text Include="data\displays_msg.txt">
+      <Filter>리소스 파일</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

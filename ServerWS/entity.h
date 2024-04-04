@@ -36,6 +36,14 @@ namespace entity {
 		ID GetID() const noexcept {	return id_; }
 
 		const Postion& GetPostion() const noexcept { return pos_; }
+
+		void Reset() noexcept {
+
+		}
+
+		void Delete() noexcept {
+
+		}
 	private:
 		ID id_;
 		Postion pos_;

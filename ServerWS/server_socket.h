@@ -18,8 +18,8 @@ namespace server {
 		Socket() noexcept : threads_{}, accepter_{},
 			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker()) },
 			parties_(GetMaxClients() / 2) {
-			WSAData wsa;
-			if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+			WSAData wsadata;
+			if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
 				exit(1);
 			}
 			memset(&server_addr_, 0, sizeof(server_addr_));
@@ -63,20 +63,23 @@ namespace server {
 			clients_->ReserveDelete(id);
 		}
 
-		int GetMaxClients() const {
+		int GetMaxClients() const noexcept {
 			static int max_clients;
 			static bool has_read_file;
 			if (has_read_file) {
 				return max_clients;
 			}
-			std::ifstream in{ "data/max_clients.txt" };
+
+			std::string file_name{ "max_clients.txt" };
+			std::ifstream in{ std::format("data/{}", file_name) };
 			if (not in) {
-				in.open("../../data/max_clients.txt");
+				in.open(std::format("../../data/{}", file_name));
 				if (not in) {
-					std::print("[Error] Cannot Open file: data/max_client.txt");
+					std::print("[Error] Cannot Open file: data/{}\n", file_name);
 					exit(1);
 				}
 			}
+
 			in >> max_clients;
 			has_read_file = true;
 
@@ -98,33 +101,38 @@ namespace server {
 		void WorkerThread(int id) noexcept;
 		void ProcessAccept() noexcept;
 
-		void Deserialize(char*& bytes, DWORD& n_bytes, int session_id) noexcept
+		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept
 		{
-			if (n_bytes <= 0) {
+			if (n_bytes == 0) {
 				return;
 			}
 
-			packet::Size size = *(packet::Size*)(bytes++);
-			packet::Type type = *(packet::Type*)(bytes++);
+			packet::Size size = *(packet::Size*)(buf.GetData());
+			if (n_bytes < sizeof(size) + sizeof(packet::Type) + size) {
+				buf.SaveRemains(n_bytes);
+				n_bytes = 0;
+				return;
+			}
 
+			packet::Type type = *(packet::Type*)(buf.GetData() + 1);
 			n_bytes -= sizeof(size) + sizeof(type) + size;
 
 			switch (type) {
 			case packet::Type::kTest: {
-				auto p{ std::make_unique<packet::Test>(bytes) };
-				std::print("{} {} {}\n", p->a, p->b, p->c);
+				packet::Test p{ buf.GetData() };
+				std::print("{} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
 				break;
 			}
 			case packet::Type::kCSJoinParty: {
-				auto p{ std::make_unique<packet::CSJoinParty>(bytes) };
-				if (parties_[p->id].TryEnter(session_id)) {
-					if (debug::IsDebugMode()) {
-						std::print("ID: {} has joined Party: {}.\n", session_id, p->id);
+				packet::CSJoinParty p{ buf.GetData() };
+				if (parties_[p.id].TryEnter(session_id)) {
+					if (debug::DisplaysMSG()) {
+						std::print("ID: {} has joined Party: {}.\n", session_id, p.id);
 					}
 
 					(*clients_)[session_id].Push<packet::SCResult>(true);
-					(*clients_)[session_id].SetPartyID(p->id);
-					auto partner_id = parties_[p->id].GetPartnerID(session_id);
+					(*clients_)[session_id].SetPartyID(p.id);
+					auto partner_id = parties_[p.id].GetPartnerID(session_id);
 
 					if ((*clients_).TryAccess(partner_id)) {
 						auto& pos = (*clients_)[session_id].GetPlayer().GetPostion();
@@ -139,13 +147,13 @@ namespace server {
 				break;
 			}
 			case packet::Type::kCSPosition: {
-				auto p{ std::make_unique<packet::CSPosition>(bytes) };
-				(*clients_)[session_id].GetPlayer().SetPosition(p->x, p->y, p->z);
+				packet::CSPosition p{ buf.GetData() };
+				(*clients_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
 				auto party_id{ (*clients_)[session_id].GetPartyID() };
 				auto partner_id = parties_[party_id].GetPartnerID(session_id);
 
 				if ((*clients_).TryAccess(partner_id)) {
-					(*clients_)[partner_id].Push<packet::CSPosition>(bytes);
+					(*clients_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p->x, p->y, p->z);
 					(*clients_).EndAccess(partner_id);
 				}
 				break;
@@ -159,14 +167,21 @@ namespace server {
 				break;
 			}
 			default: {
-				std::print("[Error] Unknown Packet: {}\n", (int)type);
+				std::print("[Error] Unknown Packet: {}\n", static_cast<int>(type));
 				exit(1);
 			}
+			}
+
+			if (n_bytes == 0) {
+				buf.ResetCursor();
+			}
+			else {
+				buf.MoveCursor(sizeof(size) + sizeof(type) + size);
 			}
 		}
 
 		static constexpr unsigned short kPort{ 21155 };
-		static constexpr auto kTransferFrequency{ 1.0 / 45.0 };
+		static constexpr auto kTransferFrequency{ 1.0 / 100.0 };
 
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;

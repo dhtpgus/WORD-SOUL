@@ -35,7 +35,7 @@ public:
 	void Exit(ID id) noexcept {
 		for (auto& i : player_ids_) {
 			if (i == id and CAS(&i, id, kEmpty)) {
-				if (debug::IsDebugMode()) {
+				if (debug::DisplaysMSG()) {
 					std::print("[MSG] ID: {} has left the party.\n", id);
 				}
 			}

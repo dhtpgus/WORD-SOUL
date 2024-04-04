@@ -163,6 +163,10 @@
     <ClInclude Include="thread.h" />
     <ClInclude Include="timer.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="data\displays_msg.txt" />
+    <Text Include="data\max_clients.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
