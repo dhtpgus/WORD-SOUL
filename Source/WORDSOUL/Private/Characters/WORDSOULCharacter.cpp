@@ -68,6 +68,7 @@ void AWORDSOULCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	InitWORDSOULOverlay();
+	Socket.Party();
 }
 
 void AWORDSOULCharacter::InitWORDSOULOverlay()
@@ -103,7 +104,7 @@ void AWORDSOULCharacter::Tick(float DeltaTime)
 
 	Socket.SendCharacterLocation(GetActorLocation());
 
-	OtherCharacter = Socket.RecvCharacterInfo();
+	TUniquePtr<SCCharacterInfo> OtherCharacter = Socket.RecvCharacterInfo();
 
 	if (!OtherCharacter) return;
 	SCCharacterInfo* CharacterInfo = OtherCharacter.Get();

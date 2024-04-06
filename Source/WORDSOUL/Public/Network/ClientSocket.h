@@ -11,6 +11,7 @@
 #define SERVER_IP "127.0.0.1"
 #define BUFSIZE 1024
 
+#pragma pack(push, 1)
 struct CSCharacterLocation
 {
 	uint8 length;
@@ -29,6 +30,14 @@ struct SCCharacterInfo
 	float y;
 	float z;
 };
+
+struct party
+{
+	uint8 length;
+	uint8 packetNum;
+	uint16 id;
+};
+#pragma pack(pop)
 /**
  * 
  */
@@ -46,6 +55,7 @@ public:
 	bool InitSocket();
 	bool ConnectToServer(const char* serverIP, int serverPort);
 	void SendCharacterLocation(const FVector& CharacterLocation);
+	void Party();
 	TUniquePtr<SCCharacterInfo> RecvCharacterInfo();
 
 private:

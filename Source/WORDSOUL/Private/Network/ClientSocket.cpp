@@ -86,6 +86,17 @@ void ClientSocket::SendCharacterLocation(const FVector& CharacterLocation)
 	send(sock, (char*)&CharacterLoc, sizeof(CSCharacterLocation), 0);
 }
 
+void ClientSocket::Party()
+{
+	party party0;
+	party0.id = 0;
+	party0.length = sizeof(party) - 2;
+	party0.packetNum = 128;
+	send(sock, (char*)&party0, sizeof(party), 0);
+}
+
+
+
 TUniquePtr<SCCharacterInfo> ClientSocket::RecvCharacterInfo()
 {
 	TUniquePtr<SCCharacterInfo> CharacterInfo = MakeUnique<SCCharacterInfo>();
@@ -105,4 +116,6 @@ TUniquePtr<SCCharacterInfo> ClientSocket::RecvCharacterInfo()
 }
 
 
+// 서버에서 클라르 보내주는 패킷
+// 파티 입장패킷 보내고 -> 파티 제대로 입장햇는지 패킷 서버-클라(최초 한번) -> 다른사람의 좌표값 패킷(2번)
 

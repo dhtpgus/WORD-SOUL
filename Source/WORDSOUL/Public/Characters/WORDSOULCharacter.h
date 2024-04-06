@@ -107,6 +107,5 @@ private:
 	ClientSocket Socket;
 	bool bIsConnected;
 	uint8 id;
-	TUniquePtr<SCCharacterInfo> OtherCharacter;
 	
 };
