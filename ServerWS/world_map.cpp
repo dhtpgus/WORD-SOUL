@@ -6,7 +6,7 @@ WorldMap world_map;
 
 WorldMap::WorldMap() noexcept
 {
-	std::vector<Region::Shape> shapes;
+	std::vector<Region::ShapeFunc> shapes;
 	shapes.reserve(20);
 
 	shapes.emplace_back([](const Position& pos) {

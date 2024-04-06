@@ -11,12 +11,6 @@ struct Position {
 	float x{}, y{}, z{};
 };
 
-
-constexpr inline float Sqaure(float f)
-{
-	return f * f;
-}
-
 inline float GetDistanceSq(const Position& a, const Position& b)
 {
 	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z);

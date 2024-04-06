@@ -5,16 +5,16 @@
 
 class Region {
 public:
-	using Shape = std::function<bool(const Position&)>;
-	Region(const Shape& shape) noexcept : shape_{ shape } {}
+	using ShapeFunc = std::function<bool(const Position&)>;
+	Region(const ShapeFunc& shape) noexcept : shape_funcs_{ shape } {}
 	void AddAdjRegion(Region* r) noexcept {
 		adjs_.push_back(r);
 	}
 	bool IsInRegion(const Position& pos) const {
-		return shape_(pos);
+		return shape_funcs_(pos);
 	}
 private:
-	Shape shape_;
+	ShapeFunc shape_funcs_;
 	std::vector<Region*> adjs_;
 };
 
