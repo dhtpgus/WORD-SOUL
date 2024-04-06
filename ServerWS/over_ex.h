@@ -21,8 +21,8 @@ struct OverEx {
 	OverEx(Operation op) noexcept : op{ op } {
 		memset(&over, 0, sizeof(over));
 	}
-	void Reset(Operation reset_op) noexcept {
-		op = reset_op;
+	void Reset(Operation rs_op) noexcept {
+		op = rs_op;
 		memset(&over, 0, sizeof(over));
 	}
 	OVERLAPPED over;

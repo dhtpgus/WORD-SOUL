@@ -5,6 +5,7 @@
 //---------------------------------------------------
 
 #pragma once
+#include "coord.h"
 
 namespace entity {
 	enum class Type : unsigned char {
@@ -13,10 +14,6 @@ namespace entity {
 	using ID = unsigned short;
 	constexpr inline ID kPartnerID{ 0xFFFF };
 	constexpr inline ID kAvatarID{ 0xFFFE };
-
-	struct Postion {
-		float x, y, z;
-	};
 
 	class Base {
 	public:
@@ -35,7 +32,7 @@ namespace entity {
 
 		ID GetID() const noexcept {	return id_; }
 
-		const Postion& GetPostion() const noexcept { return pos_; }
+		const Position& GetPostion() const noexcept { return pos_; }
 
 		void Reset() noexcept {
 
@@ -46,7 +43,7 @@ namespace entity {
 		}
 	private:
 		ID id_;
-		Postion pos_;
+		Position pos_;
 		short hp_;
 	};
 }

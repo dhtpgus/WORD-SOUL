@@ -72,15 +72,15 @@ namespace client {
 		}
 
 		void Reset(int id, SOCKET sock, HANDLE iocp) noexcept {
-			if (debug::DisplaysMSG()) {
-				std::print("[Info] ID: {} has joined the game.\n", GetID());
-			}
 			sock_ = sock;
 			buf_recv_.ResetCursor();
 			id_ = id;
 			party_id_ = -1;
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id_, 0);
 			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
+			if (debug::DisplaysMSG()) {
+				std::print("[Info] ID: {} has joined the game.\n", GetID());
+			}
 		}
 
 		void Delete() noexcept {

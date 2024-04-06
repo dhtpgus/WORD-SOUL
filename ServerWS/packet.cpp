@@ -1,5 +1,6 @@
 #include <print>
 #include "packet.h"
+#include "free_list.h"
 #include "debug.h"
 
 namespace packet {

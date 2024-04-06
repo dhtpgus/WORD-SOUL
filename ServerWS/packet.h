@@ -5,7 +5,6 @@
 //---------------------------------------------------
 
 #pragma once
-#include "free_list.h"
 #include "entity.h"
 
 namespace packet {
@@ -117,14 +116,14 @@ namespace packet {
 	};
 
 	struct SCResult : Base {
-		SCResult(bool value, char flag = 0) noexcept
+		SCResult(bool value, char flags = 0) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, data{} {
 			data |= (static_cast<char>(value) << 7);
-			data |= flag;
+			data |= flags;
 		}
-		void Reset(bool value, char flag = 0) noexcept {
+		void Reset(bool value, char flags = 0) noexcept {
 			data |= (static_cast<char>(value) << 7);
-			data |= flag;
+			data |= flags;
 		}
 
 		char data;

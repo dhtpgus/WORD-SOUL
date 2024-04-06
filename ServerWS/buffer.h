@@ -1,9 +1,13 @@
+//---------------------------------------------------------
+// 
+// buffer.h - BufferRecv 클래스 정의 및 버퍼 관련 상수 정의
+// 
+//---------------------------------------------------------
+
 #pragma once
 #include <array>
 
 inline constexpr size_t kBufferSize{ 256 };
-
-using Buffer = std::array<char, kBufferSize>;
 
 class BufferRecv {
 public:
@@ -35,3 +39,5 @@ private:
 	std::array<char, kBufferSize * 2> buf_{};
 	int cursor_{ kStartPoint };
 };
+
+using Buffer = std::array<char, kBufferSize>;

@@ -16,7 +16,7 @@ namespace server {
 	class Socket {
 	public:
 		Socket() noexcept : threads_{}, accepter_{},
-			clients_{ std::make_shared<ClientArray>(GetMaxClients(), thread::GetNumWorker()) },
+			sessions_{ std::make_shared<SessionArray>(GetMaxClients(), thread::GetNumWorker()) },
 			parties_(GetMaxClients() / 2) {
 			WSAData wsadata;
 			if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
@@ -53,14 +53,14 @@ namespace server {
 		}
 
 		void Disconnect(int id) noexcept {
-			auto& party = parties_[(*clients_)[id].GetPartyID()];
+			auto& party = parties_[(*sessions_)[id].GetPartyID()];
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
-			if (clients_->TryAccess(partner_id)) {
-				(*clients_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID);
-				clients_->EndAccess(partner_id);
+			if (sessions_->TryAccess(partner_id)) {
+				(*sessions_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID);
+				sessions_->EndAccess(partner_id);
 			}
-			clients_->ReserveDelete(id);
+			sessions_->ReserveDelete(id);
 		}
 
 		int GetMaxClients() const noexcept {
@@ -86,7 +86,7 @@ namespace server {
 			return max_clients;
 		}
 	private:
-		using ClientArray = lf::Array<client::Session>;
+		using SessionArray = lf::Array<client::Session>;
 		void CreateThread() noexcept {
 			threads_.reserve(thread::GetNumWorker() + 1);
 			for (int i = 0; i < thread::GetNumWorker(); ++i) {
@@ -100,94 +100,26 @@ namespace server {
 
 		void WorkerThread(int id) noexcept;
 		void ProcessAccept() noexcept;
-
-		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept
-		{
-			if (n_bytes == 0) {
-				return;
-			}
-
-			packet::Size size = *(packet::Size*)(buf.GetData());
-			if (n_bytes < sizeof(size) + sizeof(packet::Type) + size) {
-				buf.SaveRemains(n_bytes);
-				n_bytes = 0;
-				return;
-			}
-
-			packet::Type type = *(packet::Type*)(buf.GetData() + 1);
-			n_bytes -= sizeof(size) + sizeof(type) + size;
-
-			switch (type) {
-			case packet::Type::kTest: {
-				packet::Test p{ buf.GetData() };
-				std::print("{} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
-				break;
-			}
-			case packet::Type::kCSJoinParty: {
-				packet::CSJoinParty p{ buf.GetData() };
-				if (parties_[p.id].TryEnter(session_id)) {
-					if (debug::DisplaysMSG()) {
-						std::print("ID: {} has joined Party: {}.\n", session_id, p.id);
+		void Send() noexcept {
+			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
+				if (sessions_->TryAccess(i)) {
+					if (false == (*sessions_)[i].Send()) {
+						Disconnect(i);
 					}
-
-					(*clients_)[session_id].Push<packet::SCResult>(true);
-					(*clients_)[session_id].SetPartyID(p.id);
-					auto partner_id = parties_[p.id].GetPartnerID(session_id);
-
-					if ((*clients_).TryAccess(partner_id)) {
-						auto& pos = (*clients_)[session_id].GetPlayer().GetPostion();
-						(*clients_)[partner_id].Push<packet::SCNewEntity>(
-							entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer);
-						(*clients_).EndAccess(partner_id);
-					}
+					sessions_->EndAccess(i);
 				}
-				else {
-					(*clients_)[session_id].Push<packet::SCResult>(false);
-				}
-				break;
-			}
-			case packet::Type::kCSPosition: {
-				packet::CSPosition p{ buf.GetData() };
-				(*clients_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
-				auto party_id{ (*clients_)[session_id].GetPartyID() };
-				auto partner_id = parties_[party_id].GetPartnerID(session_id);
-
-				if ((*clients_).TryAccess(partner_id)) {
-					(*clients_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z);
-					(*clients_).EndAccess(partner_id);
-				}
-				break;
-			}
-			case packet::Type::kCSLeaveParty: {
-				auto party_id = (*clients_)[session_id].GetPartyID();
-				if (party_id < 0 or party_id >= parties_.size()) {
-					break;
-				}
-				parties_[party_id].Exit(session_id);
-				break;
-			}
-			default: {
-				std::print("[Error] Unknown Packet: {}\n", static_cast<int>(type));
-				exit(1);
-			}
-			}
-
-			if (n_bytes == 0) {
-				buf.ResetCursor();
-			}
-			else {
-				buf.MoveCursor(sizeof(size) + sizeof(type) + size);
 			}
 		}
+		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
 
 		static constexpr unsigned short kPort{ 21155 };
-		static constexpr auto kTransferFrequency{ 1.0 / 100.0 };
+		static constexpr auto kTransferFrequency{ 1.0 / 30 * 0 };
 
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		HANDLE iocp_;
 		std::shared_ptr<Accepter> accepter_;
-		std::shared_ptr<ClientArray> clients_;
+		std::shared_ptr<SessionArray> sessions_;
 		std::vector<Party> parties_;
 	};
 
