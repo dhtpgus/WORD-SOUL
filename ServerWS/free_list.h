@@ -1,44 +1,56 @@
+//---------------------------------------------------
+// 
+// free_list.h - free list 클래스 정의
+// 
+//---------------------------------------------------
+
 #pragma once
 #include <vector>
+#include "thread.h"
 
 template<class T>
 class FreeList {
 public:
 	FreeList() = delete;
-	FreeList(int el_num)
-		: pointers_{ new T*[el_num]{} }, current_el_num_{ -1 }, max_el_num_{ el_num } {}
-	~FreeList() {
-		for (int i = 0; i < max_el_num_; ++i) {
-			delete pointers_[i];
-		}
-		delete[] pointers_;
+	FreeList(int el_num) : pointers_{} {
+		pointers_.reserve(el_num);
 	}
-	template<class Type>
-	auto Allocate() noexcept {
-		if (-1 == current_el_num_) {
-			return new Type{};
+	~FreeList() {
+		for (auto p : pointers_) {
+			delete p;
 		}
-		auto p = pointers_[current_el_num_--];
+	}
+
+	auto Get() noexcept {
+		if (pointers_.empty()) {
+			return new T{};
+		}
+		auto p =  pointers_.back();
+		pointers_.pop_back();
+		p->Reset();
 		return p;
 	}
-	template<class Type, class... Value>
-	auto Allocate(Value... values) noexcept {
-		if (-1 == current_el_num_) {
-			return new Type{ values... };
+
+	template<class... Value>
+	auto Get(Value... values) noexcept {
+		if (pointers_.empty()) {
+			return new T{ values... };
 		}
-		auto p = pointers_[current_el_num_--];
-		p->Reallocate(values...);
+		auto p = pointers_.back();
+		pointers_.pop_back();
+		p->Reset(values...);
 		return p;
 	}
 	void Collect(T* ptr) noexcept {
-		if (current_el_num_ == max_el_num_) {
+		if (pointers_.size() == pointers_.capacity()) {
 			delete ptr;
 			return;
 		}
-		pointers_[current_el_num_++] = ptr;
+		pointers_.push_back(ptr);
 	}
 private:
-	T** pointers_;
-	int current_el_num_;
-	int max_el_num_;
+	std::vector<T*> pointers_;
 };
+
+template<class T>
+inline thread_local FreeList<T> free_list{ sizeof(T) <= 2 ? 3000 : 100};

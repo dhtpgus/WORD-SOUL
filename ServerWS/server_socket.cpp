@@ -1,89 +1,161 @@
 #include "server_socket.h"
+#include "free_list.h"
 #include "debug.h"
 #include "timer.h"
 
 namespace server {
 	Socket sock;
-	constexpr auto kTransferFrequency{ 45.0 };
-}
 
-void server::Socket::ProcessAccept()
-{
-	static int addr_len = sizeof(sockaddr_in);
-	auto client_sock = accept_sock_;
-	accept_sock_ = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
-	AcceptEx(listen_sock_, accept_sock_, accept_over_.buf, 0,
-		addr_len + 16, addr_len + 16, 0, &accept_over_.over);
+	void Socket::ProcessAccept() noexcept
+	{
+		auto client_sock = accepter_->GetAcceptedSocket();
+		accepter_->Accept();
 
-	auto session_id = clients_->Allocate<client::Session>(client_sock, iocp_);
-	if (session_id == ClientArray::kInvalidID) {
-		closesocket(client_sock);
-		return;
+		auto session_id = sessions_->Allocate<client::Session>(client_sock, iocp_);
+		if (session_id == SessionArray::kInvalidID) {
+			closesocket(client_sock);
+			return;
+		}
+
+		if (sessions_->TryAccess(session_id)) {
+			(*sessions_)[session_id].Receive();
+			(*sessions_)[session_id].Push<packet::SCNewEntity>(
+				entity::kAvatarID, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
+			sessions_->EndAccess(session_id);
+		}
 	}
 
-	if (clients_->TryAccess(session_id)) {
-		(*clients_)[session_id].Receive();
-		(*clients_)[session_id].Push<packet::SCNewEntity>(session_id, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
-		clients_->EndAccess(session_id);
-	}
-}
+	void Socket::WorkerThread(int thread_id) noexcept
+	{
+		thread::ID(thread_id);
 
-void server::Socket::WorkerThread(int thread_id)
-{
-	thread::ID(thread_id);
+		DWORD transferred{};
+		ULONG_PTR key{};
+		OverEx* ox{};
+		int retval{};
 
-	DWORD transferred{};
-	ULONG_PTR key;
-	OverEx* ox{};
-	int retval{};
+		Timer timer;
+		Timer::Duration duration{};
+		Timer::Duration ac_duration{};
+		Timer::Duration ac_duration2{};
 
-	Timer timer;
+		while (true) {
+			retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
+				reinterpret_cast<LPOVERLAPPED*>(&ox), 10);
 
-	while (true) {
-		retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
-			reinterpret_cast<LPOVERLAPPED*>(&ox), 1);
+			int id = static_cast<int>(key);
 
-		int id = static_cast<int>(key);
-		auto duration{ timer.GetDuration() };
-
-		if (0 == retval) {
-		}
-		else if (ox->op == Operation::kSend) {
-			delete ox; // FreeList 사용하도록 변경
-		}
-		else if (ox->op == Operation::kAccept) {
-			ProcessAccept();
-		}
-		else if (transferred != 0) {
-			if (clients_->TryAccess(id)) {
-				if (debug::IsDebugMode()) {
-					std::print("[MSG] {}({}): {}\n", id, clients_->Exists(id),
-						packet::CheckBytes((*clients_)[id].GetBuffer(), transferred));
-				}
-				
-				char* buffer = (char*)((*clients_)[id].GetBuffer());
-
-				while (transferred != 0) {
-					Deserialize(buffer, transferred, id);
-				}
-				(*clients_)[id].Receive();
-
-				clients_->EndAccess(id);
+			if (0 == retval) {
 			}
-		}
+			else if (ox->op == Operation::kSend) {
+				free_list<OverEx>.Collect(ox);
+			}
+			else if (ox->op == Operation::kAccept) {
+				ProcessAccept();
+			}
+			else if (transferred != 0) {
+				if (sessions_->TryAccess(id)) {
+					auto& buffer = (*sessions_)[id].GetBuffer();
 
-		auto c = timer.GetAccumulatedDuration();
-		if (c >= 1.0 / kTransferFrequency) {
-			timer.ResetAccumulatedDuration();
-
-			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
-				if (clients_->TryAccess(i)) {
-					if (false == (*clients_)[i].Send()) {
-						Disconnect(i);
+					if (debug::DisplaysMSG()) {
+						std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
+							buffer.GetBinary(transferred));
 					}
-					clients_->EndAccess(i);
+
+					while (transferred != 0) {
+						ProcessPacket(buffer, transferred, id);
+					}
+					(*sessions_)[id].Receive();
+
+					sessions_->EndAccess(id);
 				}
+			}
+
+			duration = timer.GetDuration();
+			ac_duration += duration;
+
+			if (ac_duration >= kTransferFrequency) {
+				//if (thread::ID() == 0) std::print("{}\n", ac_duration);
+				ac_duration = 0.0;
+
+				Send();
 			}
 		}
 	}
+
+	void Socket::ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept
+	{
+		packet::Size size = *(packet::Size*)(buf.GetData());
+		if (n_bytes < sizeof(size) + sizeof(packet::Type) + size) {
+			buf.SaveRemains(n_bytes);
+			n_bytes = 0;
+			return;
+		}
+
+		packet::Type type = *(packet::Type*)(buf.GetData() + 1);
+		n_bytes -= sizeof(size) + sizeof(type) + size;
+
+		switch (type) {
+		case packet::Type::kTest: {
+			packet::Test p{ buf.GetData() };
+			std::print("{} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
+			break;
+		}
+		case packet::Type::kCSJoinParty: {
+			packet::CSJoinParty p{ buf.GetData() };
+			if (parties_[p.id].TryEnter(session_id)) {
+				if (debug::DisplaysMSG()) {
+					std::print("ID: {} has joined Party: {}.\n", session_id, p.id);
+				}
+
+				(*sessions_)[session_id].Push<packet::SCResult>(true);
+				(*sessions_)[session_id].SetPartyID(p.id);
+				auto partner_id = parties_[p.id].GetPartnerID(session_id);
+
+				if ((*sessions_).TryAccess(partner_id)) {
+					auto& pos = (*sessions_)[session_id].GetPlayer().GetPostion();
+					(*sessions_)[partner_id].Push<packet::SCNewEntity>(
+						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer);
+					(*sessions_).EndAccess(partner_id);
+				}
+			}
+			else {
+				(*sessions_)[session_id].Push<packet::SCResult>(false);
+			}
+			break;
+		}
+		case packet::Type::kCSPosition: {
+			packet::CSPosition p{ buf.GetData() };
+			(*sessions_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
+			auto party_id{ (*sessions_)[session_id].GetPartyID() };
+			auto partner_id = parties_[party_id].GetPartnerID(session_id);
+
+			if ((*sessions_).TryAccess(partner_id)) {
+				(*sessions_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z);
+				(*sessions_).EndAccess(partner_id);
+			}
+			break;
+		}
+		case packet::Type::kCSLeaveParty: {
+			auto party_id = (*sessions_)[session_id].GetPartyID();
+			if (party_id < 0 or party_id >= parties_.size()) {
+				break;
+			}
+			parties_[party_id].Exit(session_id);
+			break;
+		}
+		default: {
+			std::print("[Error] Unknown Packet: {}\n", static_cast<int>(type));
+			exit(1);
+		}
+		}
+
+		if (n_bytes == 0) {
+			buf.ResetCursor();
+		}
+		else {
+			buf.MoveCursor(sizeof(size) + sizeof(type) + size);
+		}
+	}
+
 }

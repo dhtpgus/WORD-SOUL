@@ -31,28 +31,58 @@
     <Filter Include="헤더 파일\ai">
       <UniqueIdentifier>{0111a73d-e69c-473b-a0a1-956d3298f87b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\others">
+      <UniqueIdentifier>{d59f8e11-5e0a-4af5-85bb-8efedad36b3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\network">
+      <UniqueIdentifier>{9ea701f5-d579-4ccc-ad5f-6b9cb1cd9560}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\entity">
+      <UniqueIdentifier>{4279b006-210b-4a92-aae1-9c3f50382eca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\thread">
+      <UniqueIdentifier>{2a6e6e81-f3cb-47b8-a872-d7dcc051d1e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\ai">
+      <UniqueIdentifier>{2cbf37fb-8b83-4dc7-91fd-c24b0edda1aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\coord">
+      <UniqueIdentifier>{856fca9a-c5dc-4822-b585-3ef0d0b90877}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\coord">
+      <UniqueIdentifier>{763719ee-77fd-4f49-8d8b-6a38c4295bbf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="thread.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="random_number_generator.cpp">
+      <Filter>소스 파일\others</Filter>
     </ClCompile>
     <ClCompile Include="server_socket.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="random_number_generator.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="entity.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="free_list.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\network</Filter>
     </ClCompile>
     <ClCompile Include="debug.cpp">
-      <Filter>소스 파일</Filter>
+      <Filter>소스 파일\others</Filter>
+    </ClCompile>
+    <ClCompile Include="entity.cpp">
+      <Filter>소스 파일\entity</Filter>
+    </ClCompile>
+    <ClCompile Include="thread.cpp">
+      <Filter>소스 파일\thread</Filter>
+    </ClCompile>
+    <ClCompile Include="packet.cpp">
+      <Filter>소스 파일\network</Filter>
+    </ClCompile>
+    <ClCompile Include="fsm.cpp">
+      <Filter>소스 파일\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="moster.cpp">
+      <Filter>소스 파일\entity</Filter>
+    </ClCompile>
+    <ClCompile Include="world_map.cpp">
+      <Filter>소스 파일\coord</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -119,5 +149,28 @@
     <ClInclude Include="over_ex.h">
       <Filter>헤더 파일\network</Filter>
     </ClInclude>
+    <ClInclude Include="accepter.h">
+      <Filter>헤더 파일\network</Filter>
+    </ClInclude>
+    <ClInclude Include="buffer.h">
+      <Filter>헤더 파일\network</Filter>
+    </ClInclude>
+    <ClInclude Include="coord.h">
+      <Filter>헤더 파일\coord</Filter>
+    </ClInclude>
+    <ClInclude Include="region.h">
+      <Filter>헤더 파일\coord</Filter>
+    </ClInclude>
+    <ClInclude Include="world_map.h">
+      <Filter>헤더 파일\coord</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data\max_clients.txt">
+      <Filter>리소스 파일</Filter>
+    </Text>
+    <Text Include="data\displays_msg.txt">
+      <Filter>리소스 파일</Filter>
+    </Text>
   </ItemGroup>
 </Project>

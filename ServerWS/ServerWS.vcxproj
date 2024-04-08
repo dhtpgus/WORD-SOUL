@@ -130,17 +130,23 @@
   <ItemGroup>
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="entity.cpp" />
-    <ClCompile Include="free_list.cpp" />
+    <ClCompile Include="fsm.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
+    <ClCompile Include="moster.cpp" />
+    <ClCompile Include="packet.cpp" />
     <ClCompile Include="random_number_generator.cpp" />
+    <ClCompile Include="world_map.cpp" />
     <ClCompile Include="server_socket.cpp" />
     <ClCompile Include="thread.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="accepter.h" />
     <ClInclude Include="boss.h" />
+    <ClInclude Include="buffer.h" />
     <ClInclude Include="cas_lock.h" />
+    <ClInclude Include="coord.h" />
     <ClInclude Include="free_list.h" />
     <ClInclude Include="fsm.h" />
     <ClInclude Include="over_ex.h" />
@@ -160,6 +166,12 @@
     <ClInclude Include="server_socket.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="timer.h" />
+    <ClInclude Include="region.h" />
+    <ClInclude Include="world_map.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data\displays_msg.txt" />
+    <Text Include="data\max_clients.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

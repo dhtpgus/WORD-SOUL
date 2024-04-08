@@ -5,10 +5,7 @@
 //---------------------------------------------------
 
 #pragma once
-#include <print>
-#include <memory>
 #include "entity.h"
-#include "debug.h"
 
 namespace packet {
 	enum class Type : unsigned char {
@@ -34,84 +31,115 @@ namespace packet {
 	};
 
 	template<class Packet>
-	static constexpr Size GetPacketSize()
+	inline constexpr Size GetPacketSize() noexcept
 	{
 		return sizeof(Packet) - sizeof(Base);
 	}
 
 	template<class Packet>
-	void Deserialize(Packet* packet, char*& byte)
+	void Deserialize(Packet* packet, const char* byte) noexcept
 	{
-		memcpy(((char*)packet) + sizeof(Base), byte, GetPacketSize<Packet>());
-		byte += GetPacketSize<Packet>();
+		memcpy(packet, byte, GetPacketSize<Packet>() + sizeof(Base));
 	}
 
 	struct Test : Base {
-		Test() : Base{ GetPacketSize<decltype(*this)>(), Type::kTest },
+		Test() noexcept : Base{ GetPacketSize<decltype(*this)>(), Type::kTest },
 			a{ 7 }, b{ 8 }, c{ 9 } {
 		}
 
-		Test(int a, int b, int c)
+		Test(int a, int b, int c) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{ a }, b{ b }, c{ c } {}
 
-		Test(char*& byte)
+		Test(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kTest }, a{}, b{}, c{} {
 			Deserialize(this, byte);
+		}
+
+		void Reset(int rs_a, int rs_b, int rs_c) noexcept {
+			a = rs_a;
+			b = rs_b;
+			c = rs_c;
 		}
 
 		int a, b, c;
 	};
 
 	struct SCPosition : Base {
-		SCPosition() : Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
+		SCPosition() noexcept : Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
 			id{}, x{}, y{}, z{} {}
 
-		SCPosition(int id, float x, float y, float z) 
+		SCPosition(entity::ID id, float x, float y, float z) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
-			id{ id }, x{ x }, y{ y }, z{ z } {}
+			id(id), x{ x }, y{ y }, z{ z } {}
 
-		int id;
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z) noexcept {
+			id = rs_id;
+			x = rs_x;
+			y = rs_y;
+			z = rs_z;
+		}
+
+		entity::ID id;
 		float x;
 		float y;
 		float z;
 	};
 
 	struct SCNewEntity : SCPosition {
-		SCNewEntity(int id, float x, float y, float z, entity::Type et)
+		SCNewEntity(entity::ID id, float x, float y, float z, entity::Type et) noexcept
 			: SCPosition{ id, x, y, z }, entity_type{ et } {
 			type = Type::kSCNewEntity;
 			size = GetPacketSize<decltype(*this)>();
 		}
-
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, entity::Type rs_et) noexcept {
+			id = rs_id;
+			x = rs_x;
+			y = rs_y;
+			z = rs_z;
+			entity_type = rs_et;
+		}
 		entity::Type entity_type;
 	};
 
 	struct SCRemoveEntity : Base {
-		SCRemoveEntity() : Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity },
+		SCRemoveEntity() noexcept : Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity },
 			id{} {}
 
-		SCRemoveEntity(int id)
+		SCRemoveEntity(entity::ID id) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity }, id{ id } {}
 
-		int id;
+		void Reset(entity::ID rs_id) noexcept {
+			id = rs_id;
+		}
+
+		entity::ID id;
 	};
 
 	struct SCResult : Base {
-		SCResult(bool value)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, value{ value } {}
-		bool value;
+		SCResult(bool value, char flags = 0) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, data{} {
+			data |= (static_cast<char>(value) << 7);
+			data |= flags;
+		}
+		void Reset(bool value, char flags = 0) noexcept {
+			data |= (static_cast<char>(value) << 7);
+			data |= flags;
+		}
+
+		char data;
 	};
 
 	struct SCCheckConnection : Base {
-		SCCheckConnection()
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x55 } {}
+		SCCheckConnection() noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x12 } {}
+		void Reset() noexcept {}
 		char value;
 	};
 
 	struct CSJoinParty : Base {
-		CSJoinParty(int id)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id(id) {}
-		CSJoinParty(char*& byte)
+		/*CSJoinParty(int id)
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id(id) {}*/
+		CSJoinParty(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSJoinParty }, id{} {
 			Deserialize(this, byte);
 		}
@@ -119,23 +147,11 @@ namespace packet {
 	};
 
 	struct CSLeaveParty : Base {
-		CSLeaveParty(int id)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSLeaveParty }, id(id) {}
-		CSLeaveParty(char*& byte)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSLeaveParty }, id{} {
-			Deserialize(this, byte);
-		}
-		unsigned short id;
+		CSLeaveParty() noexcept : Base{ GetPacketSize<decltype(*this)>(), Type::kCSLeaveParty } {}
 	};
 
 	struct CSPosition : Base {
-		CSPosition() : Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition },
-			x{}, y{}, z{} {}
-
-		CSPosition(float x, float y, float z)
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }, x{ x }, y{ y }, z{ z } {}
-
-		CSPosition(char*& byte)
+		CSPosition(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }, x{}, y{}, z{} {
 			Deserialize(this, byte);
 		}
@@ -147,35 +163,5 @@ namespace packet {
 
 #pragma pack(pop)
 
-	static void Free(char* p)
-	{
-		switch (static_cast<Type>(*p))
-		{
-		case Type::kTest:
-			delete reinterpret_cast<packet::Test*>(p);
-			break;
-		case Type::kSCPosition:
-			delete reinterpret_cast<packet::SCPosition*>(p);
-			break;
-		case Type::kSCNewEntity:
-			delete reinterpret_cast<packet::SCNewEntity*>(p);
-			break;
-		default:
-			break;
-		}
-	}
-
-	static std::string CheckBytes(char* bytes, int size)
-	{
-		std::string data;
-		for (int i = 0; i < size; ++i) {
-			data += std::format("{:02X} ", (unsigned int)(*(unsigned char*)(bytes + i)));
-		}
-		return std::format("send {} bytes: {}", size, data);
-	}
-
-	static std::string CheckBytes(const char* bytes, int size)
-	{
-		return CheckBytes((char*)bytes, size);
-	}
+	void Collect(void* p) noexcept;
 }

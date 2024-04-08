@@ -2,25 +2,36 @@
 #include <fstream>
 #include "debug.h"
 
+#define IS_RELEASE_MODE 0
+
 namespace debug {
-	bool IsDebugMode() {
-		static bool is_debug_mode;
+#if IS_RELEASE_MODE
+	constexpr bool DisplaysMSG() noexcept {
+		return false;
+	}
+#else
+	bool DisplaysMSG() noexcept {
+		static bool displays_msg;
 		static bool has_read_file;
 
 		if (has_read_file) {
-			return is_debug_mode;
+			return displays_msg;
 		}
-		std::ifstream in{ "data/is_debug_mode.txt" };
+
+		std::string file_name{ "displays_msg.txt" };
+
+		std::ifstream in{ std::format("data/{}", file_name) };
 		if (not in) {
-			in.open("../../data/is_debug_mode.txt");
+			in.open(std::format("../../data/{}", file_name));
 			if (not in) {
-				std::print("[Error] Cannot Open file: data/is_debug_mode.txt");
+				std::print("[Error] Cannot Open file: data/{}\n", file_name);
 				exit(1);
 			}
 		}
-		in >> is_debug_mode;
+		in >> displays_msg;
 		has_read_file = true;
 
-		return is_debug_mode;
+		return displays_msg;
 	};
+#endif
 }

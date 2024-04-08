@@ -12,32 +12,44 @@
 #include "random_number_generator.h"
 
 namespace lf {
-	template<class T>
-	struct Element {
-		Element() = default;
-		~Element() {
-			if (ref_cnt > 0) {
-				delete data;
+	namespace array {
+		using ID = unsigned short;
+
+		template<class T>
+		struct Element {
+			Element() noexcept = default;
+			~Element() noexcept {
+				if (ref_cnt > 0) {
+					delete data;
+				}
 			}
-		}
-		Element(const Element&) = delete;
-		Element(Element&&) = delete;
-		Element& operator=(const Element&) = delete;
-		Element& operator=(Element&&) = delete;
+			Element(const Element&) = delete;
+			Element(Element&&) = delete;
+			Element& operator=(const Element&) = delete;
+			Element& operator=(Element&&) = delete;
 
-		T* data{};
-		CASLock cas_lock{};
-		std::atomic_int ref_cnt{ kDeleted };
+			static constexpr auto kDeleted{ -1 };
+			T* data{};
+			std::atomic_int ref_cnt{ kDeleted };
+			CASLock cas_lock{};
+			volatile bool is_deleted{};
+		};
 
-		static constexpr auto kDeleted{ -1 };
-	};
+		struct ElementID {
+			void Reset(ID rs_id) {
+				id = rs_id;
+			}
+			ID id;
+		};
+	}
 
 	template<class T>
 	class Array {
 	public:
+		using ID = array::ID;
 		Array() = delete;
-		Array(int el_num, int th_num) : elements_(el_num), index_queue_{ th_num } {
-			std::vector<int> indexes(el_num);
+		Array(int el_num, int th_num) noexcept : elements_(el_num), id_queue_{ th_num } {
+			std::vector<ID> indexes(el_num);
 			std::iota(indexes.begin(), indexes.end(), 0);
 			std::shuffle(indexes.begin(), indexes.end(), std::mt19937{ std::random_device{}() });
 
@@ -46,7 +58,7 @@ namespace lf {
 				threads.emplace_back([i, el_num, th_num, indexes, this]() {
 					thread::ID(i);
 					for (int j = i; j < el_num; j += th_num) {
-						index_queue_.Emplace<int>(indexes[j]);
+						id_queue_.Emplace<array::ElementID>(indexes[j]);
 					}
 					});
 			}
@@ -56,11 +68,11 @@ namespace lf {
 		}
 		// 접근 전 TryAccess 메소드를 먼저 실행하여야 한다.
 		// 사용이 끝나면 EndAccess를 실행하여야 한다.
-		T& operator[](int index) {
+		T& operator[](ID index) noexcept {
 			return *elements_[index].data;
 		}
-		bool TryAccess(int index) {
-			if (not IsIDValid(index)) {
+		bool TryAccess(ID index) noexcept {
+			if ((not IsIDValid(index)) or elements_[index].is_deleted) {
 				return false;
 			}
 			while (true) {
@@ -73,68 +85,68 @@ namespace lf {
 				}
 			}
 		}
-		void EndAccess(int index) {
+		void EndAccess(ID index) noexcept {
 			if (not IsIDValid(index)) {
 				return;
 			}
 			elements_[index].ref_cnt -= 1;
 			TryDelete(index);
 		}
-		void ReserveDelete(int index) {
+		void ReserveDelete(ID index) noexcept {
 			if (not IsIDValid(index)) {
 				return;
 			}
 			if (not elements_[index].cas_lock.TryLock()) {
 				return;
 			}
+			elements_[index].is_deleted = true;
 			elements_[index].ref_cnt -= 1;
 			TryDelete(index);
 		}
 		template<class Type, class... Value>
-		int Allocate(Value&&... value) {
-			auto pop = index_queue_.Pop();
+		int Allocate(Value&&... value) noexcept {
+			auto pop = id_queue_.Pop();
 			if (nullptr == pop) {
-				if (debug::IsDebugMode()) {
+				if (debug::DisplaysMSG()) {
 					std::print("[Warning] Failed to Allocate: Capacity Exceeded\n");
 				}
 				return kInvalidID;
 			}
-			int id = *pop;
-			delete pop;
+			ID id = pop->id;
+			free_list<array::ElementID>.Collect(pop);
 
-			elements_[id].data = new Type{ id, value... };
+			if (false == elements_[id].is_deleted) {
+				elements_[id].data = new Type{ id, value... };
+			}
+			else {
+				elements_[id].data->Reset(id, value...);
+			}
 			elements_[id].cas_lock.Unlock();
 			elements_[id].ref_cnt = 1;
+			elements_[id].is_deleted = false;
 			return id;
 		}
-		bool Exists(int id) const {
-			return IsIDValid(id) and elements_[id].ref_cnt > 0;
-		}
-		int Count() const {
-			int cnt = 0;
-			for (const auto& e : elements_) {
-				cnt += (e.ref_cnt > 0 ? 1 : 0);
-			}
-			return cnt;
+		bool Exists(ID id) const noexcept {
+			return IsIDValid(id) and (not elements_[id].is_deleted) and elements_[id].ref_cnt > 0;
 		}
 		static constexpr int kInvalidID = -1;
 	private:
-		bool CAS(std::atomic_int& mem, int expected, int desired) {
+		bool CAS(std::atomic_int& mem, int expected, int desired) noexcept {
 			return mem.compare_exchange_strong(expected, desired);
 		}
-		void TryDelete(int index) {
-			if (CAS(elements_[index].ref_cnt, 0, Element<T>::kDeleted)) {
-				delete elements_[index].data;
-				index_queue_.Emplace<int>(index);
+		void TryDelete(ID index) noexcept {
+			if (CAS(elements_[index].ref_cnt, 0, array::Element<T>::kDeleted)) {
+				elements_[index].data->Delete();
+				id_queue_.Emplace<array::ElementID>(index);
 			}
 		}
-		bool IsIDValid(int index) const {
+		bool IsIDValid(ID index) const noexcept {
 			if (0 <= index and index < elements_.size()) {
 				return true;
 			}
 			return false;
 		}
-		std::vector<Element<T>> elements_;
-		RelaxedQueue<int> index_queue_;
+		std::vector<array::Element<T>> elements_;
+		RelaxedQueue<array::ElementID> id_queue_;
 	};
 }

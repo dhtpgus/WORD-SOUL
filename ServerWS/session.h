@@ -5,8 +5,9 @@
 //---------------------------------------------------
 
 #pragma once
+#include <print>
 #include <thread>
-#include <shared_mutex>
+#include "buffer.h"
 #include "packet.h"
 #include "player.h"
 #include "lf_relaxed_queue.h"
@@ -17,44 +18,35 @@ namespace client {
 	class Session {
 	public:
 		Session() = delete;
-		Session(int id, SOCKET sock, HANDLE iocp)
-			: overlapped_{}, sock_{ sock }, buf_recv_{}, recv_bytes_{}, send_bytes_{},
-			wsabuf_recv_{}, id_{ id }, player_{ new entity::Player }, party_id_{ -1 },
-			rq_ { thread::GetNumWorker() }, wsabuf_send_{} {
-			wsabuf_recv_.buf = buf_recv_;
+		Session(int id, SOCKET sock, HANDLE iocp) noexcept
+			: overlapped_{}, sock_{ sock }, buf_recv_{}, wsabuf_recv_{}, player_{},
+			rq_{ thread::GetNumWorker() }, wsabuf_send_{} {
+			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
-			CreateIoCompletionPort((HANDLE)sock_, iocp, id, 0);
-			if (debug::IsDebugMode()) {
-				std::print("[Info] ID: {} has joined the game.\n", GetID());
-			}
-			wsabuf_send_[0].buf = reinterpret_cast<char*>(new packet::SCCheckConnection{});
+			wsabuf_send_[0].buf = reinterpret_cast<char*>(free_list<packet::SCCheckConnection>.Get());
 			wsabuf_send_[0].len = sizeof(packet::SCCheckConnection);
 		}
-		~Session() {
-			delete player_;
-			delete wsabuf_send_[0].buf;
-			if (debug::IsDebugMode()) {
-				std::print("[Info] ID: {} has left the game.\n", GetID());
-			}
-			closesocket(sock_);
+		~Session() noexcept {
+			packet::Collect(wsabuf_send_[0].buf);
+			Delete();
 		}
 		Session(const Session&) = delete;
-		Session(Session&&) = default;
+		Session(Session&&) noexcept = default;
 		Session& operator=(const Session&) = delete;
-		Session& operator=(Session&&) = default;
+		Session& operator=(Session&&) noexcept = default;
 
-		void Receive() {
+		void Receive() noexcept {
 			static DWORD flags = 0;
-			wsabuf_recv_.buf = buf_recv_;
-			WSARecv(sock_, &wsabuf_recv_, 1, &recv_bytes_, &flags, &overlapped_, nullptr);
+			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
+			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &overlapped_, nullptr);
 		}
 
 		template<class Packet, class... Value>
-		void Push(Value... value) {
+		void Push(Value... value) noexcept {
 			rq_.Emplace<Packet>(value...);
 		}
 
-		int Send() {
+		int Send() noexcept {
 			DWORD num_packet{ 1 };
 			while (true) {
 				if (num_packet >= 100) {
@@ -68,38 +60,58 @@ namespace client {
 				wsabuf_send_[num_packet].len = packet->size + sizeof(packet::Base);
 				num_packet += 1;
 			}
-			if (0 == num_packet) {
-				return 0;
-			}
 
-			auto ox{ new OverEx{ Operation::kSend } };
-			int ret = WSASend(sock_, wsabuf_send_, num_packet, &send_bytes_, 0, &ox->over, 0);
+			auto ox = free_list<OverEx>.Get(Operation::kSend);
+			int ret = WSASend(sock_, &wsabuf_send_[0], num_packet, nullptr, 0, &ox->over, 0);
 
 			for (DWORD i = 1; i < num_packet; ++i) {
-				packet::Free(wsabuf_send_[i].buf);
+				packet::Collect(wsabuf_send_[i].buf);
 			}
 
 			return ret == 0;
 		}
 
-		const char* GetBuffer() const { return buf_recv_; }
-		int GetID() const { return id_; }
-		SOCKET GetSocket() const { return sock_; }
-		int GetPartyID() const { return party_id_; }
-		void SetPartyID(int id) { party_id_ = id; }
-		auto& GetPlayer() { return *player_; }
+		void Reset(int id, SOCKET sock, HANDLE iocp) noexcept {
+			sock_ = sock;
+			buf_recv_.ResetCursor();
+			id_ = id;
+			party_id_ = -1;
+			CreateIoCompletionPort((HANDLE)sock_, iocp, id_, 0);
+			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
+			if (debug::DisplaysMSG()) {
+				std::print("[Info] ID: {} has joined the game.\n", GetID());
+			}
+		}
+
+		void Delete() noexcept {
+			if (debug::DisplaysMSG()) {
+				std::print("[Info] ID: {} has left the game.\n", GetID());
+			}
+			packet::Base* packet{};
+			while (true) {
+				packet = rq_.Pop();
+				if (nullptr == packet) {
+					break;
+				}
+				packet::Collect(packet);
+			}
+		}
+
+		BufferRecv& GetBuffer() noexcept { return buf_recv_; }
+		int GetID() const noexcept { return id_; }
+		SOCKET GetSocket() const noexcept { return sock_; }
+		int GetPartyID() const noexcept { return party_id_; }
+		void SetPartyID(int id) noexcept { party_id_ = id; }
+		auto& GetPlayer() noexcept { return player_; }
 	private:
-		static constexpr size_t kBufferSize = 1024;
 		OVERLAPPED overlapped_;
 		SOCKET sock_;
-		char buf_recv_[kBufferSize];
-		DWORD recv_bytes_;
-		DWORD send_bytes_;
+		BufferRecv buf_recv_;
 		WSABUF wsabuf_recv_;
-		WSABUF wsabuf_send_[100];
+		std::array<WSABUF, 100> wsabuf_send_;
 		int id_;
 		int party_id_;
-		entity::Player* player_;
+		entity::Player player_;
 		lf::RelaxedQueue<packet::Base> rq_;
 	};
 }
