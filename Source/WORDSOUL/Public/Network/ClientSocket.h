@@ -39,6 +39,8 @@ struct party
 	uint16 id;
 };
 #pragma pack(pop)
+
+
 /**
  * 
  */
@@ -55,18 +57,24 @@ public:
 	virtual void Stop() override;
 	virtual void Exit() override;
 
+	static ClientSocket* GetInstance()
+	{
+		static ClientSocket Ins;
+		return &Ins;
+	}
+
 	bool InitSocket();
 	bool ConnectToServer(const char* serverIP, int serverPort);
-	bool StartNetworkThread();
-	void EndNetworkThread();
+	bool StartRecvThread();
+	void EndRecvThread();
 	void SendCharacterLocation(const FVector& CharacterLocation);
 	void Party();
-	TUniquePtr<SCCharacterInfo> RecvCharacterInfo();
 	void SetPlayerController(AWORDSOULPlayerController* playerController);
 
 private:
 	//=============================================================
 	FRunnableThread* Thread;
+	bool bStop;
 	//=============================================================
 
 	SOCKET sock;

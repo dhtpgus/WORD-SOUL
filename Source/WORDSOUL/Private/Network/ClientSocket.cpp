@@ -12,7 +12,6 @@ ClientSocket::~ClientSocket()
 {
 	if (Thread)
 	{
-		Thread->WaitForCompletion();
 		delete Thread;
 		Thread = nullptr;
 	}
@@ -25,34 +24,47 @@ ClientSocket::~ClientSocket()
 bool ClientSocket::Init()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Thread Initatlized"));
+	bStop = false;
 
 	return true;
 }
 
 uint32 ClientSocket::Run()
 {
+	FPlatformProcess::Sleep(0.03);
+
 	int bytesReceived;
 	int remainBytes = 0;
 	char* bufferPtr = recvBuffer;
 
-	while ((bytesReceived = recv(sock, recvBuffer + remainBytes, sizeof(recvBuffer) - remainBytes, 0)) > 0)
+	while (!bStop and (bytesReceived = recv(sock, recvBuffer + remainBytes, sizeof(recvBuffer) - remainBytes, 0)) > 0)
 	{
+		if (bytesReceived == SOCKET_ERROR) return 0;
+
 		int totalBytes = bytesReceived + remainBytes;
 		bufferPtr = recvBuffer;
 
 		while (totalBytes > 1)
 		{
-			uint16 messageLength = static_cast<uint16>(*bufferPtr);
+			uint8 messageLength = *bufferPtr;
 			uint8 packetType = static_cast<uint8>(*(bufferPtr + PACKET_TYPE_OFFSET));
 
 			int packetSize = messageLength + 2;
-
+			
 			if (totalBytes >= packetSize)
 			{
 				switch (packetType)
 				{
 				case 129:
-					UE_LOG(LogTemp, Warning, TEXT("receive 129 packet"));
+					if(totalBytes >= sizeof(SCCharacterInfo))
+					{
+						SCCharacterInfo* characterInfo = reinterpret_cast<SCCharacterInfo*>(bufferPtr);
+						UE_LOG(LogTemp, Warning, TEXT("messageLength : %d"), characterInfo->length);
+						UE_LOG(LogTemp, Warning, TEXT("packet num : %d"), characterInfo->packetNum);
+						UE_LOG(LogTemp, Warning, TEXT("Other Character id : %d"), characterInfo->id);
+						UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+					}
+					
 					break;
 
 				default:
@@ -79,7 +91,7 @@ uint32 ClientSocket::Run()
 
 void ClientSocket::Stop()
 {
-
+	bStop = true;
 }
 
 void ClientSocket::Exit()
@@ -124,18 +136,20 @@ bool ClientSocket::ConnectToServer(const char* serverIP, int serverPort)
 	return true;
 }
 
-bool ClientSocket::StartNetworkThread()
+bool ClientSocket::StartRecvThread()
 {
 	if (Thread != nullptr) return false;
 	Thread = FRunnableThread::Create(this, TEXT("ClientSocket"));
 	return (Thread != nullptr);
 }
 
-void ClientSocket::EndNetworkThread()
+void ClientSocket::EndRecvThread()
 {
 	if (Thread)
 	{
+		Stop();
 		Thread->WaitForCompletion();
+		Thread->Kill();
 		delete Thread;
 		Thread = nullptr;
 	}
@@ -160,26 +174,6 @@ void ClientSocket::Party()
 	party0.length = sizeof(party) - 2;
 	party0.packetNum = 128;
 	send(sock, (char*)&party0, sizeof(party), 0);
-}
-
-
-
-TUniquePtr<SCCharacterInfo> ClientSocket::RecvCharacterInfo()
-{
-	TUniquePtr<SCCharacterInfo> CharacterInfo = MakeUnique<SCCharacterInfo>();
-	int recvLen = recv(sock, (char*)CharacterInfo.Get(), sizeof(SCCharacterInfo), 0);
-	
-	if (recvLen != sizeof(SCCharacterInfo))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Return nullptr : recvLen = %d"), recvLen);
-		return nullptr;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("recvLen = %d"), recvLen);
-	}
-		
-	return CharacterInfo;
 }
 
 void ClientSocket::SetPlayerController(AWORDSOULPlayerController* playerController)
