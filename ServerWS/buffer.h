@@ -7,7 +7,7 @@
 #pragma once
 #include <array>
 
-inline constexpr size_t kBufferSize{ 256 };
+inline constexpr size_t kBufferSize{ 512 };
 
 class BufferRecv {
 public:

@@ -59,10 +59,10 @@ namespace server {
 				if (sessions_->TryAccess(id)) {
 					auto& buffer = (*sessions_)[id].GetBuffer();
 
-					if (0 and debug::DisplaysMSG()) {
+					/*if (debug::DisplaysMSG()) {
 						std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
 							buffer.GetBinary(transferred));
-					}
+					}*/
 
 					while (transferred != 0) {
 						ProcessPacket(buffer, transferred, id);
@@ -129,7 +129,9 @@ namespace server {
 		case packet::Type::kCSPosition: {
 			packet::CSPosition p{ buf.GetData() };
 
-			std::print("ID {}: (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
+			if (debug::DisplaysMSG()) {
+				std::print("ID {}: (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
+			}
 			
 			(*sessions_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
 			auto party_id{ (*sessions_)[session_id].GetPartyID() };
@@ -162,5 +164,4 @@ namespace server {
 			buf.MoveCursor(sizeof(size) + sizeof(type) + size);
 		}
 	}
-
 }
