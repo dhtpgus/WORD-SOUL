@@ -5,10 +5,18 @@
 
 ClientSocket::ClientSocket()
 {
+
 }
 
 ClientSocket::~ClientSocket()
 {
+	if (Thread)
+	{
+		Thread->WaitForCompletion();
+		delete Thread;
+		Thread = nullptr;
+	}
+
 	closesocket(sock);
 	WSACleanup();
 }
@@ -23,6 +31,48 @@ bool ClientSocket::Init()
 
 uint32 ClientSocket::Run()
 {
+	int bytesReceived;
+	int remainBytes = 0;
+	char* bufferPtr = recvBuffer;
+
+	while ((bytesReceived = recv(sock, recvBuffer + remainBytes, sizeof(recvBuffer) - remainBytes, 0)) > 0)
+	{
+		int totalBytes = bytesReceived + remainBytes;
+		bufferPtr = recvBuffer;
+
+		while (totalBytes > 1)
+		{
+			uint16 messageLength = static_cast<uint16>(*bufferPtr);
+			uint8 packetType = static_cast<uint8>(*(bufferPtr + PACKET_TYPE_OFFSET));
+
+			int packetSize = messageLength + 2;
+
+			if (totalBytes >= packetSize)
+			{
+				switch (packetType)
+				{
+				case 129:
+					UE_LOG(LogTemp, Warning, TEXT("receive 129 packet"));
+					break;
+
+				default:
+					break;
+				}
+				bufferPtr += packetSize;
+				totalBytes -= packetSize;
+			}
+			else
+			{
+				break;
+			}
+		}
+		if (totalBytes > 0)
+		{
+			memmove(recvBuffer, bufferPtr, totalBytes);
+		}
+
+		remainBytes = totalBytes;
+	}
 
 	return uint32();
 }
@@ -34,7 +84,7 @@ void ClientSocket::Stop()
 
 void ClientSocket::Exit()
 {
-	//?? 
+	
 }
 //=============================================================
 
@@ -72,6 +122,23 @@ bool ClientSocket::ConnectToServer(const char* serverIP, int serverPort)
 		GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Green, "connect Success");
 	}
 	return true;
+}
+
+bool ClientSocket::StartNetworkThread()
+{
+	if (Thread != nullptr) return false;
+	Thread = FRunnableThread::Create(this, TEXT("ClientSocket"));
+	return (Thread != nullptr);
+}
+
+void ClientSocket::EndNetworkThread()
+{
+	if (Thread)
+	{
+		Thread->WaitForCompletion();
+		delete Thread;
+		Thread = nullptr;
+	}
 }
 
 void ClientSocket::SendCharacterLocation(const FVector& CharacterLocation)
@@ -113,6 +180,14 @@ TUniquePtr<SCCharacterInfo> ClientSocket::RecvCharacterInfo()
 	}
 		
 	return CharacterInfo;
+}
+
+void ClientSocket::SetPlayerController(AWORDSOULPlayerController* playerController)
+{
+	if (playerController)
+	{
+		PlayerController = playerController;
+	}
 }
 
 

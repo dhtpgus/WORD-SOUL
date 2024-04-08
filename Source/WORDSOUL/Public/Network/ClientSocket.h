@@ -10,6 +10,7 @@
 #define SERVER_PORT 9000
 #define SERVER_IP "127.0.0.1"
 #define BUFSIZE 1024
+#define PACKET_TYPE_OFFSET 1
 
 #pragma pack(push, 1)
 struct CSCharacterLocation
@@ -41,6 +42,8 @@ struct party
 /**
  * 
  */
+class AWORDSOULPlayerController;
+
 class WORDSOUL_API ClientSocket : FRunnable
 {
 public:
@@ -54,9 +57,12 @@ public:
 
 	bool InitSocket();
 	bool ConnectToServer(const char* serverIP, int serverPort);
+	bool StartNetworkThread();
+	void EndNetworkThread();
 	void SendCharacterLocation(const FVector& CharacterLocation);
 	void Party();
 	TUniquePtr<SCCharacterInfo> RecvCharacterInfo();
+	void SetPlayerController(AWORDSOULPlayerController* playerController);
 
 private:
 	//=============================================================
@@ -64,6 +70,8 @@ private:
 	//=============================================================
 
 	SOCKET sock;
-	char buffer[BUFSIZE];
+	char recvBuffer[BUFSIZE];
+
+	AWORDSOULPlayerController* PlayerController;
 	
 };

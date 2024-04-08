@@ -64,9 +64,6 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void DodgeEnd();
 
-	UPROPERTY(EditAnywhere, Category = "SpawnCharacter")
-	TSubclassOf<class ACharacter> SpawnCharacter;
-
 private:
 	UPROPERTY(VisibleAnywhere)
 	UAttributeComponent* Attributes;
@@ -102,10 +99,4 @@ private:
 	int32 AttackComboCnt;
 
 	bool bIsAttackButtonClickedWhileAttack;
-
-	//임시 테스트용 소켓 변수. 일단 캐릭터에서
-	ClientSocket Socket;
-	bool bIsConnected;
-	uint8 id;
-	
 };
