@@ -18,7 +18,7 @@ public:
 		double rand_num = static_cast<double>((*uid_)(*dre_));
 		rand_num /= std::numeric_limits<long long>::max();
 
-		return min + (max - min) * static_cast<T>(rand_num);
+		return min + static_cast<T>((max - min) * (rand_num));
 	}
 private:
 	std::unique_ptr<std::random_device> rd_;

@@ -101,19 +101,22 @@ namespace server {
 		void WorkerThread(int id) noexcept;
 		void ProcessAccept() noexcept;
 		void Send() noexcept {
+			//int cnt{};
 			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
 				if (sessions_->TryAccess(i)) {
 					if (false == (*sessions_)[i].Send()) {
 						Disconnect(i);
 					}
+					//cnt += 1;
 					sessions_->EndAccess(i);
 				}
 			}
+			//if (rng.Rand(0, 2000) == 2) std::print("{}: {}\n", thread::ID(), cnt);
 		}
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
 
 		static constexpr unsigned short kPort{ 21155 };
-		static constexpr auto kTransferFrequency{ 1.0 / 30 * 0 };
+		static constexpr auto kTransferFrequency{ 1.0 / 55555 };
 
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;

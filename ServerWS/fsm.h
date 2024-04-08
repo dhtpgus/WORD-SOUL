@@ -2,6 +2,6 @@
 
 namespace ai {
 	enum class State {
-		kNoAI, kWander, kChase, kAttack
+		kAIDisabled, kWander, kChase, kAttack
 	};
 }
