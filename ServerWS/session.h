@@ -79,13 +79,13 @@ namespace client {
 			CreateIoCompletionPort((HANDLE)sock_, iocp, id_, 0);
 			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
 			if (debug::DisplaysMSG()) {
-				std::print("[Info] ID: {} has joined the game.\n", GetID());
+				std::print("[Info] (ID: {}) has joined the game.\n", GetID());
 			}
 		}
 
 		void Delete() noexcept {
 			if (debug::DisplaysMSG()) {
-				std::print("[Info] ID: {} has left the game.\n", GetID());
+				std::print("[Info] (ID: {}) has left the game.\n", GetID());
 			}
 			packet::Base* packet{};
 			while (true) {
@@ -112,6 +112,6 @@ namespace client {
 		int id_;
 		int party_id_;
 		entity::Player player_;
-		lf::RelaxedQueue<packet::Base> rq_;
+		lf::RelaxedQueue<packet::Base, 2e-5> rq_;
 	};
 }

@@ -100,14 +100,14 @@ namespace server {
 		switch (type) {
 		case packet::Type::kTest: {
 			packet::Test p{ buf.GetData() };
-			std::print("{} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
+			std::print("(ID: {}) test: {} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
 			break;
 		}
 		case packet::Type::kCSJoinParty: {
 			packet::CSJoinParty p{ buf.GetData() };
 			if (parties_[p.id].TryEnter(session_id)) {
 				if (debug::DisplaysMSG()) {
-					std::print("ID: {} has joined Party: {}.\n", session_id, p.id);
+					std::print("(ID: {}) has joined Party: {}.\n", session_id, p.id);
 				}
 
 				(*sessions_)[session_id].Push<packet::SCResult>(true);
@@ -130,7 +130,7 @@ namespace server {
 			packet::CSPosition p{ buf.GetData() };
 
 			if (debug::DisplaysMSG()) {
-				std::print("ID {}: (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
+				std::print("(ID: {}) (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
 			}
 			
 			(*sessions_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
