@@ -112,7 +112,7 @@ namespace server {
 		}
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
 
-		static constexpr unsigned short kPort{ 21155 };
+		static constexpr unsigned short kPort{ 9000 };
 		static constexpr auto kTransferFrequency{ 1.0 / 30 * 0 };
 
 		std::vector<std::thread> threads_;

@@ -55,7 +55,7 @@ uint32 ClientSocket::Run()
 			{
 				switch (packetType)
 				{
-				case 129:
+				case 2:
 					if(totalBytes >= sizeof(SCCharacterInfo))
 					{
 						SCCharacterInfo* characterInfo = reinterpret_cast<SCCharacterInfo*>(bufferPtr);
