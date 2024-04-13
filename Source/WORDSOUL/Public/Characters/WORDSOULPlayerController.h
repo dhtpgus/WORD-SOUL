@@ -22,18 +22,22 @@ public:
 	virtual ~AWORDSOULPlayerController();
 
 	virtual void Tick(float DeltaTime) override;
-
+	
+	void RecvCharacterInfo(SCCharacterInfo* CharacterInfo);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UPROPERTY(EditAnywhere, Category = "SpawnCharacter")
-	TSubclassOf<class ACharacter> SpawnCharacter;
+	UPROPERTY(BlueprintReadWrite)
+	AWORDSOULCharacter* OtherCharacter;
 	
 private:
 	ClientSocket* Socket;
 	bool bIsConnected;
 	uint8 id;
+	SCCharacterInfo* OtherCharacterInfo;
+
+	void UpdatePlayerInfo(const SCCharacterInfo& CharacterInfo);
 
 };

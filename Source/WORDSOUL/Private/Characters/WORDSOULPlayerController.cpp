@@ -3,6 +3,8 @@
 
 #include "Characters/WORDSOULPlayerController.h"
 #include "Kismet/GameplayStatics.h"
+#include "EngineUtils.h"
+
 
 AWORDSOULPlayerController::AWORDSOULPlayerController()
 {
@@ -34,6 +36,18 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	if (!bIsConnected) return;
 
 	Socket->SendCharacterLocation(this->GetPawn()->GetActorLocation());
+
+	if (OtherCharacterInfo)
+	{
+		UpdatePlayerInfo(*OtherCharacterInfo);
+	}
+	
+
+}
+
+void AWORDSOULPlayerController::RecvCharacterInfo(SCCharacterInfo* CharacterInfo)
+{
+	OtherCharacterInfo = CharacterInfo;
 }
 
 void AWORDSOULPlayerController::BeginPlay()
@@ -51,4 +65,22 @@ void AWORDSOULPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason
 	Super::EndPlay(EndPlayReason);
 
 	Socket->EndRecvThread();
+}
+
+void AWORDSOULPlayerController::UpdatePlayerInfo(const SCCharacterInfo& CharacterInfo)
+{
+
+	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
+	{
+		APawn* cPawn = *It;
+		AWORDSOULCharacter* cCharacter = Cast<AWORDSOULCharacter>(cPawn);
+		if (cCharacter and cCharacter->PlayerID == OtherCharacter->PlayerID) // characterinfo에서 누구의 좌표인지 구분해주는 id 필요
+		{
+			UE_LOG(LogTemp, Warning, TEXT("PlayerID : %d"), cCharacter->PlayerID);
+			FVector NewLocation = FVector(CharacterInfo.x, CharacterInfo.y, CharacterInfo.z); // 자신의 위치를 동기화하게됨
+
+			cCharacter->SetActorLocation(NewLocation);
+			break;
+		}
+	}
 }

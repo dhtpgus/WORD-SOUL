@@ -2,6 +2,7 @@
 
 
 #include "Network/ClientSocket.h"
+#include "Characters/WORDSOULPlayerController.h"
 
 ClientSocket::ClientSocket()
 {
@@ -59,9 +60,10 @@ uint32 ClientSocket::Run()
 					if(totalBytes >= sizeof(SCCharacterInfo))
 					{
 						SCCharacterInfo* characterInfo = reinterpret_cast<SCCharacterInfo*>(bufferPtr);
-						UE_LOG(LogTemp, Warning, TEXT("messageLength : %d"), characterInfo->length);
+						PlayerController->RecvCharacterInfo(characterInfo);
+						/*UE_LOG(LogTemp, Warning, TEXT("messageLength : %d"), characterInfo->length);
 						UE_LOG(LogTemp, Warning, TEXT("packet num : %d"), characterInfo->packetNum);
-						UE_LOG(LogTemp, Warning, TEXT("Other Character id : %d"), characterInfo->id);
+						UE_LOG(LogTemp, Warning, TEXT("Other Character id : %d"), characterInfo->id);*/
 						UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
 					}
 					

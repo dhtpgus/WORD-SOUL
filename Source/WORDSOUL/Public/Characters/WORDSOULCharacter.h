@@ -36,6 +36,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
+	int32 PlayerID;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -99,4 +101,6 @@ private:
 	int32 AttackComboCnt;
 
 	bool bIsAttackButtonClickedWhileAttack;
+
+	static int32 NextPlayerID;
 };
