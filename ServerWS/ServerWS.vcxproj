@@ -143,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accepter.h" />
+    <ClInclude Include="a_star.h" />
     <ClInclude Include="boss.h" />
     <ClInclude Include="buffer.h" />
     <ClInclude Include="cas_lock.h" />

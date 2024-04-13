@@ -1,6 +1,7 @@
 #include "monster.h"
 #include "random_number_generator.h"
 #include "world_map.h"
+#include "a_star.h"
 
 namespace entity {
 	void Monster::Decide(const Position& p1_pos, const Position& p2_pos) noexcept
@@ -13,20 +14,20 @@ namespace entity {
 
 		if (distance_sq < kAttackRangeSq) {
 			target_pos_ = target == 1 ? p1_pos : p2_pos;
-			state_ = ai::State::kAttack;
+			state_ = fsm::State::kAttack;
 		}
 		else if (distance_sq < kAcquisitionRangeSq) {
 			target_pos_ = target == 1 ? p1_pos : p2_pos;
-			state_ = ai::State::kChase;
+			state_ = fsm::State::kChase;
 		}
 		else if (distance_sq < kAIActivationRangeSq){
 			float rad = rng.Rand(0.0f, 2 * kPi);
 			target_pos_.x = GetPostion().x + 200.0f * cosf(rad);
 			target_pos_.y = GetPostion().y + 200.0f * sinf(rad);
-			state_ = ai::State::kWander;
+			state_ = fsm::State::kWander;
 		}
 		else {
-			state_ = ai::State::kAIDisabled;
+			state_ = fsm::State::kAIDisabled;
 		}
 	}
 
@@ -34,15 +35,15 @@ namespace entity {
 	{
 		switch (state_)
 		{
-		case ai::State::kAIDisabled:
+		case fsm::State::kAIDisabled:
 			break;
-		case ai::State::kWander:
+		case fsm::State::kWander:
 			Move(time);
 			break;
-		case ai::State::kChase:
+		case fsm::State::kChase:
 			Move(time);
 			break;
-		case ai::State::kAttack:
+		case fsm::State::kAttack:
 			break;
 		default:
 			break;
@@ -51,9 +52,8 @@ namespace entity {
 
 	void Monster::Move(float time) noexcept
 	{
-		Vector v{ GetPostion(), target_pos_};
-		v.Normalize();
-		v *= time * kSpeed;
+		auto new_pos = a_star::GetNextPosition(GetPostion(), target_pos_, time, kSpeed);
+		SetPosition(new_pos.x, new_pos.y, new_pos.z);
 	}
 
 	void Monster::Attack() noexcept

@@ -6,7 +6,7 @@ struct Position {
 	Position(float x, float y, float z) noexcept : x{ x }, y{ y }, z{ z } {}
 	Position(float grid_x, float grid_y) noexcept
 		: x{ kPivotX + kUnitLength * grid_x }, y{ kPivotY + kUnitLength * grid_y }, z{ 0.0f } {}
-
+	
 	static constexpr float kPivotX = 0.0f;
 	static constexpr float kPivotY = 0.0f;
 	static constexpr float kUnitLength = 1000.0f;

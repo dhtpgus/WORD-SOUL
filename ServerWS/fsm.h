@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ai {
+namespace fsm {
 	enum class State {
 		kAIDisabled, kWander, kChase, kAttack
 	};

@@ -16,13 +16,6 @@ namespace lf {
 		using Clock = std::chrono::high_resolution_clock;
 		using TimePoint = Clock::time_point;
 
-		Node* volatile next;
-		Value v;
-		Level level;
-		RetireEpoch retire_epoch;
-		Duration duration;
-		int registrant;
-
 		Node(Value v, Level level, TimePoint tp, int registrant) noexcept
 			: v{ v }, level{ level }, next{ nullptr }, retire_epoch{}
 			, duration{ (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - tp)).count() }
@@ -35,5 +28,12 @@ namespace lf {
 			registrant = rs_registrant;
 			duration = (std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - tp)).count();
 		}
+
+		Node* volatile next;
+		Value v;
+		Level level;
+		RetireEpoch retire_epoch;
+		Duration duration;
+		int registrant;
 	};
 }

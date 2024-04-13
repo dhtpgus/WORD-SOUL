@@ -170,7 +170,6 @@ namespace lf {
 
 		template<class Type, class... Value>
 		void Emplace(Value&&... value) noexcept {
-			//Node* e = new Node{ new Type{ value... }, 0 };
 			Node* e = free_list<Node>.Get(free_list<Type>.Get(value...), Node::Level{}, tp_, thread::ID());
 			ebr_.StartOp();
 

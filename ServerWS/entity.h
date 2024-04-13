@@ -25,8 +25,8 @@ namespace entity {
 		}
 
 		void SetPosition(float x, float y, float z) noexcept {
-			pos_.x = x;
-			pos_.y = y;
+			float xy[2]{ x, y };
+			*reinterpret_cast<long long*>(&pos_.x) = *reinterpret_cast<long long*>(xy);
 			pos_.z = z;
 		}
 
@@ -43,7 +43,7 @@ namespace entity {
 		}
 	private:
 		ID id_;
-		Position pos_;
 		short hp_;
+		Position pos_;
 	};
 }

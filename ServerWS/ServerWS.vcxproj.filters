@@ -164,6 +164,9 @@
     <ClInclude Include="world_map.h">
       <Filter>헤더 파일\coord</Filter>
     </ClInclude>
+    <ClInclude Include="a_star.h">
+      <Filter>헤더 파일\ai</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="data\max_clients.txt">
