@@ -58,6 +58,7 @@ namespace server {
 			else if (transferred != 0) {
 				if (sessions_->TryAccess(id)) {
 					auto& buffer = (*sessions_)[id].GetBuffer();
+					transferred += buffer.GetSizeRemains();
 
 					/*if (debug::DisplaysMSG()) {
 						std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
@@ -87,6 +88,7 @@ namespace server {
 
 	void Socket::ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept
 	{
+		//std::print("{}: {}\n", thread::ID(), n_bytes);
 		packet::Size size = *(packet::Size*)(buf.GetData());
 		if (n_bytes < sizeof(size) + sizeof(packet::Type) + size) {
 			buf.SaveRemains(n_bytes);

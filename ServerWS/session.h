@@ -37,7 +37,7 @@ namespace client {
 
 		void Receive() noexcept {
 			static DWORD flags = 0;
-			wsabuf_recv_.buf = const_cast<char*>(buf_recv_.GetData());
+			wsabuf_recv_.buf = buf_recv_.GetRecvPoint();
 			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &overlapped_, nullptr);
 		}
 

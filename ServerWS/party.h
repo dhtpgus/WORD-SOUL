@@ -27,7 +27,7 @@ public:
 	ID GetPartnerID(ID id) const noexcept {
 		for (auto i : player_ids_) {
 			if (i != id) {
-				return id;
+				return i;
 			}
 		}
 		return kEmpty;
