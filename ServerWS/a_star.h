@@ -7,13 +7,13 @@
 
 namespace a_star {
 	class State;
-	using StatePQ = std::set<State>;
 	using StateVector = std::vector<State>;
+	using StatePQ = std::priority_queue<State, StateVector>;
 
 	class State {
 	public:
-		State(int depth, float cur_x, float cur_y, float dst_x, float dst_y) noexcept
-			: depth_{ depth }, cur_{ cur_x, cur_y, 0.0f }, dst_{ dst_x, dst_y, 0.0f } {}
+		State(int depth, float dir, float cur_x, float cur_y, float dst_x, float dst_y, float distance) noexcept
+			: depth_{ depth }, dir_{ dir }, distance_{ distance }, cur_ { cur_x, cur_y, 0.0f }, dst_{ dst_x, dst_y, 0.0f } {}
 
 		/*void Reset(int rs_depth, float rs_cur_x, float rs_cur_y, float rs_dst_x, float rs_dst_y) {
 			depth_ = rs_depth;
@@ -23,72 +23,76 @@ namespace a_star {
 			dst_y_ = rs_dst_y;
 		}*/
 
-		auto Expand(StateVector& next, float time, float speed) const noexcept {
+		auto Expand(StateVector& next) const noexcept {
 			const float kPi{ acosf(-1) };
 
 			for (int i = 0; i < kNumExpand; ++i) {
-				auto next_x = cur_.x + cosf(kPi * 2 * i / kNumExpand) * time * speed;
-				auto next_y = cur_.y + sinf(kPi * 2 * i / kNumExpand) * time * speed;
+				auto next_x = cur_.x + cosf(kPi * 2 * i / kNumExpand) * distance_;
+				auto next_y = cur_.y + sinf(kPi * 2 * i / kNumExpand) * distance_;
 				
 				if (WorldMap::kOutOfBounds != world_map.FindRegion(Position{ next_x, next_y, 0.0f })) {
-					next.emplace_back(depth_ + 1, next_x, next_y, dst_.x, dst_.y);
+					next.emplace_back(depth_ + 1, dir_, next_x, next_y, dst_.x, dst_.y, distance_);
+					if (next.back().dir_ == -1.0f) {
+						next.back().dir_ = kPi * 2 * i / kNumExpand;
+					}
 				}
 			}
 		}
 
 		float H() const noexcept { return abs(cur_.x - dst_.x) + abs(cur_.y - dst_.y); }
-		auto G() const noexcept { return 1000.0f * depth_; }
+		auto G() const noexcept { return distance_ * depth_; }
 		auto F() const noexcept { return H() + G(); }
 
-		bool operator==(const State& rhs) const noexcept {
-			const float kEpsilon = 1e-5f;
-			return abs(cur_.x - rhs.cur_.x) < kEpsilon
-				and abs(cur_.y - rhs.cur_.y) < kEpsilon
-				and dst_.x == rhs.dst_.x and dst_.x == rhs.dst_.y;
-		}
-
 		bool operator<(const State& rhs) const noexcept {
-			if (*this == rhs) {
-				return false;
-			}
-			if (depth_ > rhs.depth_) {
-				return true;
-			}
-			else if (depth_ == rhs.depth_) {
-				return F() < rhs.F();
-			}
-			return false;
+			return F() < rhs.F();
 		}
 		auto& GetPosition() const noexcept {
 			return cur_;
+		}
+		float GetDir() const noexcept {
+			return dir_;
+		}
+		bool Check() const noexcept {
+			return H() < 1.0f;
 		}
 
 		static constexpr size_t kNumExpand{ 40 };
 	private:
 		int depth_;
+		float dir_;
+		float distance_;
 		Position cur_;
 		Position dst_;
 	};
 
-	Position GetNextPosition(const Position& cur, const Position& trg, float time, float speed) noexcept
+	inline Position GetNextPosition(const Position& cur, const Position& trg, float time, float speed) noexcept
 	{
-		constexpr auto kMaxDepth{ 2 };
+		constexpr auto kMaxTries{ 50 };
 
-		StatePQ states;
-		states.emplace(0, cur.x, cur.y, trg.x, trg.y);
+		StatePQ open_queue;
+		open_queue.emplace(0, -1.0f, cur.x, cur.y, trg.x, trg.y, time * speed);
 		StateVector next_states;
-		next_states.reserve(State::kNumExpand * State::kNumExpand);
+		next_states.reserve(State::kNumExpand);
 
-		for (int d = 0; d < kMaxDepth; ++d) {
+		for (int i = 0; i < kMaxTries; ++i) {
 			next_states.clear();
-			for (auto it = states.begin(); it != states.end(); ++it) {
-				it->Expand(next_states, time, speed);
+
+			const State& state = open_queue.top();
+
+			if (true == state.Check()) {
+				return Position{ cur.x + cosf(state.GetDir()) * time * speed,
+					cur.y + sinf(state.GetDir()) * time * speed, cur.z };
 			}
 
-			for (int i = 0; i < next_states.size(); ++i) {
-				states.insert(next_states[i]);
+			state.Expand(next_states);
+
+			for (const auto& state : next_states) {
+				open_queue.push(state);
 			}
 		}
-		return states.begin()->GetPosition();
+		auto dir = open_queue.top().GetDir();
+
+		return Position{ cur.x + cosf(dir) * time * speed,
+			cur.y + sinf(dir) * time * speed, cur.z };
 	}
 }
