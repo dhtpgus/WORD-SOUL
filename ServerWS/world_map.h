@@ -16,15 +16,17 @@ public:
 				return i;
 			}
 		}
-		return -1;
+		return kOutOfBounds;
 	}
 	bool IsInSameRegion(const Position& p1, const Position& p2) const noexcept {
 		auto r = FindRegion(p1);
-		if (r == -1) {
+		if (r == kOutOfBounds) {
 			return false;
 		}
 		return regions_[r].IsInRegion(p2);
 	}
+
+	static constexpr auto kOutOfBounds{ -1 };
 private:
 	std::vector<Region> regions_;
 };

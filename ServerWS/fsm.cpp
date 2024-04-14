@@ -1,5 +1,5 @@
 #include "fsm.h"
 
-namespace ai {
+namespace fsm {
 
 }

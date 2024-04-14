@@ -20,10 +20,10 @@ namespace lf {
 	class EBR {
 	public:
 		EBR() = delete;
-		EBR(int thread_num) noexcept : reservations_{ new Epoch[thread_num] },
+		EBR(int thread_num) noexcept : reservations_{ new RetiredEpoch[thread_num] },
 			thread_num_{ thread_num }, epoch_{} {
 			for (int i = 0; i < thread_num; ++i) {
-				reservations_[i] = std::numeric_limits<Epoch>::max();
+				reservations_[i] = std::numeric_limits<RetiredEpoch>::max();
 				retired_.emplace_back();
 			}
 		}
@@ -52,26 +52,26 @@ namespace lf {
 			reservations_[thread::ID()] = epoch_.fetch_add(1, std::memory_order_relaxed);
 		}
 		void EndOp() noexcept {
-			reservations_[thread::ID()] = std::numeric_limits<Epoch>::max();
+			reservations_[thread::ID()] = std::numeric_limits<RetiredEpoch>::max();
 		}
 
 	private:
-		using Epoch = unsigned long long;
+		using RetiredEpoch = unsigned long long;
 		using RetiredNodeQueue = std::queue<T*>;
 
-		constexpr Epoch GetCapacity() const noexcept {
-			return (Epoch)(3 * thread_num_ * 2 * 10);
+		constexpr RetiredEpoch GetCapacity() const noexcept {
+			return (RetiredEpoch)(3 * thread_num_ * 2 * 10);
 		}
 
-		Epoch GetMinReservation() const noexcept {
-			Epoch min_re = std::numeric_limits<Epoch>::max();
+		RetiredEpoch GetMinReservation() const noexcept {
+			RetiredEpoch min_re = std::numeric_limits<RetiredEpoch>::max();
 			for (int i = 0; i < thread_num_; ++i) {
-				min_re = std::min(min_re, (Epoch)reservations_[i]);
+				min_re = std::min(min_re, (RetiredEpoch)reservations_[i]);
 			}
 			return min_re;
 		}
 		void Clear() noexcept {
-			Epoch max_safe_epoch = GetMinReservation();
+			RetiredEpoch max_safe_epoch = GetMinReservation();
 
 			while (false == retired_[thread::ID()].empty()) {
 				auto f = retired_[thread::ID()].front();
@@ -83,9 +83,9 @@ namespace lf {
 			}
 		}
 
-		Epoch* volatile reservations_;
+		RetiredEpoch* volatile reservations_;
 		std::vector<RetiredNodeQueue> retired_;
 		int thread_num_;
-		std::atomic<Epoch> epoch_;
+		std::atomic<RetiredEpoch> epoch_;
 	};
 }

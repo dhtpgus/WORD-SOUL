@@ -39,9 +39,11 @@ namespace server {
 		Timer::Duration ac_duration{};
 		Timer::Duration ac_duration2{};
 
+		const DWORD kDelay = debug::DisplaysMSG() ? 10UL : 0UL;
+
 		while (true) {
 			retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
-				reinterpret_cast<LPOVERLAPPED*>(&ox), 10);
+				reinterpret_cast<LPOVERLAPPED*>(&ox), kDelay);
 
 			int id = static_cast<int>(key);
 
@@ -56,11 +58,12 @@ namespace server {
 			else if (transferred != 0) {
 				if (sessions_->TryAccess(id)) {
 					auto& buffer = (*sessions_)[id].GetBuffer();
+					transferred += buffer.GetSizeRemains();
 
-					if (debug::DisplaysMSG()) {
+					/*if (debug::DisplaysMSG()) {
 						std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
 							buffer.GetBinary(transferred));
-					}
+					}*/
 
 					while (transferred != 0) {
 						ProcessPacket(buffer, transferred, id);
@@ -75,7 +78,7 @@ namespace server {
 			ac_duration += duration;
 
 			if (ac_duration >= kTransferFrequency) {
-				//if (thread::ID() == 0) std::print("{}\n", ac_duration);
+				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
 				ac_duration = 0.0;
 
 				Send();
@@ -85,6 +88,7 @@ namespace server {
 
 	void Socket::ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept
 	{
+		//std::print("{}: {}\n", thread::ID(), n_bytes);
 		packet::Size size = *(packet::Size*)(buf.GetData());
 		if (n_bytes < sizeof(size) + sizeof(packet::Type) + size) {
 			buf.SaveRemains(n_bytes);
@@ -98,14 +102,14 @@ namespace server {
 		switch (type) {
 		case packet::Type::kTest: {
 			packet::Test p{ buf.GetData() };
-			std::print("{} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
+			std::print("(ID: {}) test: {} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
 			break;
 		}
 		case packet::Type::kCSJoinParty: {
 			packet::CSJoinParty p{ buf.GetData() };
 			if (parties_[p.id].TryEnter(session_id)) {
 				if (debug::DisplaysMSG()) {
-					std::print("ID: {} has joined Party: {}.\n", session_id, p.id);
+					std::print("(ID: {}) has joined Party: {}.\n", session_id, p.id);
 				}
 
 				(*sessions_)[session_id].Push<packet::SCResult>(true);
@@ -126,6 +130,11 @@ namespace server {
 		}
 		case packet::Type::kCSPosition: {
 			packet::CSPosition p{ buf.GetData() };
+
+			if (debug::DisplaysMSG()) {
+				std::print("(ID: {}) (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
+			}
+			
 			(*sessions_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
 			auto party_id{ (*sessions_)[session_id].GetPartyID() };
 			auto partner_id = parties_[party_id].GetPartnerID(session_id);
@@ -157,5 +166,4 @@ namespace server {
 			buf.MoveCursor(sizeof(size) + sizeof(type) + size);
 		}
 	}
-
 }

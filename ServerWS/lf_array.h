@@ -147,6 +147,6 @@ namespace lf {
 			return false;
 		}
 		std::vector<array::Element<T>> elements_;
-		RelaxedQueue<array::ElementID> id_queue_;
+		RelaxedQueue<array::ElementID, 1e9> id_queue_;
 	};
 }

@@ -17,8 +17,8 @@ namespace lf {
 
 	class alignas(std::hardware_destructive_interference_size) LFQueue {
 	public:
-		LFQueue() noexcept {
-			head = tail = free_list<Node>.Get(Node::Value{}, Node::Level{});
+		LFQueue(Node::TimePoint tp) noexcept {
+			head = tail = free_list<Node>.Get(Node::Value{}, Node::Level{}, tp, -1);
 		}
 		void Push(Node* e, const LFQueue& main_queue) noexcept {
 			while (true) {
@@ -107,6 +107,22 @@ namespace lf {
 			return next->level;
 		}
 
+		int GetRegistrant() const noexcept {
+			Node* next = head->next;
+			if (next == nullptr) {
+				return -1;
+			}
+			return next->registrant;
+		}
+
+		Node::Duration GetDuration() const noexcept {
+			Node* next = head->next;
+			if (next == nullptr) {
+				return std::numeric_limits<Node::Duration>::max();
+			}
+			return next->duration;
+		}
+
 		bool IsEmpty() const noexcept {
 			return nullptr == head->next;
 		}
@@ -131,12 +147,17 @@ namespace lf {
 		Node* volatile tail;
 	};
 
-	template<class T>
+	template<class T, const double kCutline>
 	class RelaxedQueue {
 	public:
 		RelaxedQueue() = delete;
 		RelaxedQueue(int num_thread) noexcept : num_thread_{ num_thread },
-			queues_(num_thread + 1), ebr_{ num_thread } {}
+			ebr_{ num_thread }, tp_{ Node::Clock::now() } {
+			queues_.reserve(num_thread + 1);
+			for (int i = 0; i < num_thread + 1; ++i) {
+				queues_.emplace_back(tp_);
+			}
+		}
 		~RelaxedQueue() noexcept {
 			for (auto& lfq : queues_) {
 				lfq.Clear<T>();
@@ -149,13 +170,20 @@ namespace lf {
 
 		template<class Type, class... Value>
 		void Emplace(Value&&... value) noexcept {
-			//Node* e = new Node{ new Type{ value... }, 0 };
-			Node* e = free_list<Node>.Get(free_list<Type>.Get(value...), Node::Level{});
+			Node* e = free_list<Node>.Get(free_list<Type>.Get(value...), Node::Level{}, tp_, thread::ID());
 			ebr_.StartOp();
 
-			Node::Level top_level = queues_[num_thread_].GetTailLevel() + 1;
+			auto top_level = queues_[num_thread_].GetTailLevel();
+			auto duration = queues_[num_thread_].GetDuration();
+			auto registrant = queues_[num_thread_].GetRegistrant();
 
-			if (false == queues_[num_thread_].TryPush(e, top_level)) {
+			auto duration_gap = e->duration - duration;
+
+			if (registrant != thread::ID() and queues_[thread::ID()].GetTailLevel() < top_level
+				and duration_gap > 0 and duration_gap < kCutline * 1e9) {
+				queues_[thread::ID()].Push(e, queues_[num_thread_]);
+			}
+			else if (false == queues_[num_thread_].TryPush(e, top_level + 1)) {
 				queues_[thread::ID()].Push(e, queues_[num_thread_]);
 			}
 
@@ -218,5 +246,6 @@ namespace lf {
 		int num_thread_;
 		std::vector<LFQueue> queues_;
 		EBR<Node> ebr_;
+		Node::TimePoint tp_;
 	};
 }
