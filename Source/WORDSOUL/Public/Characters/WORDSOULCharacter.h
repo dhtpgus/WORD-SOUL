@@ -36,6 +36,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
+	UPROPERTY(BlueprintReadWrite)
 	int32 PlayerID;
 
 protected:

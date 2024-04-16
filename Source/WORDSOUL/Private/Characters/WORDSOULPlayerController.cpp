@@ -41,8 +41,6 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	{
 		UpdatePlayerInfo(*OtherCharacterInfo);
 	}
-	
-
 }
 
 void AWORDSOULPlayerController::RecvCharacterInfo(SCCharacterInfo* CharacterInfo)
@@ -74,10 +72,10 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCCharacterInfo& Characte
 	{
 		APawn* cPawn = *It;
 		AWORDSOULCharacter* cCharacter = Cast<AWORDSOULCharacter>(cPawn);
-		if (cCharacter and cCharacter->PlayerID == OtherCharacter->PlayerID) // characterinfo에서 누구의 좌표인지 구분해주는 id 필요
+		if (cCharacter and cCharacter == OtherCharacter)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("PlayerID : %d"), cCharacter->PlayerID);
-			FVector NewLocation = FVector(CharacterInfo.x, CharacterInfo.y, CharacterInfo.z); // 자신의 위치를 동기화하게됨
+			UE_LOG(LogTemp, Warning, TEXT("Player x y z : %f %f %f"), CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
+			FVector NewLocation = FVector(CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
 
 			cCharacter->SetActorLocation(NewLocation);
 			break;

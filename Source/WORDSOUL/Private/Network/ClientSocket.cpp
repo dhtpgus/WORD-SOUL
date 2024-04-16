@@ -66,7 +66,8 @@ uint32 ClientSocket::Run()
 						UE_LOG(LogTemp, Warning, TEXT("Other Character id : %d"), characterInfo->id);*/
 						UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
 					}
-					
+				case 5:
+					UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
 					break;
 
 				default:
