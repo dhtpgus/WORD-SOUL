@@ -5,6 +5,7 @@
 #include "Characters/WORDSOULCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Interfaces/HitInterface.h"
 
 AWeapon::AWeapon()
@@ -30,8 +31,10 @@ void AWeapon::BeginPlay()
 	
 }
 
-void AWeapon::Equip(USceneComponent* InParent, FName InSocketName)
+void AWeapon::Equip(USceneComponent* InParent, FName InSocketName, AActor* NewOner, APawn* NewInstigator)
 {
+	SetOwner(NewOner);
+	SetInstigator(NewInstigator);
 	AttachMeshTotSocket(InParent, InSocketName);
 }
 
@@ -77,17 +80,20 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		ETraceTypeQuery::TraceTypeQuery1,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::Type::None,
 		BoxHit,
 		true
 	);
 	if (BoxHit.GetActor())
 	{
+		UGameplayStatics::ApplyDamage(BoxHit.GetActor(), Damage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
+
 		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
 		if (HitInterface)
 		{
 			HitInterface->GetHit(BoxHit.ImpactPoint);
 		}
 		IgnoreActors.AddUnique(BoxHit.GetActor());
+
 	}
 }

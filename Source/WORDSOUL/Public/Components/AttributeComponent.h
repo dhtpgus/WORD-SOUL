@@ -39,6 +39,9 @@ private:
 	float StaminaRegenRate = 10.f;
 
 public:
+	void ReceiveDamage(float Damage);
+	FORCEINLINE float GetHealthPercent() const { return Health / MaxHealth; };
+	bool IsAlive();
 	void UseStamina(float StaminaCost);
 	float GetStaminaPercent();
 	FORCEINLINE float GetDodgeCost() const { return DodgeCost; }
