@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/AttributeComponent.h"
 #include "HUD/HealthBarComponent.h"
+#include "Items/Weapons/Weapon.h"
 
 
 AEnemy::AEnemy()
@@ -23,16 +24,29 @@ AEnemy::AEnemy()
 	HealthBarWidget->SetupAttachment(GetRootComponent());
 
 	IsAlive = true;
+
+
 }
+
 
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
 	if (HealthBarWidget)
 	{
 		HealthBarWidget->SetVisibility(false);
 	}
+
+	UWorld* World = GetWorld();
+	if (World and WeaponClass)
+	{
+		AWeapon* DefaultWeapon = World->SpawnActor<AWeapon>(WeaponClass);
+		DefaultWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
+		EquippedWeapon = DefaultWeapon;
+	}
 }
+
 
 void AEnemy::Die()
 {
@@ -117,5 +131,13 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 	}
 	CombatTarget = EventInstigator->GetPawn();
 	return DamageAmount;
+}
+
+void AEnemy::Destroyed()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Destroy();
+	}
 }
 
