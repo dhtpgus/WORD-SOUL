@@ -67,21 +67,19 @@ namespace packet {
 	struct SCPosition : Base {
 		SCPosition() noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
-			, id{}, x{}, y{}, z{}, vx{}, vy{}, vz{}, flag{} {}
+			, id{}, x{}, y{}, z{}, v{}, flag{} {}
 
-		SCPosition(entity::ID id, float x, float y, float z, float vx, float vy, float vz, char flag) noexcept
+		SCPosition(entity::ID id, float x, float y, float z, float v, char flag) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
-			, id(id), x{ x }, y{ y }, z{ z }, vx{ vx }, vy{ vy }, vz{ vz }, flag{ flag } {}
+			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, flag{ flag } {}
 
 		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z,
-			float rs_vx, float rs_vy, float rs_vz, char rs_flag) noexcept {
+			float rs_v, char rs_flag) noexcept {
 			id = rs_id;
 			x = rs_x;
 			y = rs_y;
 			z = rs_z;
-			vx = rs_vx;
-			vy = rs_vy;
-			vz = rs_vz;
+			v = rs_v;
 			flag = rs_flag;
 		}
 
@@ -89,9 +87,7 @@ namespace packet {
 		float x;
 		float y;
 		float z;
-		float vx;
-		float vy;
-		float vz;
+		float v;
 		char flag;
 	};
 
@@ -165,16 +161,14 @@ namespace packet {
 	struct CSPosition : Base {
 		CSPosition(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }
-			, x{}, y{}, z{}, vx{}, vy{}, vz{}, flag{} {
+			, x{}, y{}, z{}, v{}, flag{} {
 			Deserialize(this, byte);
 		}
 
 		float x;
 		float y;
 		float z;
-		float vx;
-		float vy;
-		float vz;
+		float v;
 		char flag;
 	};
 
