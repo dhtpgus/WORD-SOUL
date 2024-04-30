@@ -31,4 +31,29 @@ namespace lf {
 
 		volatile bool has_locked;
 	};
+
+	class CASLockGuard {
+	public:
+		CASLockGuard() = delete;
+		CASLockGuard(CASLock& cas_lock) noexcept : cas_lock_{ &cas_lock } {
+			auto msb = kMSBMask * static_cast<size_t>(!cas_lock_->TryLock());
+			auto qword = reinterpret_cast<size_t>(cas_lock_);
+			cas_lock_ = reinterpret_cast<CASLock*>(qword | msb);
+		};
+		CASLockGuard(const CASLockGuard&) = delete;
+		CASLockGuard(CASLockGuard&&) = delete;
+		CASLockGuard& operator=(const CASLockGuard&) = delete;
+		CASLockGuard& operator=(CASLockGuard&&) = delete;
+		~CASLockGuard() noexcept {
+			if (*this) {
+				cas_lock_->Unlock();
+			}
+		}
+		operator bool() const noexcept {
+			return 0 == (reinterpret_cast<size_t>(cas_lock_) & kMSBMask);
+		}
+	private:
+		static constexpr auto kMSBMask{ 0x8000'0000'0000'0000 };
+		CASLock* cas_lock_;
+	};
 }
