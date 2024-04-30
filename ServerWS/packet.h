@@ -65,32 +65,40 @@ namespace packet {
 	};
 
 	struct SCPosition : Base {
-		SCPosition() noexcept : Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
-			id{}, x{}, y{}, z{} {}
+		SCPosition() noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
+			, id{}, x{}, y{}, z{}, vx{}, vy{}, vz{}, flag{} {}
 
-		SCPosition(entity::ID id, float x, float y, float z) noexcept
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition },
-			id(id), x{ x }, y{ y }, z{ z } {}
+		SCPosition(entity::ID id, float x, float y, float z, float vx, float vy, float vz, char flag) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
+			, id(id), x{ x }, y{ y }, z{ z }, vx{ vx }, vy{ vy }, vz{ vz }, flag{ flag } {}
 
-		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z) noexcept {
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z,
+			float rs_vx, float rs_vy, float rs_vz, char rs_flag) noexcept {
 			id = rs_id;
 			x = rs_x;
 			y = rs_y;
 			z = rs_z;
+			vx = rs_vx;
+			vy = rs_vy;
+			vz = rs_vz;
+			flag = rs_flag;
 		}
 
 		entity::ID id;
 		float x;
 		float y;
 		float z;
+		float vx;
+		float vy;
+		float vz;
+		char flag;
 	};
 
-	struct SCNewEntity : SCPosition {
+	struct SCNewEntity : Base {
 		SCNewEntity(entity::ID id, float x, float y, float z, entity::Type et) noexcept
-			: SCPosition{ id, x, y, z }, entity_type{ et } {
-			type = Type::kSCNewEntity;
-			size = GetPacketSize<decltype(*this)>();
-		}
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCNewEntity }
+			, id{ id }, x{ x }, y{ y }, z{ z }, entity_type { et } {}
 		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, entity::Type rs_et) noexcept {
 			id = rs_id;
 			x = rs_x;
@@ -98,6 +106,10 @@ namespace packet {
 			z = rs_z;
 			entity_type = rs_et;
 		}
+		entity::ID id;
+		float x;
+		float y;
+		float z;
 		entity::Type entity_type;
 	};
 
@@ -152,13 +164,18 @@ namespace packet {
 
 	struct CSPosition : Base {
 		CSPosition(const char* byte) noexcept
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }, x{}, y{}, z{} {
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }
+			, x{}, y{}, z{}, vx{}, vy{}, vz{}, flag{} {
 			Deserialize(this, byte);
 		}
 
 		float x;
 		float y;
 		float z;
+		float vx;
+		float vy;
+		float vz;
+		char flag;
 	};
 
 #pragma pack(pop)
