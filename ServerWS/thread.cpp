@@ -5,7 +5,7 @@
 
 int thread::GetNumWorker() noexcept
 {
-	return static_cast<int>(std::thread::hardware_concurrency());
+	return static_cast<int>(std::thread::hardware_concurrency()) * 2;
 }
 
 int thread::ID(int id_to_register) noexcept

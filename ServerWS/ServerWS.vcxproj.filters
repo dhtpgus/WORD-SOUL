@@ -84,6 +84,9 @@
     <ClCompile Include="world_map.cpp">
       <Filter>소스 파일\coord</Filter>
     </ClCompile>
+    <ClCompile Include="lf_child_node.cpp">
+      <Filter>소스 파일\thread</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="session.h">
@@ -166,6 +169,15 @@
     </ClInclude>
     <ClInclude Include="a_star.h">
       <Filter>헤더 파일\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="lf_base15_tree.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="lf_child_node.h">
+      <Filter>헤더 파일\thread\lf</Filter>
+    </ClInclude>
+    <ClInclude Include="timer_thread.h">
+      <Filter>헤더 파일\thread</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

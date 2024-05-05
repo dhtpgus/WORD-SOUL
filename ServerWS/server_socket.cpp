@@ -2,6 +2,7 @@
 #include "free_list.h"
 #include "debug.h"
 #include "timer.h"
+#include "monster.h"
 
 namespace server {
 	Socket sock;
@@ -104,6 +105,8 @@ namespace server {
 		packet::Type type = *(packet::Type*)(buf.GetData() + 1);
 		n_bytes -= sizeof(size) + sizeof(type) + size;
 
+		auto& session = (*sessions_)[session_id];
+
 		switch (type) {
 		case packet::Type::kTest: {
 			packet::Test p{ buf.GetData() };
@@ -117,12 +120,13 @@ namespace server {
 					std::print("(ID: {}) has joined Party: {}.\n", session_id, p.id);
 				}
 
-				(*sessions_)[session_id].Push<packet::SCResult>(true);
-				(*sessions_)[session_id].SetPartyID(p.id);
+				session.Push<packet::SCResult>(true);
+				session.SetPartyID(p.id);
+
 				auto partner_id = parties_[p.id].GetPartnerID(session_id);
 
 				if ((*sessions_).TryAccess(partner_id)) {
-					auto& pos = (*sessions_)[session_id].GetPlayer().GetPostion();
+					auto& pos = session.GetPlayer().GetPostion();
 					(*sessions_)[partner_id].Push<packet::SCNewEntity>(
 						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
 					(*sessions_).EndAccess(partner_id);
@@ -140,8 +144,8 @@ namespace server {
 				std::print("(ID: {}) (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
 			}
 			
-			(*sessions_)[session_id].GetPlayer().SetPosition(p.x, p.y, p.z);
-			auto party_id{ (*sessions_)[session_id].GetPartyID() };
+			session.GetPlayer().SetPosition(p.x, p.y, p.z);
+			auto party_id{ session.GetPartyID() };
 			auto partner_id = parties_[party_id].GetPartnerID(session_id);
 
 			if ((*sessions_).TryAccess(partner_id)) {
@@ -151,7 +155,7 @@ namespace server {
 			break;
 		}
 		case packet::Type::kCSLeaveParty: {
-			auto party_id = (*sessions_)[session_id].GetPartyID();
+			auto party_id = session.GetPartyID();
 			if (party_id < 0 or party_id >= parties_.size()) {
 				break;
 			}
@@ -160,6 +164,7 @@ namespace server {
 		}
 		default: {
 			std::print("[Error] Unknown Packet: {}\n", static_cast<int>(type));
+			system("pause");
 			exit(1);
 		}
 		}

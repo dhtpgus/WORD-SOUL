@@ -137,6 +137,7 @@
     <ClCompile Include="moster.cpp" />
     <ClCompile Include="packet.cpp" />
     <ClCompile Include="random_number_generator.cpp" />
+    <ClCompile Include="lf_child_node.cpp" />
     <ClCompile Include="world_map.cpp" />
     <ClCompile Include="server_socket.cpp" />
     <ClCompile Include="thread.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="coord.h" />
     <ClInclude Include="free_list.h" />
     <ClInclude Include="fsm.h" />
+    <ClInclude Include="lf_base15_tree.h" />
     <ClInclude Include="over_ex.h" />
     <ClInclude Include="session.h" />
     <ClInclude Include="debug.h" />
@@ -165,9 +167,11 @@
     <ClInclude Include="random_number_generator.h" />
     <ClInclude Include="party.h" />
     <ClInclude Include="server_socket.h" />
+    <ClInclude Include="lf_child_node.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="region.h" />
+    <ClInclude Include="timer_thread.h" />
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>

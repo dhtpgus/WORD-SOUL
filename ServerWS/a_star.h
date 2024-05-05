@@ -44,7 +44,7 @@ namespace a_star {
 		auto F() const noexcept { return H() + G(); }
 
 		bool operator<(const State& rhs) const noexcept {
-			return F() < rhs.F();
+			return F() > rhs.F();
 		}
 		auto& GetPosition() const noexcept {
 			return cur_;
@@ -77,7 +77,11 @@ namespace a_star {
 		for (int i = 0; i < kMaxTries; ++i) {
 			next_states.clear();
 
+			if (open_queue.empty()) {
+				return cur;
+			}
 			const State& state = open_queue.top();
+			open_queue.pop();
 
 			if (true == state.Check()) {
 				return Position{ cur.x + cosf(state.GetDir()) * time * speed,

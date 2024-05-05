@@ -15,6 +15,7 @@ namespace entity {
 			: Base{ id, x, y, z, hp }, state_{ fsm::State::kAIDisabled }, target_pos_{} {}
 		void Decide(const Position& p1_pos, const Position& p2_pos) noexcept;
 		void Act(float time) noexcept;
+		auto GetState() const noexcept { return state_; }
 	private:
 		void Move(float time) noexcept;
 		void Attack() noexcept;
@@ -24,7 +25,8 @@ namespace entity {
 		constexpr static auto kAttackRangeSq = kAttackRange * kAttackRange;
 		constexpr static auto kAIActivationRange = 3000.0f;
 		constexpr static auto kAIActivationRangeSq = kAIActivationRange * kAIActivationRange;
-		constexpr static auto kSpeed = 300.0f;
+		constexpr static auto kWanderSpeed = 300.0f;
+		constexpr static auto kChaseSpeed = 150.0f;
 		fsm::State state_;
 		Position target_pos_;
 	};

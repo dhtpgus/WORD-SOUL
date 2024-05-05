@@ -1,3 +1,4 @@
+#include <print>
 #include "monster.h"
 #include "random_number_generator.h"
 #include "world_map.h"
@@ -52,6 +53,8 @@ namespace entity {
 
 	void Monster::Move(float time) noexcept
 	{
+		const float kSpeed{ (fsm::State::kChase == state_) ? kChaseSpeed, kWanderSpeed };
+
 		auto new_pos = a_star::GetNextPosition(GetPostion(), target_pos_, time, kSpeed);
 		SetPosition(new_pos.x, new_pos.y, new_pos.z);
 	}
