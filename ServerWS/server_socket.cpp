@@ -20,7 +20,7 @@ namespace server {
 		if (sessions_->TryAccess(session_id)) {
 			(*sessions_)[session_id].Receive();
 			(*sessions_)[session_id].Push<packet::SCNewEntity>(
-				entity::kAvatarID, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer);
+				entity::kAvatarID, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer, 0);
 			sessions_->EndAccess(session_id);
 		}
 	}
@@ -42,12 +42,17 @@ namespace server {
 		const DWORD kDelay = debug::DisplaysMSG() ? 10UL : 0UL;
 
 		while (true) {
+			key = std::numeric_limits<decltype(key)>::max();
 			retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
 				reinterpret_cast<LPOVERLAPPED*>(&ox), kDelay);
 
 			int id = static_cast<int>(key);
 
 			if (0 == retval) {
+				if (sessions_->TryAccess(id)) {
+					Disconnect(id);
+					sessions_->EndAccess(id);
+				}
 			}
 			else if (ox->op == Operation::kSend) {
 				free_list<OverEx>.Collect(ox);
@@ -119,7 +124,7 @@ namespace server {
 				if ((*sessions_).TryAccess(partner_id)) {
 					auto& pos = (*sessions_)[session_id].GetPlayer().GetPostion();
 					(*sessions_)[partner_id].Push<packet::SCNewEntity>(
-						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer);
+						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
 					(*sessions_).EndAccess(partner_id);
 				}
 			}

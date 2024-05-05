@@ -43,6 +43,7 @@ public:
 private:
 	static constexpr int kRecvPoint{ kBufferSize };
 	std::array<char, kBufferSize * 2> buf_{};
+
 	int cursor_{ kRecvPoint };
 };
 

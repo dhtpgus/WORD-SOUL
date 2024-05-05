@@ -69,18 +69,18 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
 			, id{}, x{}, y{}, z{}, v{}, flag{} {}
 
-		SCPosition(entity::ID id, float x, float y, float z, float v, char flag) noexcept
+		SCPosition(entity::ID id, float x, float y, float z, float v, int flag) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
-			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, flag{ flag } {}
+			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, flag{ static_cast<char>(flag) } {}
 
 		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z,
-			float rs_v, char rs_flag) noexcept {
+			float rs_v, int rs_flag) noexcept {
 			id = rs_id;
 			x = rs_x;
 			y = rs_y;
 			z = rs_z;
 			v = rs_v;
-			flag = rs_flag;
+			flag = static_cast<char>(rs_flag);
 		}
 
 		entity::ID id;
@@ -92,35 +92,39 @@ namespace packet {
 	};
 
 	struct SCNewEntity : Base {
-		SCNewEntity(entity::ID id, float x, float y, float z, entity::Type et) noexcept
+		SCNewEntity(entity::ID id, float x, float y, float z, entity::Type et, int flag) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCNewEntity }
-			, id{ id }, x{ x }, y{ y }, z{ z }, entity_type { et } {}
-		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, entity::Type rs_et) noexcept {
+			, id{ id }, x{ x }, y{ y }, z{ z }, entity_type{ et }, flag{ static_cast<char>(flag) } {}
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, entity::Type rs_et, int rs_flag) noexcept {
 			id = rs_id;
 			x = rs_x;
 			y = rs_y;
 			z = rs_z;
 			entity_type = rs_et;
+			flag = static_cast<char>(rs_flag);
 		}
 		entity::ID id;
 		float x;
 		float y;
 		float z;
 		entity::Type entity_type;
+		char flag;
 	};
 
 	struct SCRemoveEntity : Base {
 		SCRemoveEntity() noexcept : Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity },
-			id{} {}
+			id{}, flag{} {}
 
-		SCRemoveEntity(entity::ID id) noexcept
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity }, id{ id } {}
+		SCRemoveEntity(entity::ID id, int flag) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCRemoveEntity }, id{ id }, flag{ static_cast<char>(flag) } {}
 
-		void Reset(entity::ID rs_id) noexcept {
+		void Reset(entity::ID rs_id, int rs_flag) noexcept {
 			id = rs_id;
+			flag = static_cast<char>(rs_flag);
 		}
 
 		entity::ID id;
+		char flag;
 	};
 
 	struct SCResult : Base {

@@ -112,6 +112,6 @@ namespace client {
 		int id_;
 		int party_id_;
 		entity::Player player_;
-		lf::RelaxedQueue<packet::Base, 2e-5> rq_;
+		lf::RelaxedQueue<packet::Base, 1e-4> rq_;
 	};
 }

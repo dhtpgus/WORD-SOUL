@@ -57,7 +57,7 @@ namespace server {
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
 			if (sessions_->TryAccess(partner_id)) {
-				(*sessions_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID);
+				(*sessions_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID, 0);
 				sessions_->EndAccess(partner_id);
 			}
 			sessions_->ReserveDelete(id);

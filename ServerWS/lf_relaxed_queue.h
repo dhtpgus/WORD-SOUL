@@ -147,7 +147,7 @@ namespace lf {
 		Node* volatile tail;
 	};
 
-	template<class T, const double kCutline>
+	template<class T, const double kTimeTolerance>
 	class RelaxedQueue {
 	public:
 		RelaxedQueue() = delete;
@@ -180,7 +180,7 @@ namespace lf {
 			auto duration_gap = e->duration - duration;
 
 			if (registrant != thread::ID() and queues_[thread::ID()].GetTailLevel() < top_level
-				and duration_gap > 0 and duration_gap < kCutline * 1e9) {
+				and duration_gap > 0 and duration_gap < kTimeTolerance * 1e9) {
 				queues_[thread::ID()].Push(e, queues_[num_thread_]);
 			}
 			else if (false == queues_[num_thread_].TryPush(e, top_level + 1)) {

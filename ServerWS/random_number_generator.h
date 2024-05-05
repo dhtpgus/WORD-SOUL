@@ -8,6 +8,7 @@
 #include <random>
 #include <memory>
 #undef max
+#undef min
 
 class RandomNumberGenerator {
 public:
