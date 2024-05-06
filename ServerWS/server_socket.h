@@ -11,13 +11,13 @@
 #include "accepter.h"
 #include "packet.h"
 #include "party.h"
+#include "timer_thread.h"
 
 namespace server {
 	class Socket {
 	public:
 		Socket() noexcept : threads_{}, accepter_{},
-			sessions_{ std::make_shared<SessionArray>(GetMaxClients(), thread::GetNumWorker()) },
-			parties_(GetMaxClients() / 2) {
+			sessions_{ std::make_shared<SessionArray>(client::GetMaxClients(), thread::kNumWorkers) } {
 			WSAData wsadata;
 			if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
 				exit(1);
@@ -31,10 +31,6 @@ namespace server {
 
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 			accepter_->LinkIOCP(iocp_);
-
-			for (Party& party : parties_) {
-				party.InitEntityManager(100, thread::GetNumWorker());
-			}
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -53,7 +49,7 @@ namespace server {
 		}
 
 		void Disconnect(int id) noexcept {
-			auto& party = parties_[(*sessions_)[id].GetPartyID()];
+			auto& party = parties[(*sessions_)[id].GetPartyID()];
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
 			if (sessions_->TryAccess(partner_id)) {
@@ -62,36 +58,13 @@ namespace server {
 			}
 			sessions_->ReserveDelete(id);
 		}
-
-		int GetMaxClients() const noexcept {
-			static int max_clients;
-			static bool has_read_file;
-			if (has_read_file) {
-				return max_clients;
-			}
-
-			std::string file_name{ "max_clients.txt" };
-			std::ifstream in{ std::format("data/{}", file_name) };
-			if (not in) {
-				in.open(std::format("../../data/{}", file_name));
-				if (not in) {
-					std::print("[Error] Cannot Open file: data/{}\n", file_name);
-					exit(1);
-				}
-			}
-
-			in >> max_clients;
-			has_read_file = true;
-
-			return max_clients;
-		}
 	private:
-		using SessionArray = lf::Array<client::Session>;
 		void CreateThread() noexcept {
-			threads_.reserve(thread::GetNumWorker() + 1);
-			for (int i = 0; i < thread::GetNumWorker(); ++i) {
+			threads_.reserve(thread::kNumWorkers + 1);
+			for (int i = 0; i < thread::kNumWorkers; ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
 			};
+			threads_.emplace_back(TimerThread);
 
 			for (std::thread& th : threads_) {
 				th.join();
@@ -102,7 +75,7 @@ namespace server {
 		void ProcessAccept() noexcept;
 		void Send() noexcept {
 			//int cnt{};
-			for (int i = thread::ID(); i < GetMaxClients(); i += thread::GetNumWorker()) {
+			for (int i = thread::ID(); i < client::GetMaxClients(); i += thread::kNumWorkers) {
 				if (sessions_->TryAccess(i)) {
 					if (false == (*sessions_)[i].Send()) {
 						Disconnect(i);
@@ -118,12 +91,12 @@ namespace server {
 		static constexpr unsigned short kPort{ 21155 };
 		static constexpr auto kTransferFrequency{ 1.0 / 55555 };
 
+		using SessionArray = lf::Array<client::Session>;
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		HANDLE iocp_;
 		std::shared_ptr<Accepter> accepter_;
 		std::shared_ptr<SessionArray> sessions_;
-		std::vector<Party> parties_;
 	};
 
 	extern Socket sock;

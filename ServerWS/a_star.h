@@ -32,7 +32,7 @@ namespace a_star {
 				
 				if (WorldMap::kOutOfBounds != world_map.FindRegion(Position{ next_x, next_y, 0.0f })) {
 					next.emplace_back(depth_ + 1, dir_, next_x, next_y, dst_.x, dst_.y, distance_);
-					if (next.back().dir_ == -1.0f) {
+					if (next.back().dir_ == kDirUndefined) {
 						next.back().dir_ = kPi * 2 * i / kNumExpand;
 					}
 				}
@@ -46,17 +46,21 @@ namespace a_star {
 		bool operator<(const State& rhs) const noexcept {
 			return F() > rhs.F();
 		}
+
 		auto& GetPosition() const noexcept {
 			return cur_;
 		}
+
 		float GetDir() const noexcept {
 			return dir_;
 		}
+
 		bool Check() const noexcept {
 			return H() < 1.0f;
 		}
 
 		static constexpr size_t kNumExpand{ 40 };
+		static constexpr float kDirUndefined{ -1.0f };
 	private:
 		int depth_;
 		float dir_;
@@ -70,7 +74,7 @@ namespace a_star {
 		constexpr auto kMaxTries{ 50 };
 
 		StatePQ open_queue;
-		open_queue.emplace(0, -1.0f, cur.x, cur.y, trg.x, trg.y, time * speed);
+		open_queue.emplace(0, State::kDirUndefined, cur.x, cur.y, trg.x, trg.y, time * speed);
 		StateVector next_states;
 		next_states.reserve(State::kNumExpand);
 

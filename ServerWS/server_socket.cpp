@@ -95,14 +95,15 @@ namespace server {
 	void Socket::ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept
 	{
 		//std::print("{}: {}\n", thread::ID(), n_bytes);
-		packet::Size size = *(packet::Size*)(buf.GetData());
+
+		auto size = buf.GetPacketSize();
 		if (n_bytes < sizeof(size) + sizeof(packet::Type) + size) {
 			buf.SaveRemains(n_bytes);
 			n_bytes = 0;
 			return;
 		}
 
-		packet::Type type = *(packet::Type*)(buf.GetData() + 1);
+		auto type = buf.GetPacketType();
 		n_bytes -= sizeof(size) + sizeof(type) + size;
 
 		auto& session = (*sessions_)[session_id];
@@ -115,7 +116,7 @@ namespace server {
 		}
 		case packet::Type::kCSJoinParty: {
 			packet::CSJoinParty p{ buf.GetData() };
-			if (parties_[p.id].TryEnter(session_id)) {
+			if (parties[p.id].TryEnter(session_id)) {
 				if (debug::DisplaysMSG()) {
 					std::print("(ID: {}) has joined Party: {}.\n", session_id, p.id);
 				}
@@ -123,7 +124,7 @@ namespace server {
 				session.Push<packet::SCResult>(true);
 				session.SetPartyID(p.id);
 
-				auto partner_id = parties_[p.id].GetPartnerID(session_id);
+				auto partner_id = parties[p.id].GetPartnerID(session_id);
 
 				if ((*sessions_).TryAccess(partner_id)) {
 					auto& pos = session.GetPlayer().GetPostion();
@@ -133,7 +134,7 @@ namespace server {
 				}
 			}
 			else {
-				(*sessions_)[session_id].Push<packet::SCResult>(false);
+				session.Push<packet::SCResult>(false);
 			}
 			break;
 		}
@@ -146,8 +147,8 @@ namespace server {
 			
 			session.GetPlayer().SetPosition(p.x, p.y, p.z);
 			auto party_id{ session.GetPartyID() };
-			auto partner_id = parties_[party_id].GetPartnerID(session_id);
-
+			auto partner_id = parties[party_id].GetPartnerID(session_id);
+			
 			if ((*sessions_).TryAccess(partner_id)) {
 				(*sessions_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.flag);
 				(*sessions_).EndAccess(partner_id);
@@ -156,10 +157,10 @@ namespace server {
 		}
 		case packet::Type::kCSLeaveParty: {
 			auto party_id = session.GetPartyID();
-			if (party_id < 0 or party_id >= parties_.size()) {
+			if (party_id < 0 or party_id >= parties.size()) {
 				break;
 			}
-			parties_[party_id].Exit(session_id);
+			parties[party_id].Exit(session_id);
 			break;
 		}
 		default: {

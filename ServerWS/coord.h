@@ -43,6 +43,11 @@ inline float GetDistanceSq(const Position& a, const Position& b)
 	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z);
 }
 
+inline float GetDistance2DSq(const Position& a, const Position& b)
+{
+	return (a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y);
+}
+
 inline bool IsInRectGrid(const Position& p, const Position& center, float w, float h)
 {
 	w *= Position::kUnitLength;

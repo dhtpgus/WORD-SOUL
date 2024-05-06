@@ -20,7 +20,7 @@ namespace client {
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, wsabuf_recv_{}, player_{},
-			rq_{ thread::GetNumWorker() }, wsabuf_send_{} {
+			rq_{ thread::kNumWorkers }, wsabuf_send_{} {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			wsabuf_send_[0].buf = reinterpret_cast<char*>(free_list<packet::SCCheckConnection>.Get());
@@ -103,6 +103,7 @@ namespace client {
 		int GetPartyID() const noexcept { return party_id_; }
 		void SetPartyID(int id) noexcept { party_id_ = id; }
 		auto& GetPlayer() noexcept { return player_; }
+
 	private:
 		OVERLAPPED overlapped_;
 		SOCKET sock_;
@@ -114,4 +115,29 @@ namespace client {
 		entity::Player player_;
 		lf::RelaxedQueue<packet::Base, 1e-4> rq_;
 	};
+
+	inline int GetMaxClients() noexcept {
+		static int max_clients;
+		static bool has_read_file;
+		if (has_read_file) {
+			return max_clients;
+		}
+
+		std::string file_name{ "max_clients.txt" };
+		std::ifstream in{ std::format("data/{}", file_name) };
+		if (not in) {
+			in.open(std::format("../../data/{}", file_name));
+			if (not in) {
+				std::print("[Error] Cannot Open file: data/{}\n", file_name);
+				exit(1);
+			}
+		}
+
+		in >> max_clients;
+		has_read_file = true;
+
+		std::print("[Info] Max Clients: {}\n", max_clients);
+
+		return max_clients;
+	}
 }

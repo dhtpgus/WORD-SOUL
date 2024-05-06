@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <array>
+#include <vector>
 #include <tuple>
 #include "lf_array.h"
 #include "entity_manager.h"
@@ -8,10 +9,8 @@
 class Party {
 public:
 	using ID = unsigned short;
-	Party() noexcept : num_player_{}, player_ids_{ kEmpty, kEmpty }, entities_{} {}
-	void InitEntityManager(int entity_num, int thread_num) {
-		entities_ = std::make_shared<entity::Manager>(entity_num, thread_num);
-	}
+
+	Party() noexcept : num_player_{}, player_ids_{ kEmpty, kEmpty } {}
 	bool TryEnter(ID id) noexcept {
 		if (num_player_ >= kMaxPlayer) {
 			return false;
@@ -19,6 +18,7 @@ public:
 		for (int i = 0; i < kMaxPlayer; ++i) {
 			if (CAS(&player_ids_[i], kEmpty, id)) {
 				num_player_ += 1;
+				
 				return true;
 			}
 		}
@@ -53,5 +53,6 @@ private:
 	static constexpr ID kMaxPlayer{ 2 };
 	std::array<volatile ID, kMaxPlayer> player_ids_;
 	std::atomic_uchar num_player_;
-	std::shared_ptr<entity::Manager> entities_;
 };
+
+inline std::vector<Party> parties(client::GetMaxClients() / 2);
