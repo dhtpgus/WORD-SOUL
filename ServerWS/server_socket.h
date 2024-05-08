@@ -31,6 +31,8 @@ namespace server {
 
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 			accepter_->LinkIOCP(iocp_);
+
+			for (int i = 0; i < parties.size(); ++i) parties[i].SetID(i);
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -87,9 +89,10 @@ namespace server {
 			//if (rng.Rand(0, 2000) == 2) std::print("{}: {}\n", thread::ID(), cnt);
 		}
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
+		void RunAI(float time) noexcept;
 
 		static constexpr unsigned short kPort{ 21155 };
-		static constexpr auto kTransferFrequency{ 1.0 / 55555 };
+		static constexpr auto kTransferFrequency{ 1.0 / 5555555 };
 
 		using SessionArray = lf::Array<client::Session>;
 		std::vector<std::thread> threads_;

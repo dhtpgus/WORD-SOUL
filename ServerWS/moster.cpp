@@ -30,6 +30,8 @@ namespace entity {
 		else {
 			state_ = fsm::State::kAIDisabled;
 		}
+
+		//std::print("_{}, state: {}\n", GetID(), (int)state_);
 	}
 
 	void Monster::Act(float time) noexcept

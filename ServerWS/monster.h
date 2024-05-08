@@ -13,7 +13,7 @@ namespace entity {
 	public:
 		Monster(ID id, float x, float y, float z, short hp) noexcept
 			: Base{ id, x, y, z, hp }, state_{ fsm::State::kAIDisabled }, target_pos_{} {
-			SetType(Type::kPlayer);
+			SetType(Type::kMonster);
 		}
 		void Decide(const Position& p1_pos, const Position& p2_pos) noexcept;
 		void Act(float time) noexcept;

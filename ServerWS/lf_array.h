@@ -71,6 +71,9 @@ namespace lf {
 		T& operator[](ID index) noexcept {
 			return *elements_[index].data;
 		}
+		T& Get(ID index) noexcept {
+			return *elements_[index].data;
+		}
 		bool TryAccess(ID index) noexcept {
 			if ((not IsIDValid(index)) or elements_[index].is_deleted) {
 				return false;

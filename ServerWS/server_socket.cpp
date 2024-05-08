@@ -19,9 +19,10 @@ namespace server {
 		}
 
 		if (sessions_->TryAccess(session_id)) {
-			(*sessions_)[session_id].Receive();
-			(*sessions_)[session_id].Push<packet::SCNewEntity>(
-				entity::kAvatarID, 0.0f, 0.0f, 0.0f, entity::Type::kPlayer, 0);
+			auto& session = (*sessions_)[session_id];
+			session.Receive();
+			session.Push<packet::SCNewEntity>(entity::kAvatarID, 80.0f, 500.0f, 0.0f, entity::Type::kPlayer, 0);
+			session.GetPlayer().SetPosition(80.0f, 500.0f, 0.0f);
 			sessions_->EndAccess(session_id);
 		}
 	}
@@ -43,7 +44,7 @@ namespace server {
 		const DWORD kDelay = debug::DisplaysMSG() ? 10UL : 0UL;
 
 		while (true) {
-			key = std::numeric_limits<decltype(key)>::max();
+			key = 0xFFFF'FFFF'FFFF'FFFF;
 			retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
 				reinterpret_cast<LPOVERLAPPED*>(&ox), kDelay);
 
@@ -82,6 +83,8 @@ namespace server {
 
 			duration = timer.GetDuration();
 			ac_duration += duration;
+
+			RunAI(ac_duration);
 
 			if (ac_duration >= kTransferFrequency) {
 				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
@@ -125,7 +128,7 @@ namespace server {
 				session.SetPartyID(p.id);
 
 				auto partner_id = parties[p.id].GetPartnerID(session_id);
-
+				
 				if ((*sessions_).TryAccess(partner_id)) {
 					auto& pos = session.GetPlayer().GetPostion();
 					(*sessions_)[partner_id].Push<packet::SCNewEntity>(
@@ -149,9 +152,9 @@ namespace server {
 			auto party_id{ session.GetPartyID() };
 			auto partner_id = parties[party_id].GetPartnerID(session_id);
 			
-			if ((*sessions_).TryAccess(partner_id)) {
+			if (sessions_->TryAccess(partner_id)) {
 				(*sessions_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.flag);
-				(*sessions_).EndAccess(partner_id);
+				sessions_->EndAccess(partner_id);
 			}
 			break;
 		}
@@ -177,4 +180,54 @@ namespace server {
 			buf.MoveCursor(sizeof(size) + sizeof(type) + size);
 		}
 	}
+
+	void Socket::RunAI(float time) noexcept
+	{
+		for (int i = thread::ID(); i < parties.size(); i += thread::kNumWorkers) {
+			if (not parties[i].IsAssembled()) {
+				continue;
+			}
+			auto members{ parties[i].GetPartyMembers() };
+			auto p1 = members[0];
+			auto p2 = members[1];
+			const Position* pos_p1{};
+			const Position* pos_p2{};
+			if (sessions_->TryAccess(p1)) {
+				pos_p1 = &(*sessions_)[p1].GetPlayer().GetPostion();
+				sessions_->EndAccess(p1);
+			}
+			else {
+				continue;
+			}
+			if (sessions_->TryAccess(p2)) {
+				pos_p2 = &(*sessions_)[p2].GetPlayer().GetPostion();
+				sessions_->EndAccess(p2);
+			}
+			else {
+				continue;
+			}
+			/*std::print("1: {} {}\n", pos_p1->x, pos_p1->y);
+			std::print("2: {} {}\n", pos_p2->x, pos_p2->y);*/
+			entity::managers[i].Update(*pos_p1, *pos_p2, time);
+
+			for (int j = 0; j < entity::kMaxEntities; ++j) {
+				if (entity::managers[i].TryAccess(j)) {
+					auto& en = entity::managers[i][j];
+					auto& en_pos = en.GetPostion();
+
+					for (auto mem : members) {
+						if (sessions_->TryAccess(mem)) {
+							(*sessions_)[mem].Push<packet::SCPosition>(
+								en.GetID(), en_pos.x, en_pos.y, en_pos.z, 150.0f, 0);
+							/*std::print("{}: {} {} {}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z);*/
+							sessions_->EndAccess(mem);
+						}
+					}
+
+					entity::managers[i].EndAccess(j);
+				}
+			}
+		}
+	}
 }
+
