@@ -15,26 +15,20 @@ namespace lf {
 		volatile unsigned char bytes[16];
 	};
 
-	struct Base15Tree {
+	class Base15Tree {
+	public:
 		using RefCntVector = std::vector<std::atomic_ullong*>;
 
-		// 8의 (layer + 1)승 개만큼의 원소 보유 가능
+		// 15의 (layer + 1)승 개만큼의 원소 보유 가능
 		Base15Tree(int layer) {
+			if (layer > 4) {
+				std::print("[Error] The layer value must be at most 4.\n");
+			}
 			for (auto& i : state) {
 				i = State::kEmpty;
 			}
 			memset(const_cast<unsigned char*>(data.bytes), 0, 16);
 			data.bytes[15] = layer;
-		}
-
-		size_t GetQWord(int diff) const {
-			return *reinterpret_cast<const volatile size_t*>(data.bytes + diff);
-		}
-
-		bool CASChunk(int diff, size_t expected, size_t desired) {
-			return std::atomic_compare_exchange_strong(
-				reinterpret_cast<volatile std::atomic_ullong*>(data.bytes + diff),
-				&expected, desired);
 		}
 
 		bool Insert(int v) {
@@ -45,6 +39,53 @@ namespace lf {
 			return result;
 		}
 
+		bool Remove(int v) {
+			bool result{};
+			RefCntVector ref_cnts;
+			ref_cnts.reserve(GetLayer());
+			Remove(v, result, ref_cnts);
+			return result;
+		}
+
+		bool Contains(int v) {
+			if (not IsLeaf()) {
+				auto child = children[v % kChunkSize].TryAccess();
+				if (nullptr == child) {
+					return false;
+				}
+
+				auto r = child->Contains(v / kChunkSize);
+				children[v % kChunkSize].EndAccess();
+				return r;
+			}
+
+			State local_value = static_cast<State>(state[v].load());
+
+			return local_value == State::kInserted;
+		}
+
+		void GetElements(std::forward_list<int>&);
+		void GetElements(std::vector<int>&);
+		void GetElements(std::unordered_set<int>&);
+
+	private:
+		size_t GetQWord(int diff) const {
+			return *reinterpret_cast<const volatile size_t*>(data.bytes + diff);
+		}
+
+		bool IsLeaf() const {
+			return 0 == GetLayer();
+		}
+
+		char GetLayer() const {
+			return data.bytes[15];
+		}
+
+		bool CASChunk(int diff, size_t expected, size_t desired) {
+			return std::atomic_compare_exchange_strong(
+				reinterpret_cast<volatile std::atomic_ullong*>(data.bytes + diff),
+				&expected, desired);
+		}
 
 		void Insert(int v, bool& result, int original_v, RefCntVector& ref_cnts) {
 			if (not IsLeaf()) {
@@ -62,35 +103,28 @@ namespace lf {
 			if (false == state[v].compare_exchange_strong(expected_state, desired_state)) {
 				return;
 			}
-		retry:
-			auto q = GetQWord(0);
-			int byte{};
+			while (true) {
+				auto q = GetQWord(0);
+				int byte{};
 
-			auto desired = q * 16 + (1ULL + v);
+				auto desired = q * 16 + (1ULL + v);
 
-			if (false == CASChunk(0, q, desired)) {
-				goto retry;
+				if (false == CASChunk(0, q, desired)) {
+					continue; // retry
+				}
+
+				for (auto ref_cnt : ref_cnts) {
+					ref_cnt->fetch_add(ChildNode::kRefCntDiff);
+				}
+
+				state[v] = State::kInserted;
+
+				result = true;
+
+				children[v].v = original_v;
+
+				return;
 			}
-
-			for (auto ref_cnt : ref_cnts) {
-				ref_cnt->fetch_add(ChildNode::kRefCntDiff);
-			}
-
-			state[v] = State::kInserted;
-
-			result = true;
-
-			children[v].v = original_v;
-
-			return;
-		}
-
-		bool Remove(int v) {
-			bool result{};
-			RefCntVector ref_cnts;
-			ref_cnts.reserve(GetLayer());
-			Remove(v, result, ref_cnts);
-			return result;
 		}
 
 		void Remove(int v, bool& result, RefCntVector& ref_cnts) {
@@ -151,35 +185,6 @@ namespace lf {
 				return;
 			}
 		}
-
-		bool Contains(int v) {
-			if (not IsLeaf()) {
-				auto child = children[v % kChunkSize].TryAccess();
-				if (nullptr == child) {
-					return false;
-				}
-
-				auto r = child->Contains(v / kChunkSize);
-				children[v % kChunkSize].EndAccess();
-				return r;
-			}
-
-			State local_value = static_cast<State>(state[v].load());
-
-			return local_value == State::kInserted;
-		}
-
-		bool IsLeaf() const {
-			return 0 == GetLayer();
-		}
-
-		char GetLayer() const {
-			return data.bytes[15];
-		}
-
-		void GetElements(std::forward_list<int>&);
-		void GetElements(std::vector<int>&);
-		void GetElements(std::unordered_set<int>&);
 
 		static constexpr auto kChunkSize{ 15 };
 		Bit128 data;

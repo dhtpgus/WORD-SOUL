@@ -71,7 +71,7 @@ namespace a_star {
 
 	inline Position GetNextPosition(const Position& cur, const Position& trg, float time, float speed) noexcept
 	{
-		constexpr auto kMaxTries{ 50 };
+		constexpr auto kMaxTries{ 40 };
 
 		StatePQ open_queue;
 		open_queue.emplace(0, State::kDirUndefined, cur.x, cur.y, trg.x, trg.y, time * speed);

@@ -2,19 +2,14 @@
 #include <atomic>
 
 namespace lf {
-	struct Base15Tree;
+	class Base15Tree;
 
 	struct ChildNode {
 		ChildNode() = default;
 		~ChildNode();
 
 		auto GetRefCnt(size_t v) const {
-			return static_cast<short>((v & 0xFFFF'0000'0000'0000) >> 48);
-		}
-
-		Base15Tree* GetData() const {
-			auto qword = ref_cnt.load() & 0x0000'FFFF'FFFF'FFFF;
-			return reinterpret_cast<Base15Tree*>(qword);
+			return static_cast<unsigned short>((v & 0xFFFF'0000'0000'0000) >> 48);
 		}
 
 		Base15Tree* GetData(size_t qword) const {
