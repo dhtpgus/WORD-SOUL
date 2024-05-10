@@ -13,6 +13,7 @@
 #include "player.h"
 #include "monster.h"
 #include "boss.h"
+#include "lf_base15_tree.h"
 
 namespace entity {
 	inline constexpr auto kMaxEntities{ 100 };

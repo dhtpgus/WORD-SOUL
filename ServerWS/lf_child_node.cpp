@@ -48,22 +48,11 @@ namespace lf {
 	void ChildNode::EndAccess()
 	{
 		ref_cnt -= kRefCntDiff;
-		//TryDelete();
-	}
-
-	/*void ChildNode::ReserveDelete()
-	{
-		if (not cas_lock.TryLock()) {
-			return;
-		}
-		ref_cnt -= kRefCntDiff;
 		TryDelete();
-	}*/
+	}
 
 	void ChildNode::TryDelete()
 	{
-		/*if (size != 0){
-		}*/
 		void* old_ptr{};
 		size_t local_cnt = ref_cnt;
 		auto local_ref_cnt = GetRefCnt(local_cnt);

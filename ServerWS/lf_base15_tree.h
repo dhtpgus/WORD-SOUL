@@ -5,8 +5,6 @@
 #include <atomic>
 #include "lf_child_node.h"
 
-//inline int dasize;
-
 namespace lf {
 	enum class State : char {
 		kEmpty, kInserting, kInserted, kRemoving,
@@ -19,11 +17,10 @@ namespace lf {
 	struct Base15Tree {
 		using Set = std::unordered_set<int>;
 		//using Set = std::set<int>;
+		using RefCntVector = std::vector<std::atomic_ullong*>;
 
 		// 8의 (layer + 1)승 개만큼의 원소 보유 가능
 		Base15Tree(int layer) {
-			//dasize += sizeof(Base15Tree);
-
 			for (auto& i : state) {
 				i = State::kEmpty;
 			}
@@ -43,29 +40,28 @@ namespace lf {
 
 		bool Insert(int v) {
 			bool result{};
-			Insert(v, result, v, nullptr);
+			RefCntVector ref_cnts;
+			ref_cnts.reserve(GetLayer());
+			Insert(v, result, v, ref_cnts);
 			return result;
 		}
 
-		// 빈 리스트에 원소 삽입 시 true, 아니면 false
-		bool Insert(int v, bool& result, int original_v, std::atomic_ullong* ref_cnt) {
+
+		void Insert(int v, bool& result, int original_v, RefCntVector& ref_cnts) {
 			if (not IsLeaf()) {
 				auto child = children[v % kChunkSize].StartAccess(GetLayer() - 1);
 				auto child_ref_cnt = &children[v % kChunkSize].ref_cnt;
-				if (true == child->Insert(v / kChunkSize, result, original_v, child_ref_cnt)) {
-					v %= kChunkSize;
-					children[v % kChunkSize].EndAccess();
-				}
-				else {
-					children[v % kChunkSize].EndAccess();
-					return false;
-				}
+				ref_cnts.push_back(child_ref_cnt);
+
+				child->Insert(v / kChunkSize, result, original_v, ref_cnts);
+				children[v % kChunkSize].EndAccess();
+				return;
 			}
 
 			auto expected_state = State::kEmpty;
 			auto desired_state = State::kInserting;
 			if (false == state[v].compare_exchange_strong(expected_state, desired_state)) {
-				return false;
+				return;
 			}
 		retry:
 			auto q = GetQWord(0);
@@ -77,7 +73,9 @@ namespace lf {
 				goto retry;
 			}
 
-			if (ref_cnt) ref_cnt->fetch_add(ChildNode::kRefCntDiff);
+			for (auto ref_cnt : ref_cnts) {
+				ref_cnt->fetch_add(ChildNode::kRefCntDiff);
+			}
 
 			state[v] = State::kInserted;
 
@@ -85,39 +83,35 @@ namespace lf {
 
 			children[v].v = original_v;
 
-			return q == 0;
+			return;
 		}
 
 		bool Remove(int v) {
 			bool result{};
-			Remove(v, result, nullptr);
+			RefCntVector ref_cnts;
+			ref_cnts.reserve(GetLayer());
+			Remove(v, result, ref_cnts);
 			return result;
 		}
 
-		// 원소를 삭제했을 때 리스트가 비게 되었다면 true, 아니면 false
-		bool Remove(int v, bool& result, std::atomic_ullong* ref_cnt) {
+
+		void Remove(int v, bool& result, RefCntVector& ref_cnts) {
 			if (not IsLeaf()) {
 				auto child = children[v % kChunkSize].TryAccess();
 				auto child_ref_cnt = &children[v % kChunkSize].ref_cnt;
+				ref_cnts.push_back(child_ref_cnt);
 				if (nullptr == child) {
-					return false;
+					return;
 				}
-				if (true == child->Remove(v / kChunkSize, result, child_ref_cnt)) {
-					v %= kChunkSize;
-					children[v % kChunkSize].EndAccess();
-					children[v % kChunkSize].TryDelete();
-				}
-				else {
-					children[v % kChunkSize].EndAccess();
-					children[v % kChunkSize].TryDelete();
-					return false;
-				}
+				child->Remove(v / kChunkSize, result, ref_cnts);
+				children[v % kChunkSize].EndAccess();
+				return;
 			}
 
 			auto expected_state = State::kInserted;
 			auto desired_state = State::kRemoving;
 			if (false == state[v].compare_exchange_strong(expected_state, desired_state)) {
-				return false;
+				return;
 			}
 		retry:
 			size_t local_bytes = GetQWord(0);
@@ -148,13 +142,15 @@ namespace lf {
 				}
 			}
 
-			if (ref_cnt) ref_cnt->fetch_sub(ChildNode::kRefCntDiff);
+			for (auto ref_cnt : ref_cnts) {
+				ref_cnt->fetch_sub(ChildNode::kRefCntDiff);
+			}
 
 			state[v] = State::kEmpty;
 
 			result = true;
 
-			return byte == 0 and qword / 16 == 0;
+			return;
 		}
 		bool Contains(int v) {
 			if (not IsLeaf()) {
@@ -214,9 +210,9 @@ namespace lf {
 			return data.bytes[15];
 		}
 
-		void GetElements(Set& s) {
+		void GetElements2(Set& s) {
 			auto q = GetQWord(0);
-			
+
 			if (not IsLeaf()) {
 				while (true) {
 					if ((q & 0xF) == 0) {
@@ -224,7 +220,7 @@ namespace lf {
 					}
 					auto child = children[(q & 0xF) - 1].TryAccess();
 					if (nullptr != child) {
-						child->GetElements(s);
+						child->GetElements2(s);
 						children[(q & 0xF) - 1].EndAccess();
 					}
 					q /= 16;
@@ -240,6 +236,28 @@ namespace lf {
 			}
 			return;
 		}
+
+		void GetElements(Set& s) {
+			if (not IsLeaf()) {
+				for (int i = 0; i < kChunkSize; ++i) {
+					auto child = children[i].TryAccess();
+					if (nullptr != child) {
+						child->GetElements(s);
+						children[i].EndAccess();
+					}
+				}
+				return;
+			}
+			auto q = GetQWord(0);
+			while (true) {
+				if ((q & 0xF) == 0) {
+					return;
+				}
+				s.insert(children[(q & 0xF) - 1].v);
+				q /= 16;
+			}
+		}
+
 
 		static constexpr auto kChunkSize{ 15 };
 		Bit128 data;

@@ -1,6 +1,5 @@
 #pragma once
 #include <atomic>
-#include "cas_lock.h"
 
 namespace lf {
 	struct Base15Tree;
