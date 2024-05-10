@@ -1,5 +1,6 @@
+#include <vector>
+#include <forward_list>
 #include <unordered_set>
-#include <set>
 #include <stack>
 #include <print>
 #include <atomic>
@@ -15,8 +16,6 @@ namespace lf {
 	};
 
 	struct Base15Tree {
-		using Set = std::unordered_set<int>;
-		//using Set = std::set<int>;
 		using RefCntVector = std::vector<std::atomic_ullong*>;
 
 		// 8의 (layer + 1)승 개만큼의 원소 보유 가능
@@ -94,7 +93,6 @@ namespace lf {
 			return result;
 		}
 
-
 		void Remove(int v, bool& result, RefCntVector& ref_cnts) {
 			if (not IsLeaf()) {
 				auto child = children[v % kChunkSize].TryAccess();
@@ -113,45 +111,47 @@ namespace lf {
 			if (false == state[v].compare_exchange_strong(expected_state, desired_state)) {
 				return;
 			}
-		retry:
-			size_t local_bytes = GetQWord(0);
+			while (true) {
+				size_t local_bytes = GetQWord(0);
 
-			int byte{ 0 };
-			size_t find = 1ULL + v;
-			for (; byte < 15; ++byte) {
-				if ((local_bytes & 0xF) == find) {
-					break;
+				int byte{ 0 };
+				size_t find = 1ULL + v;
+				for (; byte < 15; ++byte) {
+					if ((local_bytes & 0xF) == find) {
+						break;
+					}
+					local_bytes /= 16;
 				}
-				local_bytes /= 16;
-			}
 
-			auto qword = GetQWord(byte / 2);
-			if (byte % 2 == 0) {
-				if ((qword & 0xF) != find or false == CASChunk(byte / 2, qword, qword / 16)) {
-					goto retry;
+				auto qword = GetQWord(byte / 2);
+				if (byte % 2 == 0) {
+					if ((qword & 0xF) != find or false == CASChunk(byte / 2, qword, qword / 16)) {
+						continue; // retry
+					}
 				}
-			}
-			else {
-				size_t desired = qword;
-				auto c = desired & 0xF;
-				desired /= 16;
-				desired &= 0xFFFF'FFFF'FFFF'FFF0;
-				desired |= c;
-				if ((qword & 0xF0) != find * 16 or false == CASChunk(byte / 2, qword, desired)) {
-					goto retry;
+				else {
+					size_t desired = qword;
+					auto c = desired & 0xF;
+					desired /= 16;
+					desired &= 0xFFFF'FFFF'FFFF'FFF0;
+					desired |= c;
+					if ((qword & 0xF0) != find * 16 or false == CASChunk(byte / 2, qword, desired)) {
+						continue; // retry
+					}
 				}
+
+				for (auto ref_cnt : ref_cnts) {
+					ref_cnt->fetch_sub(ChildNode::kRefCntDiff);
+				}
+
+				state[v] = State::kEmpty;
+
+				result = true;
+
+				return;
 			}
-
-			for (auto ref_cnt : ref_cnts) {
-				ref_cnt->fetch_sub(ChildNode::kRefCntDiff);
-			}
-
-			state[v] = State::kEmpty;
-
-			result = true;
-
-			return;
 		}
+
 		bool Contains(int v) {
 			if (not IsLeaf()) {
 				auto child = children[v % kChunkSize].TryAccess();
@@ -173,91 +173,13 @@ namespace lf {
 			return 0 == GetLayer();
 		}
 
-		int Count() const {
-			auto q = GetQWord(0);
-			int cnt{};
-
-			//std::print("{:x}\n", q);
-
-			if (not IsLeaf()) {
-				while (true) {
-					if ((q & 0xF) == 0) {
-						break;
-					}
-					auto child = reinterpret_cast<Base15Tree*>(children[(q & 0xF) - 1].GetData());
-					cnt += child->Count();
-					q /= 16;
-				}
-				return cnt;
-			}
-			return GetSize(q);
-		}
-
-		int GetSize(size_t q) const {
-			int cnt{ 0 };
-			while (true) {
-				if ((q & 0xF) == 0) {
-					break;
-				}
-				q /= 16;
-				cnt += 1;
-			}
-			//std::print("{} ", cnt);
-			return cnt;
-		};
-
 		char GetLayer() const {
 			return data.bytes[15];
 		}
 
-		void GetElements2(Set& s) {
-			auto q = GetQWord(0);
-
-			if (not IsLeaf()) {
-				while (true) {
-					if ((q & 0xF) == 0) {
-						break;
-					}
-					auto child = children[(q & 0xF) - 1].TryAccess();
-					if (nullptr != child) {
-						child->GetElements2(s);
-						children[(q & 0xF) - 1].EndAccess();
-					}
-					q /= 16;
-				}
-				return;
-			}
-			while (true) {
-				if ((q & 0xF) == 0) {
-					break;
-				}
-				s.insert(children[(q & 0xF) - 1].v);
-				q /= 16;
-			}
-			return;
-		}
-
-		void GetElements(Set& s) {
-			if (not IsLeaf()) {
-				for (int i = 0; i < kChunkSize; ++i) {
-					auto child = children[i].TryAccess();
-					if (nullptr != child) {
-						child->GetElements(s);
-						children[i].EndAccess();
-					}
-				}
-				return;
-			}
-			auto q = GetQWord(0);
-			while (true) {
-				if ((q & 0xF) == 0) {
-					return;
-				}
-				s.insert(children[(q & 0xF) - 1].v);
-				q /= 16;
-			}
-		}
-
+		void GetElements(std::forward_list<int>&);
+		void GetElements(std::vector<int>&);
+		void GetElements(std::unordered_set<int>&);
 
 		static constexpr auto kChunkSize{ 15 };
 		Bit128 data;

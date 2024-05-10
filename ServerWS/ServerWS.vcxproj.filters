@@ -87,6 +87,9 @@
     <ClCompile Include="lf_child_node.cpp">
       <Filter>소스 파일\thread</Filter>
     </ClCompile>
+    <ClCompile Include="lf_base15_tree.cpp">
+      <Filter>소스 파일\thread</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="session.h">
