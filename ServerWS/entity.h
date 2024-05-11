@@ -18,7 +18,7 @@ namespace entity {
 	class Base {
 	public:
 		Base(ID id, float x, float y, float z, short hp) noexcept
-			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{} {}
+			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{}, region_{} {}
 
 		void Reset(ID rs_id, float rs_x, float rs_y, float rs_z, short hp) {
 			id_ = rs_id;
@@ -41,6 +41,10 @@ namespace entity {
 		auto GetType() const noexcept {
 			return type_;
 		}
+
+		char GetFlag() const noexcept;
+		float GetVel() const noexcept;
+		int region_;
 	protected:
 		void SetType(Type t) noexcept {
 			type_ = t;

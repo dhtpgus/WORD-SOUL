@@ -19,6 +19,14 @@ namespace lf {
 	public:
 		using RefCntVector = std::vector<std::atomic_ullong*>;
 
+		Base15Tree() {
+			for (auto& i : state) {
+				i = State::kEmpty;
+			}
+			memset(const_cast<unsigned char*>(data.bytes), 0, 16);
+			data.bytes[15] = 1;
+		}
+
 		// 15의 (layer + 1)승 개만큼의 원소 보유 가능
 		Base15Tree(int layer) {
 			if (layer > 4) {
@@ -106,7 +114,6 @@ namespace lf {
 			while (true) {
 				auto q = GetQWord(0);
 				int byte{};
-
 				auto desired = q * 16 + (1ULL + v);
 
 				if (false == CASChunk(0, q, desired)) {

@@ -135,7 +135,7 @@
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
-    <ClCompile Include="moster.cpp" />
+    <ClCompile Include="monster.cpp" />
     <ClCompile Include="packet.cpp" />
     <ClCompile Include="random_number_generator.cpp" />
     <ClCompile Include="lf_child_node.cpp" />

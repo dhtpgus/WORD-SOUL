@@ -69,8 +69,9 @@ WorldMap::WorldMap() noexcept
 			or IsInCircleGrid(pos, Position{ 6.0f, -6.0f }, 3.0f);
 		}); // 11
 
+	int id{};
 	for (const auto& shape : shapes) {
-		regions_.emplace_back(shape);
+		regions_.emplace_back(shape, id++);
 	}
 
 	regions_[0].AddAdjRegion(&regions_[1]);

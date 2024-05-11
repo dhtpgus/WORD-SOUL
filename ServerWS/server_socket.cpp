@@ -112,12 +112,14 @@ namespace server {
 		auto& session = (*sessions_)[session_id];
 
 		switch (type) {
-		case packet::Type::kTest: {
+		case packet::Type::kTest:
+		{
 			packet::Test p{ buf.GetData() };
 			std::print("(ID: {}) test: {} {} {}, {}\n", p.a, p.b, p.c, n_bytes);
 			break;
 		}
-		case packet::Type::kCSJoinParty: {
+		case packet::Type::kCSJoinParty:
+		{
 			packet::CSJoinParty p{ buf.GetData() };
 			if (parties[p.id].TryEnter(session_id)) {
 				if (debug::DisplaysMSG()) {
@@ -141,7 +143,8 @@ namespace server {
 			}
 			break;
 		}
-		case packet::Type::kCSPosition: {
+		case packet::Type::kCSPosition:
+		{
 			packet::CSPosition p{ buf.GetData() };
 
 			if (debug::DisplaysMSG()) {
@@ -158,7 +161,8 @@ namespace server {
 			}
 			break;
 		}
-		case packet::Type::kCSLeaveParty: {
+		case packet::Type::kCSLeaveParty:
+		{
 			auto party_id = session.GetPartyID();
 			if (party_id < 0 or party_id >= parties.size()) {
 				break;
@@ -166,7 +170,8 @@ namespace server {
 			parties[party_id].Exit(session_id);
 			break;
 		}
-		default: {
+		default:
+		{
 			std::print("[Error] Unknown Packet: {}\n", static_cast<int>(type));
 			system("pause");
 			exit(1);
@@ -188,27 +193,23 @@ namespace server {
 				continue;
 			}
 			auto members{ parties[i].GetPartyMembers() };
-			auto p1 = members[0];
-			auto p2 = members[1];
-			const Position* pos_p1{};
-			const Position* pos_p2{};
-			if (sessions_->TryAccess(p1)) {
-				pos_p1 = &(*sessions_)[p1].GetPlayer().GetPostion();
-				sessions_->EndAccess(p1);
+			const Position* pos[2]{};
+			bool break_flag{};
+			for (int p = 0; p < 2; ++p) {
+				if (sessions_->TryAccess(members[p])) {
+					pos[p] = &(*sessions_)[members[p]].GetPlayer().GetPostion();
+					sessions_->EndAccess(members[p]);
+				}
+				else {
+					break_flag = true;
+					break;
+				}
 			}
-			else {
+			if (true == break_flag) {
 				continue;
 			}
-			if (sessions_->TryAccess(p2)) {
-				pos_p2 = &(*sessions_)[p2].GetPlayer().GetPostion();
-				sessions_->EndAccess(p2);
-			}
-			else {
-				continue;
-			}
-			/*std::print("1: {} {}\n", pos_p1->x, pos_p1->y);
-			std::print("2: {} {}\n", pos_p2->x, pos_p2->y);*/
-			entity::managers[i].Update(*pos_p1, *pos_p2, time);
+
+			entity::managers[i].Update(*pos[0], *pos[1], time);
 
 			for (int j = 0; j < entity::kMaxEntities; ++j) {
 				if (entity::managers[i].TryAccess(j)) {
@@ -218,7 +219,7 @@ namespace server {
 					for (auto mem : members) {
 						if (sessions_->TryAccess(mem)) {
 							(*sessions_)[mem].Push<packet::SCPosition>(
-								en.GetID(), en_pos.x, en_pos.y, en_pos.z, 150.0f, 0);
+								en.GetID(), en_pos.x, en_pos.y, en_pos.z, en.GetVel(), en.GetFlag());
 							/*std::print("{}: {} {} {}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z);*/
 							sessions_->EndAccess(mem);
 						}

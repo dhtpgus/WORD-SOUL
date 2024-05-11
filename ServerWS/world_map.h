@@ -25,8 +25,12 @@ public:
 		}
 		return regions_[r].IsInRegion(p2);
 	}
+	Region& GetRegion(int i) {
+		return regions_[i];
+	}
 
 	static constexpr auto kOutOfBounds{ -1 };
+	static constexpr auto kNumRegions{ 12 };
 private:
 	std::vector<Region> regions_;
 };
