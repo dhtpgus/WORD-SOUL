@@ -13,6 +13,7 @@
 #include "lf_relaxed_queue.h"
 #include "debug.h"
 #include "over_ex.h"
+#include "lua_script.h"
 
 namespace client {
 	class Session {
@@ -118,23 +119,13 @@ namespace client {
 
 	inline int GetMaxClients() noexcept {
 		static int max_clients;
-		static bool has_read_file;
-		if (has_read_file) {
+		static bool has_read;
+		if (has_read) {
 			return max_clients;
 		}
 
-		std::string file_name{ "max_clients.txt" };
-		std::ifstream in{ std::format("data/{}", file_name) };
-		if (not in) {
-			in.open(std::format("../../data/{}", file_name));
-			if (not in) {
-				std::print("[Error] Cannot Open file: data/{}\n", file_name);
-				exit(1);
-			}
-		}
-
-		in >> max_clients;
-		has_read_file = true;
+		max_clients = lua::server_data.GetGlobalVar<int>("max_clients");
+		has_read = true;
 
 		std::print("[Info] Max Clients: {}\n", max_clients);
 

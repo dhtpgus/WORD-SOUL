@@ -52,6 +52,9 @@
     <Filter Include="헤더 파일\coord">
       <UniqueIdentifier>{763719ee-77fd-4f49-8d8b-6a38c4295bbf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="헤더 파일\lua">
+      <UniqueIdentifier>{1c69ba1c-813f-4e80-9729-65088b3dcbfa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -182,6 +185,24 @@
     <ClInclude Include="timer_thread.h">
       <Filter>헤더 파일\thread</Filter>
     </ClInclude>
+    <ClInclude Include="lua_script.h">
+      <Filter>헤더 파일\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\include\lauxlib.h">
+      <Filter>헤더 파일\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\include\lua.h">
+      <Filter>헤더 파일\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\include\lua.hpp">
+      <Filter>헤더 파일\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\include\luaconf.h">
+      <Filter>헤더 파일\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="lua\include\lualib.h">
+      <Filter>헤더 파일\lua</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="data\max_clients.txt">
@@ -190,5 +211,10 @@
     <Text Include="data\displays_msg.txt">
       <Filter>리소스 파일</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="server_settings.lua">
+      <Filter>리소스 파일</Filter>
+    </None>
   </ItemGroup>
 </Project>

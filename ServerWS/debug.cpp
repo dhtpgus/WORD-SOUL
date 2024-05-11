@@ -1,6 +1,7 @@
 #include <print>
 #include <fstream>
 #include "debug.h"
+#include "lua_script.h"
 
 namespace debug {
 #if IS_RELEASE_MODE
@@ -10,24 +11,15 @@ namespace debug {
 #else
 	bool DisplaysMSG() noexcept {
 		static bool displays_msg;
-		static bool has_read_file;
+		static bool has_read;
 
-		if (has_read_file) {
+		if (has_read) {
 			return displays_msg;
 		}
 
-		std::string file_name{ "displays_msg.txt" };
+		displays_msg = static_cast<bool>(lua::server_data.GetGlobalVar<int>("displays_msg"));
 
-		std::ifstream in{ std::format("data/{}", file_name) };
-		if (not in) {
-			in.open(std::format("../../data/{}", file_name));
-			if (not in) {
-				std::print("[Error] Cannot Open file: data/{}\n", file_name);
-				exit(1);
-			}
-		}
-		in >> displays_msg;
-		has_read_file = true;
+		has_read = true;
 
 		return displays_msg;
 	};
