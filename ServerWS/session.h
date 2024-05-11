@@ -124,7 +124,7 @@ namespace client {
 			return max_clients;
 		}
 
-		max_clients = lua::server_data.GetGlobalVar<int>("max_clients");
+		max_clients = lua::server_settings.GetGlobalVar<int>("max_clients");
 		has_read = true;
 
 		std::print("[Info] Max Clients: {}\n", max_clients);

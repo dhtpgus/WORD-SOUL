@@ -17,7 +17,7 @@ namespace debug {
 			return displays_msg;
 		}
 
-		displays_msg = static_cast<bool>(lua::server_data.GetGlobalVar<int>("displays_msg"));
+		displays_msg = lua::server_settings.GetGlobalVar<bool>("displays_msg");
 
 		has_read = true;
 

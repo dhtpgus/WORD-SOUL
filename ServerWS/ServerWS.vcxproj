@@ -184,10 +184,6 @@
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="data\displays_msg.txt" />
-    <Text Include="data\max_clients.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="server_settings.lua" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
