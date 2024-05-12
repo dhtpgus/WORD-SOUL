@@ -10,6 +10,6 @@
 namespace thread {
 	constexpr inline int kUnregisteredID = -1;
 
-	int GetNumWorker() noexcept;
+	inline const int kNumWorkers = static_cast<int>(std::thread::hardware_concurrency()) * 2;
 	int ID(int id_to_register = kUnregisteredID) noexcept;
 }

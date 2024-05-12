@@ -9,11 +9,11 @@
 
 class Timer {
 public:
-	using Duration = double;
+	using Duration = float;
 	Timer() noexcept : time_point_{ Clock::now() } {}
 	Duration GetDuration() noexcept {
 		auto duration = Clock::now() - time_point_;
-		Duration sec = duration_cast<std::chrono::microseconds>(duration).count() / 1e6;
+		Duration sec = duration_cast<std::chrono::microseconds>(duration).count() / 1e6f;
 		ResetTimePoint();
 		return sec;
 	}

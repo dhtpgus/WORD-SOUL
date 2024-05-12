@@ -108,6 +108,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>/NODEFAULTLIB:libcmt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -125,18 +126,21 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>/NODEFAULTLIB:libcmt.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="fsm.cpp" />
+    <ClCompile Include="lf_base15_tree.cpp" />
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
-    <ClCompile Include="moster.cpp" />
+    <ClCompile Include="monster.cpp" />
     <ClCompile Include="packet.cpp" />
     <ClCompile Include="random_number_generator.cpp" />
+    <ClCompile Include="lf_child_node.cpp" />
     <ClCompile Include="world_map.cpp" />
     <ClCompile Include="server_socket.cpp" />
     <ClCompile Include="thread.cpp" />
@@ -150,6 +154,13 @@
     <ClInclude Include="coord.h" />
     <ClInclude Include="free_list.h" />
     <ClInclude Include="fsm.h" />
+    <ClInclude Include="lf_base15_tree.h" />
+    <ClInclude Include="lua\include\lauxlib.h" />
+    <ClInclude Include="lua\include\lua.h" />
+    <ClInclude Include="lua\include\lua.hpp" />
+    <ClInclude Include="lua\include\luaconf.h" />
+    <ClInclude Include="lua\include\lualib.h" />
+    <ClInclude Include="lua_script.h" />
     <ClInclude Include="over_ex.h" />
     <ClInclude Include="session.h" />
     <ClInclude Include="debug.h" />
@@ -165,14 +176,15 @@
     <ClInclude Include="random_number_generator.h" />
     <ClInclude Include="party.h" />
     <ClInclude Include="server_socket.h" />
+    <ClInclude Include="lf_child_node.h" />
     <ClInclude Include="thread.h" />
     <ClInclude Include="timer.h" />
     <ClInclude Include="region.h" />
+    <ClInclude Include="timer_thread.h" />
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="data\displays_msg.txt" />
-    <Text Include="data\max_clients.txt" />
+    <None Include="server_settings.lua" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

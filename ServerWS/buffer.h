@@ -6,6 +6,7 @@
 
 #pragma once
 #include <array>
+#include "packet.h"
 
 inline constexpr size_t kBufferSize{ 512 };
 
@@ -31,6 +32,12 @@ public:
 	void ResetCursor() noexcept {
 		cursor_ = kRecvPoint;
 	}
+	auto GetPacketSize() const noexcept {
+		return *(packet::Size*)(GetData());
+	}
+	auto GetPacketType() const noexcept {
+		return *(packet::Type*)(GetData() + 1);
+	}
 	std::string GetBinary(int size) const noexcept
 	{
 		std::string data;
@@ -43,6 +50,7 @@ public:
 private:
 	static constexpr int kRecvPoint{ kBufferSize };
 	std::array<char, kBufferSize * 2> buf_{};
+
 	int cursor_{ kRecvPoint };
 };
 

@@ -1,3 +1,4 @@
+#include <print>
 #include "monster.h"
 #include "random_number_generator.h"
 #include "world_map.h"
@@ -6,10 +7,10 @@
 namespace entity {
 	void Monster::Decide(const Position& p1_pos, const Position& p2_pos) noexcept
 	{
-		auto distance_sq_p1 = GetDistanceSq(p1_pos, GetPostion());
-		auto distance_sq_p2 = GetDistanceSq(p2_pos, GetPostion());
+		auto distance_sq_p1 = GetDistance2DSq(p1_pos, GetPostion());
+		auto distance_sq_p2 = GetDistance2DSq(p2_pos, GetPostion());
 		int target = distance_sq_p1 > distance_sq_p2 ? 2 : 1;
-		float distance_sq = target == 1 ? distance_sq_p1 : distance_sq_p2;
+		auto distance_sq = target == 1 ? distance_sq_p1 : distance_sq_p2;
 		const float kPi = acosf(-1);
 
 		if (distance_sq < kAttackRangeSq) {
@@ -29,14 +30,14 @@ namespace entity {
 		else {
 			state_ = fsm::State::kAIDisabled;
 		}
+
+		//std::print("_{}, state: {}\n", GetID(), (int)state_);
 	}
 
 	void Monster::Act(float time) noexcept
 	{
 		switch (state_)
 		{
-		case fsm::State::kAIDisabled:
-			break;
 		case fsm::State::kWander:
 			Move(time);
 			break;
@@ -52,6 +53,8 @@ namespace entity {
 
 	void Monster::Move(float time) noexcept
 	{
+		const float kSpeed{ (fsm::State::kChase == state_) ? kChaseSpeed : kWanderSpeed };
+
 		auto new_pos = a_star::GetNextPosition(GetPostion(), target_pos_, time, kSpeed);
 		SetPosition(new_pos.x, new_pos.y, new_pos.z);
 	}

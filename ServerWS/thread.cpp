@@ -3,11 +3,6 @@
 #include "thread.h"
 #include "debug.h"
 
-int thread::GetNumWorker() noexcept
-{
-	return static_cast<int>(std::thread::hardware_concurrency());
-}
-
 int thread::ID(int id_to_register) noexcept
 {
 	static thread_local const int id{ id_to_register };

@@ -9,7 +9,7 @@
 
 namespace entity {
 	enum class Type : unsigned char {
-		kPlayer, kMonster, kBoss
+		kNone, kPlayer, kMonster, kBoss
 	};
 	using ID = unsigned short;
 	constexpr inline ID kPartnerID{ 0xFFFF };
@@ -18,10 +18,12 @@ namespace entity {
 	class Base {
 	public:
 		Base(ID id, float x, float y, float z, short hp) noexcept
-			: id_(id), pos_{ x, y, z }, hp_{ hp } {}
+			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{}, region_{} {}
 
-		void Reset(ID) {
-
+		void Reset(ID rs_id, float rs_x, float rs_y, float rs_z, short hp) {
+			id_ = rs_id;
+			SetPosition(rs_x, rs_y, rs_z);
+			hp_ = hp;
 		}
 
 		void SetPosition(float x, float y, float z) noexcept {
@@ -34,16 +36,23 @@ namespace entity {
 
 		const Position& GetPostion() const noexcept { return pos_; }
 
-		void Reset() noexcept {
+		void Delete() noexcept {}
 
+		auto GetType() const noexcept {
+			return type_;
 		}
 
-		void Delete() noexcept {
-
+		char GetFlag() const noexcept;
+		float GetVel() const noexcept;
+		int region_;
+	protected:
+		void SetType(Type t) noexcept {
+			type_ = t;
 		}
 	private:
 		ID id_;
 		short hp_;
+		Type type_;
 		Position pos_;
 	};
 }
