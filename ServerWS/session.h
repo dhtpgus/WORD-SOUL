@@ -21,7 +21,7 @@ namespace client {
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
 			: overlapped_{}, sock_{ sock }, buf_recv_{}, wsabuf_recv_{}, player_{},
-			rq_{ thread::kNumWorkers }, wsabuf_send_{} {
+			rq_{ thread::GetNumWorkers()}, wsabuf_send_{} {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			wsabuf_send_[0].buf = reinterpret_cast<char*>(free_list<packet::SCCheckConnection>.Get());

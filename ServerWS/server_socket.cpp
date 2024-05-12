@@ -131,11 +131,11 @@ namespace server {
 
 				auto partner_id = parties[p.id].GetPartnerID(session_id);
 				
-				if ((*sessions_).TryAccess(partner_id)) {
+				if (sessions_->TryAccess(partner_id)) {
 					auto& pos = session.GetPlayer().GetPostion();
 					(*sessions_)[partner_id].Push<packet::SCNewEntity>(
 						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
-					(*sessions_).EndAccess(partner_id);
+					sessions_->EndAccess(partner_id);
 				}
 			}
 			else {
@@ -188,13 +188,14 @@ namespace server {
 
 	void Socket::RunAI(float time) noexcept
 	{
-		for (int i = thread::ID(); i < parties.size(); i += thread::kNumWorkers) {
+		for (int i = thread::ID(); i < parties.size(); i += thread::GetNumWorkers()) {
 			if (not parties[i].IsAssembled()) {
 				continue;
 			}
 			auto members{ parties[i].GetPartyMembers() };
 			const Position* pos[2]{};
 			bool break_flag{};
+
 			for (int p = 0; p < 2; ++p) {
 				if (sessions_->TryAccess(members[p])) {
 					pos[p] = &(*sessions_)[members[p]].GetPlayer().GetPostion();
@@ -220,7 +221,7 @@ namespace server {
 						if (sessions_->TryAccess(mem)) {
 							(*sessions_)[mem].Push<packet::SCPosition>(
 								en.GetID(), en_pos.x, en_pos.y, en_pos.z, en.GetVel(), en.GetFlag());
-							/*std::print("{}: {} {} {}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z);*/
+							std::print("{}: {} {} {}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z);
 							sessions_->EndAccess(mem);
 						}
 					}

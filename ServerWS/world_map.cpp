@@ -2,8 +2,6 @@
 #include <print>
 #include "world_map.h"
 
-WorldMap world_map;
-
 WorldMap::WorldMap() noexcept
 {
 	std::vector<Region::ShapeFunc> shapes;

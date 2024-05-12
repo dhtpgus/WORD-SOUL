@@ -9,7 +9,9 @@
 
 namespace debug {
 #if IS_RELEASE_MODE
-	constexpr bool DisplaysMSG() noexcept;
+	inline constexpr bool DisplaysMSG() noexcept {
+		return false;
+	};
 #else
 	bool DisplaysMSG() noexcept;
 #endif

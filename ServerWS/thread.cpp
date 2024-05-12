@@ -1,22 +1,45 @@
 #include <atomic>
 #include <print>
 #include "thread.h"
+#include "lua_script.h"
 #include "debug.h"
 
-int thread::ID(int id_to_register) noexcept
-{
-	static thread_local const int id{ id_to_register };
-	if (debug::DisplaysMSG()) {
-		if (id == kUnregisteredID) {
-			std::print("[Error] Must Register Thread ID First.\n");
-			system("pause");
-			exit(1);
+namespace thread {
+	int GetNumWorkers() noexcept
+	{
+		static int num_workers;
+		static bool has_read;
+
+		if (has_read) {
+			return num_workers;
 		}
-		if (id_to_register != kUnregisteredID and id != id_to_register) {
-			std::print("[Error] Thread already has an ID.\n");
-			system("pause");
-			exit(1);
+
+		num_workers = lua::server_settings.GetGlobalVar<int>("workers");
+		if (num_workers == 0) {
+			num_workers = static_cast<int>(std::thread::hardware_concurrency() * 2);
 		}
+
+		std::print("[Info] Worker Threads: {}\n", num_workers);
+		has_read = true;
+
+		return num_workers;
 	}
-	return id;
+
+	int ID(int id_to_register) noexcept
+	{
+		static thread_local const int kID{ id_to_register };
+		if (debug::DisplaysMSG()) {
+			if (kID == kUnregisteredID) {
+				std::print("[Error] Must Register Thread ID First.\n");
+				system("pause");
+				exit(1);
+			}
+			if (id_to_register != kUnregisteredID and kID != id_to_register) {
+				std::print("[Error] Thread already has an ID.\n");
+				system("pause");
+				exit(1);
+			}
+		}
+		return kID;
+	}
 }

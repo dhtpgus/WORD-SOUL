@@ -6,37 +6,41 @@
 namespace lua {
 	class Manager {
 	public:
-		Manager() noexcept : ls{ luaL_newstate() } {
-			luaL_openlibs(ls);
+		Manager() noexcept : ls_{ luaL_newstate() } {
+			luaL_openlibs(ls_);
 		}
+		Manager(const Manager&) = delete;
+		Manager(Manager&&) = delete;
+		Manager& operator=(const Manager&) = delete;
+		Manager& operator=(Manager&&) = delete;
 		~Manager() noexcept {
-			lua_close(ls);
+			lua_close(ls_);
 		}
 		auto GetLuaState() const noexcept {
-			return ls;
+			return ls_;
 		}
 	private:
-		lua_State* ls;
+		lua_State* ls_;
 	};
 	
-	inline Manager manager;
+	inline thread_local Manager manager;
 
 	class Script {
 	public:
-		Script(const std::string& file_name) : ls{ manager.GetLuaState() } {
-			luaL_loadfile(ls, file_name.c_str());
+		Script(const std::string& file_name) : ls_{ manager.GetLuaState() } {
+			luaL_loadfile(ls_, file_name.c_str());
 		}
 		template<class T>
 		T GetGlobalVar(const std::string& var_name) {
-			lua_pcall(ls, 0, 0, 0);
-			lua_getglobal(ls, var_name.c_str());
-			auto val = static_cast<T>(lua_tonumber(ls, -1));
-			lua_pop(ls, 1);
+			lua_pcall(ls_, 0, 0, 0);
+			lua_getglobal(ls_, var_name.c_str());
+			auto val = static_cast<T>(lua_tonumber(ls_, -1));
+			lua_pop(ls_, 1);
 			return val;
 		}
 	private:
-		lua_State* ls;
+		lua_State* ls_;
 	};
 
-	inline Script server_settings{ "server_settings.lua" };
+	inline thread_local Script server_settings{ "scripts/server_settings.lua" };
 }

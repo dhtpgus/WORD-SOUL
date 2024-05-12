@@ -23,7 +23,7 @@ namespace entity {
 	class Manager : public lf::Array<Base> {
 	public:
 		Manager() noexcept
-			: lf::Array<Base>{ kMaxEntities, thread::kNumWorkers }
+			: lf::Array<Base>{ kMaxEntities, thread::GetNumWorkers() }
 			, entities_in_region_{} {}
 
 		void UpdateEntityPosition(int id, float x, float y, float z) noexcept {

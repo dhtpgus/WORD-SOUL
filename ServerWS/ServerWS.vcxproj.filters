@@ -208,7 +208,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="server_settings.lua">
+    <None Include="scripts\server_settings.lua">
       <Filter>리소스 파일</Filter>
     </None>
   </ItemGroup>
