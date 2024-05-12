@@ -32,12 +32,12 @@ public:
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() const { return ActionState; }
+	bool GetIsFalling() const;
+	float GetGroundSpeed() const;
+
 
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
-
-	UPROPERTY(BlueprintReadWrite)
-	int32 PlayerID;
 
 protected:
 	virtual void BeginPlay() override;
@@ -103,5 +103,4 @@ private:
 
 	bool bIsAttackButtonClickedWhileAttack;
 
-	static int32 NextPlayerID;
 };

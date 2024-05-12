@@ -12,8 +12,8 @@
 #include "HUD/WORDSOULHUD.h"
 #include "HUD/WORDSOULOverlay.h"
 #include "Components/BoxComponent.h"
+#include <Kismet/KismetMathLibrary.h>
 
-int32 AWORDSOULCharacter::NextPlayerID = 0;
 // Sets default values
 AWORDSOULCharacter::AWORDSOULCharacter()
 {
@@ -39,13 +39,16 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 	AttackComboCnt = 0;
 	bIsAttackButtonClickedWhileAttack = false;
 
-	if (NextPlayerID > 1)
-	{
-		PlayerID = 0;
-		NextPlayerID = 0;
-	}
-	PlayerID = NextPlayerID++;
-	
+}
+
+bool AWORDSOULCharacter::GetIsFalling() const
+{
+	return this->GetCharacterMovement()->IsFalling();
+}
+
+float AWORDSOULCharacter::GetGroundSpeed() const
+{
+	return UKismetMathLibrary::VSizeXY(this->GetCharacterMovement()->Velocity);
 }
 
 void AWORDSOULCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
@@ -93,7 +96,6 @@ void AWORDSOULCharacter::Tick(float DeltaTime)
 		Attributes->RegenStamina(DeltaTime);
 		WORDSOULOverlay->SetStaminaBarPercent(Attributes->GetStaminaPercent());
 	}
-
 }
 
 // Called to bind functionality to input

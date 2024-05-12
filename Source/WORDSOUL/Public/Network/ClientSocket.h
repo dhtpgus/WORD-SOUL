@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "HAL/Runnable.h"
+#include "NetWork/Packet.h"
 #pragma comment(lib, "ws2_32.lib")
 #include <WS2tcpip.h>
 
@@ -11,34 +12,6 @@
 #define SERVER_IP "127.0.0.1"
 #define BUFSIZE 1024
 #define PACKET_TYPE_OFFSET 1
-
-#pragma pack(push, 1)
-struct CSCharacterLocation
-{
-	uint8 length;
-	uint8 packetNum;
-	float x;
-	float y;
-	float z;
-};
-
-struct SCCharacterInfo
-{
-	uint8 length;
-	uint8 packetNum;
-	uint16 id;
-	float x;
-	float y;
-	float z;
-};
-
-struct party
-{
-	uint8 length;
-	uint8 packetNum;
-	uint16 id;
-};
-#pragma pack(pop)
 
 
 /**
@@ -67,7 +40,7 @@ public:
 	bool ConnectToServer(const char* serverIP, int serverPort);
 	bool StartRecvThread();
 	void EndRecvThread();
-	void SendCharacterLocation(const FVector& CharacterLocation);
+	void SendCharacterInfo(const FVector& location, float groundSpeed, char flag);
 	void Party();
 	void SetPlayerController(AWORDSOULPlayerController* playerController);
 

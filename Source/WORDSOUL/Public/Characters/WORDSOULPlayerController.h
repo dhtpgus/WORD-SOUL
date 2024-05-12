@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "NetWork/ClientSocket.h"
 #include "Characters/WORDSOULCharacter.h"
+#include "NetWork/Packet.h"
 #include "WORDSOULPlayerController.generated.h"
 
 /**
@@ -23,7 +24,7 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 	
-	void RecvCharacterInfo(SCCharacterInfo* CharacterInfo);
+	void RecvCharacterInfo(SCPosition* CharacterInfo);
 
 protected:
 	virtual void BeginPlay() override;
@@ -36,8 +37,8 @@ private:
 	ClientSocket* Socket;
 	bool bIsConnected;
 	uint8 id;
-	SCCharacterInfo* OtherCharacterInfo;
-
-	void UpdatePlayerInfo(const SCCharacterInfo& CharacterInfo);
+	SCPosition* OtherCharacterInfo;
+	
+	void UpdatePlayerInfo(const SCPosition& CharacterInfo);
 
 };

@@ -2,6 +2,7 @@
 
 
 #include "Network/ClientSocket.h"
+#include "Network/Packet.h"
 #include "Characters/WORDSOULPlayerController.h"
 
 ClientSocket::ClientSocket()
@@ -49,25 +50,32 @@ uint32 ClientSocket::Run()
 		{
 			uint8 messageLength = *bufferPtr;
 			uint8 packetType = static_cast<uint8>(*(bufferPtr + PACKET_TYPE_OFFSET));
-
 			int packetSize = messageLength + 2;
 			
 			if (totalBytes >= packetSize)
 			{
 				switch (packetType)
 				{
-				case 2:
-					if(totalBytes >= sizeof(SCCharacterInfo))
+				case (uint8)EPacketType::SCNewEntity:
+					break;
+				case (uint8)EPacketType::SCPosition:
+					if(totalBytes >= sizeof(SCPosition))
 					{
-						SCCharacterInfo* characterInfo = reinterpret_cast<SCCharacterInfo*>(bufferPtr);
-						PlayerController->RecvCharacterInfo(characterInfo);
-						/*UE_LOG(LogTemp, Warning, TEXT("messageLength : %d"), characterInfo->length);
-						UE_LOG(LogTemp, Warning, TEXT("packet num : %d"), characterInfo->packetNum);
-						UE_LOG(LogTemp, Warning, TEXT("Other Character id : %d"), characterInfo->id);*/
-						UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+						SCPosition* characterInfo = reinterpret_cast<SCPosition*>(bufferPtr);
+						if (characterInfo->id == 0xFFFF) // OtherPlayer
+						{
+							PlayerController->RecvCharacterInfo(characterInfo);
+							UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+						}
+						
 					}
-				case 5:
-					UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
+					break;
+				case (uint8)EPacketType::SCRemoveEntity:
+					break;
+				case (uint8)EPacketType::SCResult:
+					break;
+				case (uint8)EPacketType::SCCheckConnection:
+					//UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
 					break;
 
 				default:
@@ -158,25 +166,27 @@ void ClientSocket::EndRecvThread()
 	}
 }
 
-void ClientSocket::SendCharacterLocation(const FVector& CharacterLocation)
+void ClientSocket::SendCharacterInfo(const FVector& location, float groundSpeed, char flag)
 {
-	CSCharacterLocation CharacterLoc;
-	CharacterLoc.length = 12;
-	CharacterLoc.packetNum = 129;
-	CharacterLoc.x = CharacterLocation.X;
-	CharacterLoc.y = CharacterLocation.Y;
-	CharacterLoc.z = CharacterLocation.Z;
+	CSPosition CharacterInfo;
+	CharacterInfo.length = sizeof(CSPosition) - sizeof(PacketBase);
+	CharacterInfo.packetType = EPacketType::CSPosition;
+	CharacterInfo.x = location.X;
+	CharacterInfo.y = location.Y;
+	CharacterInfo.z = location.Z;
+	CharacterInfo.v = groundSpeed;
+	CharacterInfo.flag = flag;
 
-	send(sock, (char*)&CharacterLoc, sizeof(CSCharacterLocation), 0);
+	send(sock, (char*)&CharacterInfo, sizeof(CSPosition), 0);
 }
 
 void ClientSocket::Party()
 {
-	party party0;
-	party0.id = 0;
-	party0.length = sizeof(party) - 2;
-	party0.packetNum = 128;
-	send(sock, (char*)&party0, sizeof(party), 0);
+	CSJoinParty partyPacket;
+	partyPacket.id = 0;
+	partyPacket.length = sizeof(CSJoinParty) - sizeof(PacketBase);
+	partyPacket.packetType = EPacketType::CSJoinParty;
+	send(sock, (char*)&partyPacket, sizeof(CSJoinParty), 0);
 }
 
 void ClientSocket::SetPlayerController(AWORDSOULPlayerController* playerController)
@@ -186,8 +196,4 @@ void ClientSocket::SetPlayerController(AWORDSOULPlayerController* playerControll
 		PlayerController = playerController;
 	}
 }
-
-
-// 서버에서 클라르 보내주는 패킷
-// 파티 입장패킷 보내고 -> 파티 제대로 입장햇는지 패킷 서버-클라(최초 한번) -> 다른사람의 좌표값 패킷(2번)
 
