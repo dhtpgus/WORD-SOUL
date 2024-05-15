@@ -184,6 +184,7 @@
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="scripts\monster_settings.lua" />
     <None Include="scripts\server_settings.lua" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

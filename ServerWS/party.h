@@ -20,7 +20,7 @@ public:
 				num_player_ += 1;
 				
 				if (num_player_ == 2) {
-					entity::managers[id_].Spawn();
+					entity::managers[id_].SpawnMonsters();
 				}
 
 				return true;

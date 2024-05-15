@@ -48,6 +48,8 @@ namespace server {
 			accepter_->BindAndListen(server_addr_);
 			accepter_->Accept();
 
+			entity::LoadMonsterData();
+
 			std::print("[Info] Server Starts\n");
 			CreateThread();
 		}
@@ -57,7 +59,7 @@ namespace server {
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
 			if (sessions_->TryAccess(partner_id)) {
-				(*sessions_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID, 0);
+				(*sessions_)[partner_id].Emplace<packet::SCRemoveEntity>(entity::kPartnerID, 0);
 				sessions_->EndAccess(partner_id);
 			}
 			sessions_->ReserveDelete(id);
@@ -93,7 +95,7 @@ namespace server {
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
 		void RunAI(float time) noexcept;
 
-		static constexpr unsigned short kPort{ 21155 };
+		static constexpr unsigned short kPort{ 9000 };
 		static constexpr auto kTransferFrequency{ 1.0 / 5555555 };
 
 		using SessionArray = lf::Array<client::Session>;

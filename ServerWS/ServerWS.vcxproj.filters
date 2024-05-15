@@ -211,5 +211,8 @@
     <None Include="scripts\server_settings.lua">
       <Filter>리소스 파일</Filter>
     </None>
+    <None Include="scripts\monster_settings.lua">
+      <Filter>리소스 파일</Filter>
+    </None>
   </ItemGroup>
 </Project>

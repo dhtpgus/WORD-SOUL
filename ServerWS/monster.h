@@ -5,6 +5,9 @@
 //---------------------------------------------------
 
 #pragma once
+#include <unordered_map>
+#include "random_number_generator.h"
+#include "lua_script.h"
 #include "entity.h"
 #include "fsm.h"
 
@@ -42,4 +45,25 @@ namespace entity {
 		fsm::State state_;
 		Position target_pos_;
 	};
+
+	inline std::unordered_map<int, Position> monster_spawn_points;
+	inline short monster_hp;
+	inline short monster_hp_diff;
+
+	inline void LoadMonsterData() noexcept
+	{
+		lua::Script monster_settings{ "scripts/monster_settings.lua" };
+		const int kNumPoints{ monster_settings.GetConstant<int>("NUM_POINTS") };
+
+		for (int i = 0; i < kNumPoints; ++i) {
+			auto r_ptr = monster_settings.CallFunction<int, float>("get_spawn_point", 2, { i + 1 });
+			auto& r = *r_ptr;
+			r[0] += rng.Rand(-5.0f, 5.0f);
+			r[1] += rng.Rand(-5.0f, 5.0f);
+			monster_spawn_points.emplace(i, Position{ r[0], r[1], 0.0f });
+		}
+
+		monster_hp = monster_settings.GetConstant<short>("HP");
+		monster_hp_diff = monster_settings.GetConstant<short>("HP_DIFF");
+	}
 }

@@ -32,8 +32,12 @@ namespace entity {
 				EndAccess(id);
 			}
 		}
-		void Spawn() noexcept {
-			Allocate<Monster>(500.0f, 500.0f, 0.0f, (short)200);
+		void SpawnMonsters() noexcept {
+			for (auto& [i, pos] : monster_spawn_points) {
+				short rand_hp = monster_hp + rng.Rand<short>(-monster_hp_diff, monster_hp_diff);
+				Allocate<Monster>(pos.x, pos.y, pos.z, rand_hp);
+				//std::print("{}, ({}, {})\n", world_map.FindRegion(pos), pos.x, pos.y);
+			}
 		}
 		void Update(const Position& p1, const Position& p2, float time) noexcept {
 			for (int i = 0; i < kMaxEntities; ++i) {

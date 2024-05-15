@@ -14,12 +14,16 @@ namespace thread {
 			return num_workers;
 		}
 
-		num_workers = lua::server_settings.GetGlobalVar<int>("workers");
+		lua::Script server_settings{ "scripts/server_settings.lua" };
+
+		num_workers = server_settings.GetConstant<int>("WORKERS");
 		if (num_workers == 0) {
 			num_workers = static_cast<int>(std::thread::hardware_concurrency() * 2);
 		}
 
-		std::print("[Info] Worker Threads: {}\n", num_workers);
+		if (debug::DisplaysMSG()) {
+			std::print("[Info] Worker Threads: {}\n", num_workers);
+		}
 		has_read = true;
 
 		return num_workers;

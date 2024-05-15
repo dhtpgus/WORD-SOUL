@@ -5,6 +5,7 @@
 //---------------------------------------------------
 
 #pragma once
+#include <string>
 #include "entity.h"
 
 namespace packet {
@@ -19,6 +20,8 @@ namespace packet {
 		kCSJoinParty = 128,
 		kCSPosition,
 		kCSLeaveParty,
+
+		kPack = 255
 	};
 	using Size = unsigned char;
 
@@ -146,6 +149,22 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCCheckConnection }, value{ 0x12 } {}
 		void Reset() noexcept {}
 		char value;
+	};
+
+	struct Pack : Base {
+		Pack() noexcept : Base{ 0, Type::kPack } {
+			buffer.reserve(4096);
+		}
+		int GetTotalSize() const {
+			return static_cast<int>(buffer.size());
+		}
+		char* GetData() const {
+			return const_cast<char*>(buffer.c_str());
+		}
+		void Append(Base* packet) noexcept {
+			buffer += std::string{ (char*)packet, static_cast<size_t>(packet->size + 2) };
+		}
+		std::string buffer;
 	};
 
 	struct CSJoinParty : Base {

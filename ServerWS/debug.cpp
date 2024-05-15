@@ -13,7 +13,8 @@ namespace debug {
 			return displays_msg;
 		}
 
-		displays_msg = lua::server_settings.GetGlobalVar<bool>("displays_msg");
+		lua::Script server_settings{ "scripts/server_settings.lua" };
+		displays_msg = server_settings.GetConstant<bool>("DISPLAYS_MSG");
 
 		has_read = true;
 
