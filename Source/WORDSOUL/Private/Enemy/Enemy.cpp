@@ -64,6 +64,7 @@ void AEnemy::Die()
 		HealthBarWidget->SetVisibility(false);
 	}
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SetLifeSpan(5.f);
 }
 

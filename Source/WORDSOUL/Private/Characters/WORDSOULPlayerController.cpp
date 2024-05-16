@@ -4,6 +4,7 @@
 #include "Characters/WORDSOULPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Characters/WORDSOULAnimInstance.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "EngineUtils.h"
 
 
@@ -64,6 +65,9 @@ void AWORDSOULPlayerController::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT FAILED"));
 	}
 
+	CurrentLocation = this->GetPawn()->GetActorLocation();
+	PreviousLocation = FVector(0.f, 0.f, 0.f);
+
 	Socket->Party();
 	Socket->StartRecvThread();
 }
@@ -87,7 +91,18 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 			//UE_LOG(LogTemp, Warning, TEXT("Player x y z : %f %f %f"), CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
 			FVector NewLocation = FVector(CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
 
+			CurrentLocation = NewLocation;
+			if (CurrentLocation != PreviousLocation)
+			{
+				FVector DirectionVector = FVector(CurrentLocation.X - PreviousLocation.X, CurrentLocation.Y - PreviousLocation.Y, 0.f);
+
+				CharacterRotation = UKismetMathLibrary::FindLookAtRotation(FVector::ZeroVector, DirectionVector);
+				cCharacter->SetActorRotation(CharacterRotation);
+
+				PreviousLocation = CurrentLocation;
+			}
 			cCharacter->SetActorLocation(NewLocation);
+
 
 			UAnimInstance* AnimInst = cCharacter->GetMesh()->GetAnimInstance();
 			UWORDSOULAnimInstance* WORDSOULAnimInst = Cast<UWORDSOULAnimInstance>(AnimInst);
@@ -97,6 +112,7 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 				if ((CharacterInfo.flag & 0b0000'0011) == 0b01) //jumping(IsFalling)
 				{
 					WORDSOULAnimInst->IsFalling = true;
+					UE_LOG(LogTemp, Warning, TEXT("JUMP : TRUE"));
 				}
 				else
 				{

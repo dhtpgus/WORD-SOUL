@@ -23,5 +23,4 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void OnStartButtonClicked();
 	
-
 };

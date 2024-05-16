@@ -91,7 +91,7 @@ namespace server {
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
 		void RunAI(float time) noexcept;
 
-		static constexpr unsigned short kPort{ 21155 };
+		static constexpr unsigned short kPort{ 9000 };
 		static constexpr auto kTransferFrequency{ 1.0 / 5555555 };
 
 		using SessionArray = lf::Array<client::Session>;

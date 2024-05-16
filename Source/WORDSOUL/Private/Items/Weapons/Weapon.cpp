@@ -64,6 +64,7 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);
+	ActorsToIgnore.Add(GetOwner());
 
 	for (AActor* Actor : IgnoreActors)
 	{

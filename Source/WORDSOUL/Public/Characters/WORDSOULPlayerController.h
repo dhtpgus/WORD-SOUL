@@ -26,19 +26,21 @@ public:
 	
 	void RecvCharacterInfo(SCPosition* CharacterInfo);
 
+	UPROPERTY(BlueprintReadWrite)
+	AWORDSOULCharacter* OtherCharacter;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	UPROPERTY(BlueprintReadWrite)
-	AWORDSOULCharacter* OtherCharacter;
-	
 private:
 	ClientSocket* Socket;
 	bool bIsConnected;
-	uint8 id;
 	SCPosition* OtherCharacterInfo;
 	
 	void UpdatePlayerInfo(const SCPosition& CharacterInfo);
+
+	FVector PreviousLocation, CurrentLocation;
+	FRotator CharacterRotation;
 
 };

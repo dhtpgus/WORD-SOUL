@@ -47,12 +47,6 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	{
 		WORDSOULCharacter->SetOverlappingItem(this);
 
-		const FString OtherActorName = FString("overlap start : ") + OtherActor->GetName();
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, OtherActorName);
-		}
 	}
 	
 }
@@ -63,13 +57,6 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 	if (WORDSOULCharacter)
 	{
 		WORDSOULCharacter->SetOverlappingItem(nullptr);
-
-		const FString EndOverlap = FString("overlap end : ") + OtherActor->GetName();
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, EndOverlap);
-		}
 	}
 	
 }

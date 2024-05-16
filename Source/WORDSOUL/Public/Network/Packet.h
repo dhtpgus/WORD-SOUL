@@ -59,7 +59,6 @@ struct CSJoinParty : PacketBase
 
 struct CSPosition : PacketBase
 {
-	uint16 id;
 	float x, y, z;
 	float v;
 	char flag;

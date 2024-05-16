@@ -155,11 +155,6 @@ void AWORDSOULCharacter::GetItem()
 	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingWeapon)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(1, 30.f, FColor::Red, "GetItem");
-		}
-
 		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
 		CharacterState = ECharacterState::ECS_EquippedWeapon;
 		EquippedWeapon = OverlappingWeapon;

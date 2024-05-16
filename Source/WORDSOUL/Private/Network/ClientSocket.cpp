@@ -65,9 +65,8 @@ uint32 ClientSocket::Run()
 						if (characterInfo->id == 0xFFFF) // OtherPlayer
 						{
 							PlayerController->RecvCharacterInfo(characterInfo);
-							UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+							//UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
 						}
-						
 					}
 					break;
 				case (uint8)EPacketType::SCRemoveEntity:
@@ -77,7 +76,6 @@ uint32 ClientSocket::Run()
 				case (uint8)EPacketType::SCCheckConnection:
 					//UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
 					break;
-
 				default:
 					break;
 				}
