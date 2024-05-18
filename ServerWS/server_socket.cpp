@@ -92,7 +92,7 @@ namespace server {
 			duration = timer.GetDuration();
 			ac_duration += duration;
 
-			RunAI(ac_duration);
+			RunAI();
 
 			if (ac_duration >= kTransferFrequency) {
 				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
@@ -194,7 +194,7 @@ namespace server {
 		}
 	}
 
-	void Socket::RunAI(float time) noexcept
+	void Socket::RunAI() noexcept
 	{
 		for (int i = thread::ID(); i < parties.size(); i += thread::GetNumWorkers()) {
 			if (not parties[i].IsAssembled()) {
@@ -218,7 +218,7 @@ namespace server {
 				continue;
 			}
 
-			entity::managers[i].Update(*pos[0], *pos[1], time);
+			entity::managers[i].Update(*pos[0], *pos[1]);
 
 			for (int j = 0; j < entity::kMaxEntities; ++j) {
 				if (entity::managers[i].TryAccess(j)) {

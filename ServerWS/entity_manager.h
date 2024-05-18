@@ -39,12 +39,17 @@ namespace entity {
 				//std::print("{}, ({}, {})\n", world_map.FindRegion(pos), pos.x, pos.y);
 			}
 		}
-		void Update(const Position& p1, const Position& p2, float time) noexcept {
+		void Update(const Position& p1, const Position& p2) noexcept {
 			for (int i = 0; i < kMaxEntities; ++i) {
 				if (TryAccess(i)) {
 					auto& e = Get(i);
 					if (Type::kMonster == e.GetType()) {
 						auto m = reinterpret_cast<Monster*>(&e);
+						auto time = m->GetMoveTime(1.0f / 30);
+						if (time == 0.0f) {
+							continue;
+						}
+
 						m->Decide(p1, p2);
 						m->Act(time);
 						int r = world_map.FindRegion(m->GetPostion());

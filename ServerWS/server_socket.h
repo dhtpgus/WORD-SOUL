@@ -16,7 +16,7 @@
 namespace server {
 	class Socket {
 	public:
-		Socket() noexcept : threads_{}, accepter_{}
+		Socket() noexcept : accepter_{}
 			, sessions_{ std::make_shared<SessionArray>(client::GetMaxClients(), thread::GetNumWorkers()) } {
 			WSAData wsadata;
 			if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
@@ -48,7 +48,7 @@ namespace server {
 			accepter_->BindAndListen(server_addr_);
 			accepter_->Accept();
 
-			entity::LoadMonsterData();
+			entity::monster::LoadData();
 
 			std::print("[Info] Server Starts\n");
 			CreateThread();
@@ -93,7 +93,7 @@ namespace server {
 			//if (rng.Rand(0, 2000) == 2) std::print("{}: {}\n", thread::ID(), cnt);
 		}
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
-		void RunAI(float time) noexcept;
+		void RunAI() noexcept;
 
 		static constexpr unsigned short kPort{ 9000 };
 		static constexpr auto kTransferFrequency{ 1.0 / 5555555 };

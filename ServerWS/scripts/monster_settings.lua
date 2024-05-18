@@ -1,4 +1,18 @@
-spawn_points = {
+HP_DEFAULT = 200
+HP_DIFF = 10
+
+AI_ACTIVATION_RANGE = 3000.0
+ACQUISITION_RANGE = 1000.0
+ATTACK_RANGE = 30.0
+
+ATTACK_COOLDOWN = 3.1
+HITSTOP_TIME = 0.5
+
+VEL_WANDER = 150.0;
+VEL_CHASE = 300.0;
+
+-- 1´ç 10.0f
+SPAWN_POINTS = {
 	{ 161, 35 }, { 602, 242 }, { 1358, -372 }, { 1327, -551 }, { 1059, -566 },
 	{ 1178, -566 }, { 1120, -536 }, { 1107, -596 }, { 1297, -31 }, { 1328, -102 },
 	{ 1357, -83 }, { 1395, -160 }, { 1312, -72 }, { 1378, -128 }, { 1208, -57 },
@@ -10,11 +24,8 @@ spawn_points = {
 	{ 1377, -506 }, { 1394, -314 }, { 988, -596 }, { 1003, -536 }
 }
 
-NUM_POINTS = #spawn_points
-
-HP = 200
-HP_DIFF = 10
+NUM_POINTS = #SPAWN_POINTS
 
 function get_spawn_point(i)
-	return spawn_points[i][1] * 10, spawn_points[i][2] * 10
+	return SPAWN_POINTS[i][1] * 10, SPAWN_POINTS[i][2] * 10
 end

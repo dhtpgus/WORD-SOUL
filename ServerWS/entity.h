@@ -6,6 +6,7 @@
 
 #pragma once
 #include "coord.h"
+#include "world_map.h"
 
 namespace entity {
 	enum class Type : unsigned char {
@@ -18,7 +19,9 @@ namespace entity {
 	class Base {
 	public:
 		Base(ID id, float x, float y, float z, short hp) noexcept
-			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{}, region_{} {}
+			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{} {
+			region_ = world_map.FindRegion(pos_);
+		}
 
 		void Reset(ID rs_id, float rs_x, float rs_y, float rs_z, short hp) {
 			id_ = rs_id;

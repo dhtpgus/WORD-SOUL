@@ -20,7 +20,7 @@ namespace client {
 	public:
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
-			: ox_{ Operation::kRecv }, sock_{ sock }, buf_recv_{}, wsabuf_recv_{}, player_{},
+			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{},
 			rq_{ thread::GetNumWorkers() }, wsabuf_send_{} {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
@@ -129,6 +129,7 @@ namespace client {
 		max_clients = server_settings.GetConstant<int>("MAX_CLIENTS");
 		has_read = true;
 
+		std::print("[Info] Loading...\n");
 		if (debug::DisplaysMSG()) {
 			std::print("[Info] Max Clients: {}\n", max_clients);
 		}
