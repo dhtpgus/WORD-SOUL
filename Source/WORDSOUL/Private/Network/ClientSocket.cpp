@@ -59,15 +59,18 @@ uint32 ClientSocket::Run()
 				case (uint8)EPacketType::SCNewEntity:
 					break;
 				case (uint8)EPacketType::SCPosition:
-					if(totalBytes >= sizeof(SCPosition))
+					if (totalBytes >= sizeof(SCPosition))
 					{
-						SCPosition* characterInfo = reinterpret_cast<SCPosition*>(bufferPtr);
-						if (characterInfo->id == 0xFFFF) // OtherPlayer
+						SCPosition characterInfo;
+						if (memcpy(&characterInfo, bufferPtr, sizeof(SCPosition)))
 						{
-							PlayerController->RecvCharacterInfo(characterInfo);
-							//UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+							if (characterInfo.id == 0xFFFF) // OtherPlayer
+							{
+								PlayerController->RecvCharacterInfo(characterInfo);
+								//UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+							}
 						}
-					}
+					}	
 					break;
 				case (uint8)EPacketType::SCRemoveEntity:
 					break;
@@ -173,7 +176,7 @@ void ClientSocket::SendCharacterInfo(const FVector& location, float groundSpeed,
 	CharacterInfo.y = location.Y;
 	CharacterInfo.z = location.Z;
 	CharacterInfo.v = groundSpeed;
-	CharacterInfo.flag = flag;
+	CharacterInfo.flag = flag; 
 
 	send(sock, (char*)&CharacterInfo, sizeof(CSPosition), 0);
 }

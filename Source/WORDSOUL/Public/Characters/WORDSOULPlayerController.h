@@ -24,7 +24,7 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 	
-	void RecvCharacterInfo(SCPosition* CharacterInfo);
+	void RecvCharacterInfo(const SCPosition& CharacterInfo);
 
 	UPROPERTY(BlueprintReadWrite)
 	AWORDSOULCharacter* OtherCharacter;
@@ -36,7 +36,7 @@ protected:
 private:
 	ClientSocket* Socket;
 	bool bIsConnected;
-	SCPosition* OtherCharacterInfo;
+	SCPosition OtherCharacterInfo;
 	
 	void UpdatePlayerInfo(const SCPosition& CharacterInfo);
 

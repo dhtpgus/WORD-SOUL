@@ -32,18 +32,14 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	char flag = NULL;
 	if (MyCharacter->GetIsFalling())
 	{
-		flag = 0b0000'0011;
+		flag = 0b0000'0001;
 	}
 	Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag);
 	
-
-	if (OtherCharacterInfo)
-	{
-		UpdatePlayerInfo(*OtherCharacterInfo);
-	}
+	UpdatePlayerInfo(OtherCharacterInfo);
 }
 
-void AWORDSOULPlayerController::RecvCharacterInfo(SCPosition* CharacterInfo)
+void AWORDSOULPlayerController::RecvCharacterInfo(const SCPosition& CharacterInfo)
 {
 	OtherCharacterInfo = CharacterInfo;
 }
@@ -88,8 +84,10 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 		AWORDSOULCharacter* cCharacter = Cast<AWORDSOULCharacter>(cPawn);
 		if (cCharacter and cCharacter == OtherCharacter)
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("Player x y z : %f %f %f"), CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
+			UE_LOG(LogTemp, Warning, TEXT("Player x y z : %f %f %f"), CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
 			FVector NewLocation = FVector(CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
+
+			cCharacter->SetActorLocation(NewLocation);
 
 			CurrentLocation = NewLocation;
 			if (CurrentLocation != PreviousLocation)
@@ -101,9 +99,7 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 
 				PreviousLocation = CurrentLocation;
 			}
-			cCharacter->SetActorLocation(NewLocation);
-
-
+			
 			UAnimInstance* AnimInst = cCharacter->GetMesh()->GetAnimInstance();
 			UWORDSOULAnimInstance* WORDSOULAnimInst = Cast<UWORDSOULAnimInstance>(AnimInst);
 			if (WORDSOULAnimInst)
