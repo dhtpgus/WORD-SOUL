@@ -226,7 +226,8 @@ typedef struct luaL_Stream {
 
 /*
 ** {==================================================================
-** "Abstraction Layer" for basic report of messages and errors
+** "Abstraction Layer" for basic re
+of messages and errors
 ** ===================================================================
 */
 

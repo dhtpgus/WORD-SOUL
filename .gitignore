@@ -2,9 +2,16 @@ Binaries
 DerivedDataCache
 Intermediate
 Build
-Content
+Saved
 **/StarterContent
+**/Content/Characters
+**Collections
+**/Developers
+**/ThirdPerson
+**/Megascans
+**/MSPresets
 
+.idea
 .vscode
 .vs
 .vsconfig
