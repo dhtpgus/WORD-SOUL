@@ -113,7 +113,25 @@ void AEnemy::GetHit(const FVector& ImpactPoint)
 	if (Attributes and Attributes->IsAlive())
 	{
 		//DrawDebugSphere(GetWorld(), ImpactPoint, 8.f, 12, FColor::Red, false, 5.0f);
-		PlayHitReactMontage(FName("Damaged"));
+
+		const FVector ForwardVector = GetActorForwardVector();
+
+		const FVector ImpactPointXY(ImpactPoint.X, ImpactPoint.Y, GetActorLocation().Z);
+		const FVector ToHitVector = (ImpactPointXY - GetActorLocation()).GetSafeNormal();
+
+		double CosTheta = FVector::DotProduct(ForwardVector, ToHitVector);
+		double Theta = FMath::Acos(CosTheta);
+		Theta = FMath::RadiansToDegrees(Theta);
+
+		if (Theta <= 120.0)
+		{
+			PlayHitReactMontage(FName("Damaged_Front"));
+		}
+		else
+		{
+			PlayHitReactMontage(FName("Damaged_Back"));
+		}
+		
 	}
 	else
 	{

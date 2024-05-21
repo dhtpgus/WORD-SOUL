@@ -56,6 +56,7 @@ protected:
 
 	void PlayAttackMontage();
 	void PlayDodgeMontage();
+	void PlayPickupMontage();
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
@@ -67,6 +68,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void DodgeEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void PickupEnd();
 
 private:
 	UPROPERTY(VisibleAnywhere)
@@ -96,6 +100,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* DodgeMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* PickupMontage;
 
 	UPROPERTY()
 	UWORDSOULOverlay* WORDSOULOverlay;

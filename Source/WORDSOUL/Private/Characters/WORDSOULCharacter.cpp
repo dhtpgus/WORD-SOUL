@@ -155,6 +155,9 @@ void AWORDSOULCharacter::GetItem()
 	AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 	if (OverlappingWeapon)
 	{
+		PlayPickupMontage();
+		ActionState = EActionState::EAS_Pickup;
+
 		OverlappingWeapon->Equip(GetMesh(), FName("RightHandSocket"), this, this);
 		CharacterState = ECharacterState::ECS_EquippedWeapon;
 		EquippedWeapon = OverlappingWeapon;
@@ -168,6 +171,11 @@ bool AWORDSOULCharacter::CanAttack()
 }
 
 void AWORDSOULCharacter::DodgeEnd()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
+void AWORDSOULCharacter::PickupEnd()
 {
 	ActionState = EActionState::EAS_Unoccupied;
 }
@@ -257,6 +265,16 @@ void AWORDSOULCharacter::PlayDodgeMontage()
 	{
 		AnimInstance->Montage_Play(DodgeMontage);
 		AnimInstance->Montage_JumpToSection("Default", DodgeMontage);
+	}
+}
+
+void AWORDSOULCharacter::PlayPickupMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance and PickupMontage)
+	{
+		AnimInstance->Montage_Play(PickupMontage);
+		AnimInstance->Montage_JumpToSection("Default", PickupMontage);
 	}
 }
 
