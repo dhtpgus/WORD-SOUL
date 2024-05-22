@@ -34,6 +34,10 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	{
 		flag = 0b0000'0001;
 	}
+	if ((MyCharacter->GetActionState()) == EActionState::EAS_Dodge)
+	{
+		flag |= 0b000'0100;
+	}
 	Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag);
 	
 	UpdatePlayerInfo(OtherCharacterInfo);
@@ -113,6 +117,11 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 				else
 				{
 					WORDSOULAnimInst->IsFalling = false;
+				}
+
+				if ((CharacterInfo.flag & 0b0000'0100) != 0)  // dodge
+				{
+					cCharacter->PlayDodgeMontage();
 				}
 			}
 			break;

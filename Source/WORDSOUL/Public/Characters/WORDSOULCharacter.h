@@ -40,6 +40,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 
+	void PlayAttackMontage();
+	void PlayDodgeMontage();
+	void PlayPickupMontage();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -53,10 +57,6 @@ protected:
 
 	bool HasEnoughStamina();
 	bool IsOccupied();
-
-	void PlayAttackMontage();
-	void PlayDodgeMontage();
-	void PlayPickupMontage();
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
