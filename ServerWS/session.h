@@ -20,8 +20,8 @@ namespace client {
 	public:
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
-			: overlapped_{}, sock_{ sock }, buf_recv_{}, wsabuf_recv_{}, player_{},
-			rq_{ thread::kNumWorkers }, wsabuf_send_{} {
+			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{},
+			rq_{ thread::GetNumWorkers() }, wsabuf_send_{} {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			wsabuf_send_[0].buf = reinterpret_cast<char*>(free_list<packet::SCCheckConnection>.Get());
@@ -39,11 +39,11 @@ namespace client {
 		void Receive() noexcept {
 			static DWORD flags = 0;
 			wsabuf_recv_.buf = buf_recv_.GetRecvPoint();
-			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &overlapped_, nullptr);
+			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &ox_.over, nullptr);
 		}
 
 		template<class Packet, class... Value>
-		void Push(Value... value) noexcept {
+		void Emplace(Value... value) noexcept {
 			rq_.Emplace<Packet>(value...);
 		}
 
@@ -59,6 +59,7 @@ namespace client {
 				}
 				wsabuf_send_[num_packet].buf = reinterpret_cast<char*>(packet);
 				wsabuf_send_[num_packet].len = packet->size + sizeof(packet::Base);
+				
 				num_packet += 1;
 			}
 
@@ -106,7 +107,7 @@ namespace client {
 		auto& GetPlayer() noexcept { return player_; }
 
 	private:
-		OVERLAPPED overlapped_;
+		OverEx ox_;
 		SOCKET sock_;
 		BufferRecv buf_recv_;
 		WSABUF wsabuf_recv_;
@@ -124,10 +125,14 @@ namespace client {
 			return max_clients;
 		}
 
-		max_clients = lua::server_settings.GetGlobalVar<int>("max_clients");
+		lua::Script server_settings{ "scripts/server_settings.lua" };
+		max_clients = server_settings.GetConstant<int>("MAX_CLIENTS");
 		has_read = true;
 
-		std::print("[Info] Max Clients: {}\n", max_clients);
+		std::print("[Info] Loading...\n");
+		if (debug::DisplaysMSG()) {
+			std::print("[Info] Max Clients: {}\n", max_clients);
+		}
 
 		return max_clients;
 	}

@@ -5,10 +5,10 @@ namespace lf {
 	{
 		if (not IsLeaf()) {
 			for (int i = 0; i < kChunkSize; ++i) {
-				auto child = children[i].TryAccess();
+				auto child = children_[i].TryAccess();
 				if (nullptr != child) {
 					child->GetElements(fl);
-					children[i].EndAccess();
+					children_[i].EndAccess();
 				}
 			}
 			return;
@@ -18,7 +18,7 @@ namespace lf {
 			if ((q & 0xF) == 0) {
 				return;
 			}
-			fl.push_front(children[(q & 0xF) - 1].v);
+			fl.push_front(children_[(q & 0xF) - 1].v);
 			q /= 16;
 		}
 	}
@@ -27,10 +27,10 @@ namespace lf {
 	{
 		if (not IsLeaf()) {
 			for (int i = 0; i < kChunkSize; ++i) {
-				auto child = children[i].TryAccess();
+				auto child = children_[i].TryAccess();
 				if (nullptr != child) {
 					child->GetElements(vec);
-					children[i].EndAccess();
+					children_[i].EndAccess();
 				}
 			}
 			return;
@@ -40,7 +40,7 @@ namespace lf {
 			if ((q & 0xF) == 0) {
 				return;
 			}
-			vec.push_back(children[(q & 0xF) - 1].v);
+			vec.push_back(children_[(q & 0xF) - 1].v);
 			q /= 16;
 		}
 	}
@@ -49,10 +49,10 @@ namespace lf {
 	{
 		if (not IsLeaf()) {
 			for (int i = 0; i < kChunkSize; ++i) {
-				auto child = children[i].TryAccess();
+				auto child = children_[i].TryAccess();
 				if (nullptr != child) {
 					child->GetElements(uset);
-					children[i].EndAccess();
+					children_[i].EndAccess();
 				}
 			}
 			return;
@@ -62,7 +62,7 @@ namespace lf {
 			if ((q & 0xF) == 0) {
 				return;
 			}
-			uset.insert(children[(q & 0xF) - 1].v);
+			uset.insert(children_[(q & 0xF) - 1].v);
 			q /= 16;
 		}
 	}

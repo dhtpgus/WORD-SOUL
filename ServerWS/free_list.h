@@ -53,4 +53,4 @@ private:
 };
 
 template<class T>
-inline thread_local FreeList<T> free_list{ sizeof(T) <= 2 ? 30000 : 100};
+inline thread_local FreeList<T> free_list{ sizeof(T) <= 2 ? 3000 : 100};

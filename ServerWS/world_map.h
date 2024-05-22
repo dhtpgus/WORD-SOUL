@@ -35,4 +35,4 @@ private:
 	std::vector<Region> regions_;
 };
 
-extern WorldMap world_map;
+inline WorldMap world_map;

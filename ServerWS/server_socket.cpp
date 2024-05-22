@@ -21,7 +21,7 @@ namespace server {
 		if (sessions_->TryAccess(session_id)) {
 			auto& session = (*sessions_)[session_id];
 			session.Receive();
-			session.Push<packet::SCNewEntity>(entity::kAvatarID, 80.0f, 500.0f, 0.0f, entity::Type::kPlayer, 0);
+			session.Emplace<packet::SCNewEntity>(entity::kAvatarID, 80.0f, 500.0f, 0.0f, entity::Type::kPlayer, 0);
 			session.GetPlayer().SetPosition(80.0f, 500.0f, 0.0f);
 			sessions_->EndAccess(session_id);
 		}
@@ -56,35 +56,43 @@ namespace server {
 					sessions_->EndAccess(id);
 				}
 			}
-			else if (ox->op == Operation::kSend) {
-				free_list<OverEx>.Collect(ox);
-			}
-			else if (ox->op == Operation::kAccept) {
-				ProcessAccept();
-			}
-			else if (transferred != 0) {
-				if (sessions_->TryAccess(id)) {
-					auto& buffer = (*sessions_)[id].GetBuffer();
-					transferred += buffer.GetSizeRemains();
-
-					/*if (debug::DisplaysMSG()) {
-						std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
-							buffer.GetBinary(transferred));
-					}*/
-
-					while (transferred != 0) {
-						ProcessPacket(buffer, transferred, id);
+			else {
+				switch (ox->op)
+				{
+				case Operation::kSend:
+					free_list<OverEx>.Collect(ox);
+					break;
+				case Operation::kAccept:
+					ProcessAccept();
+					break;
+				case Operation::kRecv:
+					if (transferred == 0) {
+						break;
 					}
-					(*sessions_)[id].Receive();
+					if (sessions_->TryAccess(id)) {
+						auto& buffer = (*sessions_)[id].GetBuffer();
+						transferred += buffer.GetSizeRemains();
 
-					sessions_->EndAccess(id);
+						/*if (debug::DisplaysMSG()) {
+							std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
+								buffer.GetBinary(transferred));
+						}*/
+
+						while (transferred != 0) {
+							ProcessPacket(buffer, transferred, id);
+						}
+						(*sessions_)[id].Receive();
+
+						sessions_->EndAccess(id);
+					}
+					break;
 				}
 			}
 
 			duration = timer.GetDuration();
 			ac_duration += duration;
 
-			RunAI(ac_duration);
+			RunAI();
 
 			if (ac_duration >= kTransferFrequency) {
 				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
@@ -126,20 +134,20 @@ namespace server {
 					std::print("(ID: {}) has joined Party: {}.\n", session_id, p.id);
 				}
 
-				session.Push<packet::SCResult>(true);
+				session.Emplace<packet::SCResult>(true);
 				session.SetPartyID(p.id);
 
 				auto partner_id = parties[p.id].GetPartnerID(session_id);
 				
-				if ((*sessions_).TryAccess(partner_id)) {
+				if (sessions_->TryAccess(partner_id)) {
 					auto& pos = session.GetPlayer().GetPostion();
-					(*sessions_)[partner_id].Push<packet::SCNewEntity>(
+					(*sessions_)[partner_id].Emplace<packet::SCNewEntity>(
 						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
-					(*sessions_).EndAccess(partner_id);
+					sessions_->EndAccess(partner_id);
 				}
 			}
 			else {
-				session.Push<packet::SCResult>(false);
+				session.Emplace<packet::SCResult>(false);
 			}
 			break;
 		}
@@ -148,7 +156,7 @@ namespace server {
 			packet::CSPosition p{ buf.GetData() };
 
 			if (debug::DisplaysMSG()) {
-				std::print("(ID: {}) (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
+				//std::print("(ID: {}) (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
 			}
 			
 			session.GetPlayer().SetPosition(p.x, p.y, p.z);
@@ -156,7 +164,7 @@ namespace server {
 			auto partner_id = parties[party_id].GetPartnerID(session_id);
 			
 			if (sessions_->TryAccess(partner_id)) {
-				(*sessions_)[partner_id].Push<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.flag);
+				(*sessions_)[partner_id].Emplace<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.flag);
 				sessions_->EndAccess(partner_id);
 			}
 			break;
@@ -186,15 +194,16 @@ namespace server {
 		}
 	}
 
-	void Socket::RunAI(float time) noexcept
+	void Socket::RunAI() noexcept
 	{
-		for (int i = thread::ID(); i < parties.size(); i += thread::kNumWorkers) {
+		for (int i = thread::ID(); i < parties.size(); i += thread::GetNumWorkers()) {
 			if (not parties[i].IsAssembled()) {
 				continue;
 			}
 			auto members{ parties[i].GetPartyMembers() };
 			const Position* pos[2]{};
 			bool break_flag{};
+
 			for (int p = 0; p < 2; ++p) {
 				if (sessions_->TryAccess(members[p])) {
 					pos[p] = &(*sessions_)[members[p]].GetPlayer().GetPostion();
@@ -209,7 +218,7 @@ namespace server {
 				continue;
 			}
 
-			entity::managers[i].Update(*pos[0], *pos[1], time);
+			entity::managers[i].Update(*pos[0], *pos[1]);
 
 			for (int j = 0; j < entity::kMaxEntities; ++j) {
 				if (entity::managers[i].TryAccess(j)) {
@@ -218,9 +227,9 @@ namespace server {
 
 					for (auto mem : members) {
 						if (sessions_->TryAccess(mem)) {
-							(*sessions_)[mem].Push<packet::SCPosition>(
-								en.GetID(), en_pos.x, en_pos.y, en_pos.z, en.GetVel(), en.GetFlag());
-							/*std::print("{}: {} {} {}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z);*/
+							(*sessions_)[mem].Emplace<packet::SCPosition>(en.GetID(), en_pos.x, en_pos.y, en_pos.z, en.GetVel(), en.GetFlag());
+							
+							//std::print("{}: {} {} {}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z);
 							sessions_->EndAccess(mem);
 						}
 					}

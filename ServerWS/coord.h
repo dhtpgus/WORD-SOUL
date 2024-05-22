@@ -59,19 +59,13 @@ inline bool IsInRectGrid(const Position& p, const Position& center, float w, flo
 inline bool IsInCircleGrid(const Position& p, Position& center, float r)
 {
 	r *= Position::kUnitLength;
-	float tmp_z = center.z;
-	center.z = p.z;
-	bool ret = GetDistanceSq(p, center) <= r * r;
-	center.z = tmp_z;
+	bool ret = GetDistance2DSq(p, center) <= r * r;
 	return ret;
 }
 
 inline bool IsInCircleGrid(const Position& p, Position&& center, float r)
 {
 	r *= Position::kUnitLength;
-	float tmp_z = center.z;
-	center.z = p.z;
-	bool ret = GetDistanceSq(p, center) <= r * r;
-	center.z = tmp_z;
+	bool ret = GetDistance2DSq(p, center) <= r * r;
 	return ret;
 }

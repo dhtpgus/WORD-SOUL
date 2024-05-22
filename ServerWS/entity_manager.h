@@ -23,7 +23,7 @@ namespace entity {
 	class Manager : public lf::Array<Base> {
 	public:
 		Manager() noexcept
-			: lf::Array<Base>{ kMaxEntities, thread::kNumWorkers }
+			: lf::Array<Base>{ kMaxEntities, thread::GetNumWorkers() }
 			, entities_in_region_{} {}
 
 		void UpdateEntityPosition(int id, float x, float y, float z) noexcept {
@@ -32,15 +32,24 @@ namespace entity {
 				EndAccess(id);
 			}
 		}
-		void Spawn() noexcept {
-			Allocate<Monster>(500.0f, 500.0f, 0.0f, (short)200);
+		void SpawnMonsters() noexcept {
+			for (auto& [i, pos] : monster_spawn_points) {
+				short rand_hp = monster_hp + rng.Rand<short>(-monster_hp_diff, monster_hp_diff);
+				Allocate<Monster>(pos.x, pos.y, pos.z, rand_hp);
+				//std::print("{}, ({}, {})\n", world_map.FindRegion(pos), pos.x, pos.y);
+			}
 		}
-		void Update(const Position& p1, const Position& p2, float time) noexcept {
+		void Update(const Position& p1, const Position& p2) noexcept {
 			for (int i = 0; i < kMaxEntities; ++i) {
 				if (TryAccess(i)) {
 					auto& e = Get(i);
 					if (Type::kMonster == e.GetType()) {
 						auto m = reinterpret_cast<Monster*>(&e);
+						auto time = m->GetMoveTime(1.0f / 30);
+						if (time == 0.0f) {
+							continue;
+						}
+
 						m->Decide(p1, p2);
 						m->Act(time);
 						int r = world_map.FindRegion(m->GetPostion());

@@ -4,11 +4,7 @@
 #include "lua_script.h"
 
 namespace debug {
-#if IS_RELEASE_MODE
-	constexpr bool DisplaysMSG() noexcept {
-		return false;
-	}
-#else
+#if not IS_RELEASE_MODE
 	bool DisplaysMSG() noexcept {
 		static bool displays_msg;
 		static bool has_read;
@@ -17,7 +13,8 @@ namespace debug {
 			return displays_msg;
 		}
 
-		displays_msg = lua::server_settings.GetGlobalVar<bool>("displays_msg");
+		lua::Script server_settings{ "scripts/server_settings.lua" };
+		displays_msg = server_settings.GetConstant<bool>("DISPLAYS_MSG");
 
 		has_read = true;
 

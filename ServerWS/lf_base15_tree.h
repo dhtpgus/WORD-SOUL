@@ -20,11 +20,11 @@ namespace lf {
 		using RefCntVector = std::vector<std::atomic_ullong*>;
 
 		Base15Tree() {
-			for (auto& i : state) {
+			for (auto& i : state_) {
 				i = State::kEmpty;
 			}
-			memset(const_cast<unsigned char*>(data.bytes), 0, 16);
-			data.bytes[15] = 1;
+			memset(const_cast<unsigned char*>(data_.bytes), 0, 16);
+			data_.bytes[15] = 1;
 		}
 
 		// 15의 (layer + 1)승 개만큼의 원소 보유 가능
@@ -32,11 +32,11 @@ namespace lf {
 			if (layer > 4) {
 				std::print("[Error] The layer value must be at most 4.\n");
 			}
-			for (auto& i : state) {
+			for (auto& i : state_) {
 				i = State::kEmpty;
 			}
-			memset(const_cast<unsigned char*>(data.bytes), 0, 16);
-			data.bytes[15] = layer;
+			memset(const_cast<unsigned char*>(data_.bytes), 0, 16);
+			data_.bytes[15] = layer;
 		}
 
 		bool Insert(int v) {
@@ -57,17 +57,17 @@ namespace lf {
 
 		bool Contains(int v) {
 			if (not IsLeaf()) {
-				auto child = children[v % kChunkSize].TryAccess();
+				auto child = children_[v % kChunkSize].TryAccess();
 				if (nullptr == child) {
 					return false;
 				}
 
 				auto r = child->Contains(v / kChunkSize);
-				children[v % kChunkSize].EndAccess();
+				children_[v % kChunkSize].EndAccess();
 				return r;
 			}
 
-			State local_value = static_cast<State>(state[v].load());
+			State local_value = static_cast<State>(state_[v].load());
 
 			return local_value == State::kInserted;
 		}
@@ -78,7 +78,7 @@ namespace lf {
 
 	private:
 		size_t GetQWord(int diff) const {
-			return *reinterpret_cast<const volatile size_t*>(data.bytes + diff);
+			return *reinterpret_cast<const volatile size_t*>(data_.bytes + diff);
 		}
 
 		bool IsLeaf() const {
@@ -86,29 +86,29 @@ namespace lf {
 		}
 
 		char GetLayer() const {
-			return data.bytes[15];
+			return data_.bytes[15];
 		}
 
 		bool CASChunk(int diff, size_t expected, size_t desired) {
 			return std::atomic_compare_exchange_strong(
-				reinterpret_cast<volatile std::atomic_ullong*>(data.bytes + diff),
+				reinterpret_cast<volatile std::atomic_ullong*>(data_.bytes + diff),
 				&expected, desired);
 		}
 
 		void Insert(int v, bool& result, int original_v, RefCntVector& ref_cnts) {
 			if (not IsLeaf()) {
-				auto child = children[v % kChunkSize].StartAccess(GetLayer() - 1);
-				auto child_ref_cnt = &children[v % kChunkSize].ref_cnt;
+				auto child = children_[v % kChunkSize].StartAccess(GetLayer() - 1);
+				auto child_ref_cnt = &children_[v % kChunkSize].ref_cnt;
 				ref_cnts.push_back(child_ref_cnt);
 
 				child->Insert(v / kChunkSize, result, original_v, ref_cnts);
-				children[v % kChunkSize].EndAccess();
+				children_[v % kChunkSize].EndAccess();
 				return;
 			}
 
 			auto expected_state = State::kEmpty;
 			auto desired_state = State::kInserting;
-			if (false == state[v].compare_exchange_strong(expected_state, desired_state)) {
+			if (false == state_[v].compare_exchange_strong(expected_state, desired_state)) {
 				return;
 			}
 			while (true) {
@@ -124,11 +124,11 @@ namespace lf {
 					ref_cnt->fetch_add(ChildNode::kRefCntDiff);
 				}
 
-				state[v] = State::kInserted;
+				state_[v] = State::kInserted;
 
 				result = true;
 
-				children[v].v = original_v;
+				children_[v].v = original_v;
 
 				return;
 			}
@@ -136,20 +136,20 @@ namespace lf {
 
 		void Remove(int v, bool& result, RefCntVector& ref_cnts) {
 			if (not IsLeaf()) {
-				auto child = children[v % kChunkSize].TryAccess();
-				auto child_ref_cnt = &children[v % kChunkSize].ref_cnt;
+				auto child = children_[v % kChunkSize].TryAccess();
+				auto child_ref_cnt = &children_[v % kChunkSize].ref_cnt;
 				ref_cnts.push_back(child_ref_cnt);
 				if (nullptr == child) {
 					return;
 				}
 				child->Remove(v / kChunkSize, result, ref_cnts);
-				children[v % kChunkSize].EndAccess();
+				children_[v % kChunkSize].EndAccess();
 				return;
 			}
 
 			auto expected_state = State::kInserted;
 			auto desired_state = State::kRemoving;
-			if (false == state[v].compare_exchange_strong(expected_state, desired_state)) {
+			if (false == state_[v].compare_exchange_strong(expected_state, desired_state)) {
 				return;
 			}
 			while (true) {
@@ -185,7 +185,7 @@ namespace lf {
 					ref_cnt->fetch_sub(ChildNode::kRefCntDiff);
 				}
 
-				state[v] = State::kEmpty;
+				state_[v] = State::kEmpty;
 
 				result = true;
 
@@ -194,8 +194,8 @@ namespace lf {
 		}
 
 		static constexpr auto kChunkSize{ 15 };
-		Bit128 data;
-		std::atomic<State> state[kChunkSize];
-		ChildNode children[kChunkSize];
+		Bit128 data_;
+		std::atomic<State> state_[kChunkSize];
+		ChildNode children_[kChunkSize];
 	};
 }

@@ -20,7 +20,7 @@ namespace lf {
 		LFQueue(Node::TimePoint tp) noexcept {
 			head = tail = free_list<Node>.Get(Node::Value{}, Node::Level{}, tp, -1);
 		}
-		void Push(Node* e, const LFQueue& main_queue) noexcept {
+		void Emplace(Node* e, const LFQueue& main_queue) noexcept {
 			while (true) {
 				Node* last = tail;
 				Node* next = last->next;
@@ -172,7 +172,6 @@ namespace lf {
 		void Emplace(Value&&... value) noexcept {
 			Node* e = free_list<Node>.Get(free_list<Type>.Get(value...), Node::Level{}, tp_, thread::ID());
 			ebr_.StartOp();
-
 			auto top_level = queues_[num_thread_].GetTailLevel();
 			auto duration = queues_[num_thread_].GetDuration();
 			auto registrant = queues_[num_thread_].GetRegistrant();
@@ -181,10 +180,10 @@ namespace lf {
 
 			if (registrant != thread::ID() and queues_[thread::ID()].GetTailLevel() < top_level
 				and duration_gap > 0 and duration_gap < kTimeTolerance * 1e9) {
-				queues_[thread::ID()].Push(e, queues_[num_thread_]);
+				queues_[thread::ID()].Emplace(e, queues_[num_thread_]);
 			}
 			else if (false == queues_[num_thread_].TryPush(e, top_level + 1)) {
-				queues_[thread::ID()].Push(e, queues_[num_thread_]);
+				queues_[thread::ID()].Emplace(e, queues_[num_thread_]);
 			}
 
 			ebr_.EndOp();

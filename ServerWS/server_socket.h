@@ -16,8 +16,8 @@
 namespace server {
 	class Socket {
 	public:
-		Socket() noexcept : threads_{}, accepter_{},
-			sessions_{ std::make_shared<SessionArray>(client::GetMaxClients(), thread::kNumWorkers) } {
+		Socket() noexcept : accepter_{}
+			, sessions_{ std::make_shared<SessionArray>(client::GetMaxClients(), thread::GetNumWorkers()) } {
 			WSAData wsadata;
 			if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
 				exit(1);
@@ -32,7 +32,9 @@ namespace server {
 			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
 			accepter_->LinkIOCP(iocp_);
 
-			for (int i = 0; i < parties.size(); ++i) parties[i].SetID(i);
+			for (int i = 0; i < parties.size(); ++i) {
+				parties[i].SetID(i);
+			}
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -46,6 +48,8 @@ namespace server {
 			accepter_->BindAndListen(server_addr_);
 			accepter_->Accept();
 
+			entity::monster::LoadData();
+
 			std::print("[Info] Server Starts\n");
 			CreateThread();
 		}
@@ -55,15 +59,15 @@ namespace server {
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
 			if (sessions_->TryAccess(partner_id)) {
-				(*sessions_)[partner_id].Push<packet::SCRemoveEntity>(entity::kPartnerID, 0);
+				(*sessions_)[partner_id].Emplace<packet::SCRemoveEntity>(entity::kPartnerID, 0);
 				sessions_->EndAccess(partner_id);
 			}
 			sessions_->ReserveDelete(id);
 		}
 	private:
 		void CreateThread() noexcept {
-			threads_.reserve(thread::kNumWorkers + 1);
-			for (int i = 0; i < thread::kNumWorkers; ++i) {
+			threads_.reserve(thread::GetNumWorkers() + 1);
+			for (int i = 0; i < thread::GetNumWorkers(); ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
 			};
 			threads_.emplace_back(TimerThread);
@@ -77,7 +81,7 @@ namespace server {
 		void ProcessAccept() noexcept;
 		void Send() noexcept {
 			//int cnt{};
-			for (int i = thread::ID(); i < client::GetMaxClients(); i += thread::kNumWorkers) {
+			for (int i = thread::ID(); i < client::GetMaxClients(); i += thread::GetNumWorkers()) {
 				if (sessions_->TryAccess(i)) {
 					if (false == (*sessions_)[i].Send()) {
 						Disconnect(i);
@@ -89,7 +93,7 @@ namespace server {
 			//if (rng.Rand(0, 2000) == 2) std::print("{}: {}\n", thread::ID(), cnt);
 		}
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
-		void RunAI(float time) noexcept;
+		void RunAI() noexcept;
 
 		static constexpr unsigned short kPort{ 9000 };
 		static constexpr auto kTransferFrequency{ 1.0 / 5555555 };
