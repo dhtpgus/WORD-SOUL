@@ -16,6 +16,7 @@ namespace packet {
 		kSCRemoveEntity,
 		kSCResult,
 		kSCCheckConnection,
+		kSCModifyHP,
 
 		kCSJoinParty = 128,
 		kCSPosition,
@@ -70,19 +71,20 @@ namespace packet {
 	struct SCPosition : Base {
 		SCPosition() noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
-			, id{}, x{}, y{}, z{}, v{}, flag{} {}
+			, id{}, x{}, y{}, z{}, v{}, r{}, flag{} {}
 
-		SCPosition(entity::ID id, float x, float y, float z, float v, int flag) noexcept
+		SCPosition(entity::ID id, float x, float y, float z, float v, float r, int flag) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
-			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, flag{ static_cast<char>(flag) } {}
+			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, r{ r }, flag{ static_cast<char>(flag)} {}
 
 		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z,
-			float rs_v, int rs_flag) noexcept {
+			float rs_v, float rs_r, int rs_flag) noexcept {
 			id = rs_id;
 			x = rs_x;
 			y = rs_y;
 			z = rs_z;
 			v = rs_v;
+			r = rs_r;
 			flag = static_cast<char>(rs_flag);
 		}
 
@@ -91,6 +93,7 @@ namespace packet {
 		float y;
 		float z;
 		float v;
+		float r;
 		char flag;
 	};
 
@@ -151,6 +154,19 @@ namespace packet {
 		char value;
 	};
 
+	struct SCModifyHP : Base {
+		SCModifyHP(entity::ID id, short hp_diff) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCModifyHP }, id{ id }, hp_diff{ hp_diff } {
+		}
+		void Reset(entity::ID rs_id, short rs_hp) noexcept {
+			id = rs_id;
+			hp_diff = rs_hp;
+		}
+
+		entity::ID id;
+		short hp_diff;
+	};
+
 	struct Pack : Base {
 		Pack() noexcept : Base{ 0, Type::kPack } {
 			buffer.reserve(4096);
@@ -184,7 +200,7 @@ namespace packet {
 	struct CSPosition : Base {
 		CSPosition(const char* byte) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kCSPosition }
-			, x{}, y{}, z{}, v{}, flag{} {
+			, x{}, y{}, z{}, v{}, r{}, flag{} {
 			Deserialize(this, byte);
 		}
 
@@ -192,6 +208,7 @@ namespace packet {
 		float y;
 		float z;
 		float v;
+		float r;
 		char flag;
 	};
 

@@ -84,7 +84,7 @@
     <ClCompile Include="fsm.cpp">
       <Filter>소스 파일\ai</Filter>
     </ClCompile>
-    <ClCompile Include="monster.cpp">
+    <ClCompile Include="mob.cpp">
       <Filter>소스 파일\entity</Filter>
     </ClCompile>
     <ClCompile Include="world_map.cpp">
@@ -110,7 +110,7 @@
     <ClInclude Include="player.h">
       <Filter>헤더 파일\entity</Filter>
     </ClInclude>
-    <ClInclude Include="monster.h">
+    <ClInclude Include="mob.h">
       <Filter>헤더 파일\entity</Filter>
     </ClInclude>
     <ClInclude Include="boss.h">
@@ -206,12 +206,18 @@
     <ClInclude Include="lua\include\lualib.h">
       <Filter>헤더 파일\lua\include</Filter>
     </ClInclude>
+    <ClInclude Include="view_list.h">
+      <Filter>헤더 파일\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="flag.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\server_settings.lua">
       <Filter>리소스 파일</Filter>
     </None>
-    <None Include="scripts\monster_settings.lua">
+    <None Include="scripts\mob_settings.lua">
       <Filter>리소스 파일</Filter>
     </None>
   </ItemGroup>

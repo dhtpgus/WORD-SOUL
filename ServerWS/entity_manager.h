@@ -7,12 +7,12 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include <memory>
+#include <unordered_map>
 #include "lf_array.h"
 #include "thread.h"
 #include "entity.h"
 #include "player.h"
-#include "monster.h"
+#include "mob.h"
 #include "boss.h"
 #include "world_map.h"
 #include "lf_base15_tree.h"
@@ -33,25 +33,36 @@ namespace entity {
 			}
 		}
 		void SpawnMonsters() noexcept {
-			for (auto& [i, pos] : monster_spawn_points) {
-				short rand_hp = monster_hp + rng.Rand<short>(-monster_hp_diff, monster_hp_diff);
-				Allocate<Monster>(pos.x, pos.y, pos.z, rand_hp);
+			for (auto& [i, pos] : mob::spawn_points) {
+				short rand_hp = mob::hp_default + rng.Rand<short>(-mob::hp_diff, mob::hp_diff);
+				Allocate<Mob>(pos.x, pos.y, pos.z, rand_hp);
 				//std::print("{}, ({}, {})\n", world_map.FindRegion(pos), pos.x, pos.y);
 			}
 		}
-		void Update(const Position& p1, const Position& p2) noexcept {
+		void Update(int id1, int id2, const Position& pos1, const Position& pos2) noexcept {
+			std::array<std::unordered_map<int, Position>, WorldMap::kNumRegions> positions_in_region{};
+			std::array<std::vector<int>, WorldMap::kNumRegions> id_in_region{};
+			for (int i = 0; i < WorldMap::kNumRegions; ++i) {
+				entities_in_region_[i].GetElements(id_in_region[i]);
+				for (auto id : id_in_region[i]) {
+					if (TryAccess(id)) {
+						positions_in_region[i].try_emplace(id, Get(id).GetPostion());
+						EndAccess(id);
+					}
+				}
+			}
+
 			for (int i = 0; i < kMaxEntities; ++i) {
 				if (TryAccess(i)) {
 					auto& e = Get(i);
-					if (Type::kMonster == e.GetType()) {
-						auto m = reinterpret_cast<Monster*>(&e);
-						auto time = m->GetMoveTime(1.0f / 30);
+					if (Type::kMob == e.GetType()) {
+						auto m = reinterpret_cast<Mob*>(&e);
+						auto time = m->GetMoveTime(1.0f / 80);
 						if (time == 0.0f) {
 							continue;
 						}
-
-						m->Decide(p1, p2);
-						m->Act(time);
+						m->Decide(id1, id2, pos1, pos2);
+						m->Act(time, positions_in_region[m->region_]);
 						int r = world_map.FindRegion(m->GetPostion());
 
 						if (r != m->region_) {
@@ -64,8 +75,8 @@ namespace entity {
 			}
 		}
 		template<class Container>
-		void GetActivated(int sector, Container& con) {
-			entities_in_region_[sector].GetElements(con);
+		void GetEntitiesInRegion(int region, Container& con) {
+			entities_in_region_[region].GetElements(con);
 		}
 	private:
 		void MarkRegion(int prev_region, int curr_region, ID id) {
