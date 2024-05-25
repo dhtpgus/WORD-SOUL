@@ -79,6 +79,8 @@ uint32 ClientSocket::Run()
 				case (uint8)EPacketType::SCCheckConnection:
 					//UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
 					break;
+				case (uint8)EPacketType::SCModifyHp:
+					break;
 				default:
 					break;
 				}
@@ -167,7 +169,7 @@ void ClientSocket::EndRecvThread()
 	}
 }
 
-void ClientSocket::SendCharacterInfo(const FVector& location, float groundSpeed, char flag)
+void ClientSocket::SendCharacterInfo(const FVector& location, float groundSpeed, char flag, float rotation)
 {
 	CSPosition CharacterInfo;
 	CharacterInfo.length = sizeof(CSPosition) - sizeof(PacketBase);
@@ -176,6 +178,7 @@ void ClientSocket::SendCharacterInfo(const FVector& location, float groundSpeed,
 	CharacterInfo.y = location.Y;
 	CharacterInfo.z = location.Z;
 	CharacterInfo.v = groundSpeed;
+	CharacterInfo.r = rotation;
 	CharacterInfo.flag = flag; 
 
 	send(sock, (char*)&CharacterInfo, sizeof(CSPosition), 0);

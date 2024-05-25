@@ -7,6 +7,7 @@ enum class EPacketType : uint8
 	SCRemoveEntity,
 	SCResult,
 	SCCheckConnection,
+	SCModifyHp,
 
 	CSJoinParty = 128,
 	CSPosition,
@@ -33,6 +34,7 @@ struct SCPosition : PacketBase
 	uint16 id;
 	float x, y, z;
 	float v;
+	float r;
 	char flag;
 };
 
@@ -61,6 +63,7 @@ struct CSPosition : PacketBase
 {
 	float x, y, z;
 	float v;
+	float r;
 	char flag;
 };
 

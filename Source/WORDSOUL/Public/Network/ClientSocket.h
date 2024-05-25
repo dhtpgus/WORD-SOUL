@@ -40,7 +40,7 @@ public:
 	bool ConnectToServer(const char* serverIP, int serverPort);
 	bool StartRecvThread();
 	void EndRecvThread();
-	void SendCharacterInfo(const FVector& location, float groundSpeed, char flag);
+	void SendCharacterInfo(const FVector& location, float groundSpeed, char flag, float rotation);
 	void Party();
 	void SetPlayerController(AWORDSOULPlayerController* playerController);
 

@@ -30,6 +30,7 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	FVector MyLoc = MyCharacter->GetActorLocation();
 	float GroundSpeed = MyCharacter->GetGroundSpeed();
 	char flag = NULL;
+	float MyRot = MyCharacter->GetActorRotation().Yaw;
 	if (MyCharacter->GetIsFalling())
 	{
 		flag = 0b0000'0001;
@@ -38,7 +39,7 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	{
 		flag |= 0b000'0100;
 	}
-	Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag);
+	Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag, MyRot);
 	
 	UpdatePlayerInfo(OtherCharacterInfo);
 }
@@ -65,8 +66,8 @@ void AWORDSOULPlayerController::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT FAILED"));
 	}
 
-	CurrentLocation = this->GetPawn()->GetActorLocation();
-	PreviousLocation = FVector(0.f, 0.f, 0.f);
+	/*CurrentLocation = this->GetPawn()->GetActorLocation();
+	PreviousLocation = FVector(0.f, 0.f, 0.f);*/
 
 	Socket->Party();
 	Socket->StartRecvThread();
@@ -88,12 +89,13 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 		AWORDSOULCharacter* cCharacter = Cast<AWORDSOULCharacter>(cPawn);
 		if (cCharacter and cCharacter == OtherCharacter)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Player x y z : %f %f %f"), CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
+			//UE_LOG(LogTemp, Warning, TEXT("Player x y z : %f %f %f"), CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
 			FVector NewLocation = FVector(CharacterInfo.x, CharacterInfo.y, CharacterInfo.z);
 
 			cCharacter->SetActorLocation(NewLocation);
+			cCharacter->SetActorRotation(FRotator(0.f, CharacterInfo.r, 0.f));
 
-			CurrentLocation = NewLocation;
+			/*CurrentLocation = NewLocation;
 			if (CurrentLocation != PreviousLocation)
 			{
 				FVector DirectionVector = FVector(CurrentLocation.X - PreviousLocation.X, CurrentLocation.Y - PreviousLocation.Y, 0.f);
@@ -102,7 +104,8 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 				cCharacter->SetActorRotation(CharacterRotation);
 
 				PreviousLocation = CurrentLocation;
-			}
+			}*/
+
 			
 			UAnimInstance* AnimInst = cCharacter->GetMesh()->GetAnimInstance();
 			UWORDSOULAnimInstance* WORDSOULAnimInst = Cast<UWORDSOULAnimInstance>(AnimInst);
