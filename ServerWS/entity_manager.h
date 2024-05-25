@@ -75,8 +75,8 @@ namespace entity {
 			}
 		}
 		template<class Container>
-		void GetActivated(int sector, Container& con) {
-			entities_in_region_[sector].GetElements(con);
+		void GetEntitiesInRegion(int region, Container& con) {
+			entities_in_region_[region].GetElements(con);
 		}
 	private:
 		void MarkRegion(int prev_region, int curr_region, ID id) {

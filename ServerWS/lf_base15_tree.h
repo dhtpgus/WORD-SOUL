@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include <forward_list>
 #include <unordered_set>

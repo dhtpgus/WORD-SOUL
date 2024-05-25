@@ -10,7 +10,7 @@
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")
 
-enum class Operation {
+enum class Operation : char {
 	kNone, kSend, kRecv, kAccept
 };
 

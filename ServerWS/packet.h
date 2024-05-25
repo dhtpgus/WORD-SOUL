@@ -71,7 +71,7 @@ namespace packet {
 	struct SCPosition : Base {
 		SCPosition() noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
-			, id{}, x{}, y{}, z{}, v{}, r{}, flag {} {}
+			, id{}, x{}, y{}, z{}, v{}, r{}, flag{} {}
 
 		SCPosition(entity::ID id, float x, float y, float z, float v, float r, int flag) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
@@ -155,16 +155,16 @@ namespace packet {
 	};
 
 	struct SCModifyHP : Base {
-		SCModifyHP(entity::ID id, short hp) noexcept
-			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCModifyHP }, id{ id }, hp{ hp } {
+		SCModifyHP(entity::ID id, short hp_diff) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCModifyHP }, id{ id }, hp_diff{ hp_diff } {
 		}
 		void Reset(entity::ID rs_id, short rs_hp) noexcept {
 			id = rs_id;
-			hp = rs_hp;
+			hp_diff = rs_hp;
 		}
 
 		entity::ID id;
-		short hp;
+		short hp_diff;
 	};
 
 	struct Pack : Base {

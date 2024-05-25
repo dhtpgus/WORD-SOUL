@@ -15,8 +15,8 @@
 namespace entity {
 	class Mob : public Base {
 	public:
-		Mob(ID id, float x, float y, float z, short hp) noexcept
-			: Base{ id, x, y, z, hp }, state_{ fsm::State::kAIDisabled }
+		Mob(ID id, float x, float y, float z, short hp_diff) noexcept
+			: Base{ id, x, y, z, hp_diff }, state_{ fsm::State::kAIDisabled }
 			, target_pos_{}, target_id_{}, hitstop_time_ {} {
 			SetType(Type::kMob);
 		}
@@ -91,5 +91,10 @@ namespace entity {
 			mob::vel_wander = settings.GetConstant<float>("VEL_WANDER");
 			mob::vel_chase = settings.GetConstant<float>("VEL_CHASE");
 		}
+	}
+
+	inline bool CanSee(const Position& pos1, const Position& pos2)
+	{
+		return GetDistance2DSq(pos1, pos2) <= mob::ai_activation_range_sq;
 	}
 }

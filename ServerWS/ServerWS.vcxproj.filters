@@ -206,6 +206,12 @@
     <ClInclude Include="lua\include\lualib.h">
       <Filter>헤더 파일\lua\include</Filter>
     </ClInclude>
+    <ClInclude Include="view_list.h">
+      <Filter>헤더 파일\entity</Filter>
+    </ClInclude>
+    <ClInclude Include="flag.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\server_settings.lua">

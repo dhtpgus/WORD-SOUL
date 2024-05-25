@@ -18,15 +18,15 @@ namespace entity {
 
 	class Base {
 	public:
-		Base(ID id, float x, float y, float z, short hp) noexcept
-			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{}, dir_{}, flag_{} {
+		Base(ID id, float x, float y, float z, short hp_diff) noexcept
+			: id_(id), pos_{ x, y, z }, hp_{ hp_diff }, type_{}, dir_{}, flag_{} {
 			region_ = world_map.FindRegion(pos_);
 		}
 
-		void Reset(ID rs_id, float rs_x, float rs_y, float rs_z, short hp) {
+		void Reset(ID rs_id, float rs_x, float rs_y, float rs_z, short hp_diff) {
 			id_ = rs_id;
 			SetPosition(rs_x, rs_y, rs_z);
-			hp_ = hp;
+			hp_ = hp_diff;
 			flag_ = 0;
 		}
 

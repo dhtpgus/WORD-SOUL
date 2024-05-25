@@ -154,6 +154,7 @@
     <ClInclude Include="buffer.h" />
     <ClInclude Include="cas_lock.h" />
     <ClInclude Include="coord.h" />
+    <ClInclude Include="flag.h" />
     <ClInclude Include="free_list.h" />
     <ClInclude Include="fsm.h" />
     <ClInclude Include="lf_base15_tree.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="timer.h" />
     <ClInclude Include="region.h" />
     <ClInclude Include="timer_thread.h" />
+    <ClInclude Include="view_list.h" />
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>
