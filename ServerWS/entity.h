@@ -10,7 +10,7 @@
 
 namespace entity {
 	enum class Type : unsigned char {
-		kNone, kPlayer, kMonster, kBoss
+		kNone, kPlayer, kMob, kBoss
 	};
 	using ID = unsigned short;
 	constexpr inline ID kPartnerID{ 0xFFFF };
@@ -19,7 +19,7 @@ namespace entity {
 	class Base {
 	public:
 		Base(ID id, float x, float y, float z, short hp) noexcept
-			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{} {
+			: id_(id), pos_{ x, y, z }, hp_{ hp }, type_{}, dir_{}, flag_{} {
 			region_ = world_map.FindRegion(pos_);
 		}
 
@@ -27,6 +27,7 @@ namespace entity {
 			id_ = rs_id;
 			SetPosition(rs_x, rs_y, rs_z);
 			hp_ = hp;
+			flag_ = 0;
 		}
 
 		void SetPosition(float x, float y, float z) noexcept {
@@ -47,7 +48,10 @@ namespace entity {
 
 		char GetFlag() const noexcept;
 		float GetVel() const noexcept;
+
+		char flag_;
 		int region_;
+		float dir_;
 	protected:
 		void SetType(Type t) noexcept {
 			type_ = t;

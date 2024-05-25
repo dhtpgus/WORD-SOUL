@@ -1,6 +1,6 @@
 //---------------------------------------------------
 // 
-// monster.h - 몬스터 엔티티 클래스 정의
+// mob.h - 몬스터 엔티티 클래스 정의
 // 
 //---------------------------------------------------
 
@@ -13,28 +13,29 @@
 #include "fsm.h"
 
 namespace entity {
-	class Monster : public Base {
+	class Mob : public Base {
 	public:
-		Monster(ID id, float x, float y, float z, short hp) noexcept
+		Mob(ID id, float x, float y, float z, short hp) noexcept
 			: Base{ id, x, y, z, hp }, state_{ fsm::State::kAIDisabled }
-			, target_pos_{}, stun_time_{} {
-			SetType(Type::kMonster);
+			, target_pos_{}, target_id_{}, hitstop_time_ {} {
+			SetType(Type::kMob);
 		}
-		void Decide(const Position& p1_pos, const Position& p2_pos) noexcept;
-		void Act(float time) noexcept;
+		void Decide(int p1_id, int p2_id, const Position& p1_pos, const Position& p2_pos) noexcept;
+		void Act(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
 		auto GetState() const noexcept { return state_; }
 		float GetMoveTime(float time) noexcept {
 			return move_timer_.GetDuration(time);
 		}
 		void GetDamaged() noexcept {
-			stun_time_ = 1.0f;
+			hitstop_time_ = 1.0f;
 			attack_timer_.ResetTimePoint();
 		}
 
 	private:
-		void Move(float time) noexcept;
+		void Move(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
 		void Attack() noexcept;
 
+		int target_id_;
 		Position target_pos_;
 		fsm::State state_;
 		Timer move_timer_;
@@ -42,7 +43,7 @@ namespace entity {
 		float hitstop_time_;
 	};
 
-	namespace monster {
+	namespace mob {
 		inline std::unordered_map<int, Position> spawn_points;
 		inline short hp_default;
 		inline short hp_diff;
@@ -62,7 +63,7 @@ namespace entity {
 
 		inline void LoadData() noexcept
 		{
-			lua::Script settings{ "scripts/monster_settings.lua" };
+			lua::Script settings{ "scripts/mob_settings.lua" };
 			const int kNumPoints{ settings.GetConstant<int>("NUM_POINTS") };
 
 			for (int i = 0; i < kNumPoints; ++i) {
@@ -84,11 +85,11 @@ namespace entity {
 			acquisition_range_sq = acquisition_range * acquisition_range;
 			attack_range_sq = attack_range * attack_range;
 
-			monster::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
-			monster::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
+			mob::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
+			mob::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
 
-			monster::vel_wander = settings.GetConstant<float>("VEL_WANDER");
-			monster::vel_chase = settings.GetConstant<float>("VEL_CHASE");
+			mob::vel_wander = settings.GetConstant<float>("VEL_WANDER");
+			mob::vel_chase = settings.GetConstant<float>("VEL_CHASE");
 		}
 	}
 }

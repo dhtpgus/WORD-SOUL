@@ -28,13 +28,12 @@ namespace server {
 			server_addr_.sin_port = htons(kPort);
 
 			accepter_ = std::make_shared<Accepter>();
-
-			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
-			accepter_->LinkIOCP(iocp_);
-
 			for (int i = 0; i < parties.size(); ++i) {
 				parties[i].SetID(i);
 			}
+
+			iocp_ = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 0);
+			accepter_->LinkIOCP(iocp_);
 		}
 		Socket(const Socket&) = delete;
 		Socket(Socket&&) = delete;
@@ -48,7 +47,8 @@ namespace server {
 			accepter_->BindAndListen(server_addr_);
 			accepter_->Accept();
 
-			entity::monster::LoadData();
+			entity::mob::LoadData();
+			timer::event_pq = new timer::EventPQ[thread::GetNumWorkers()];
 
 			std::print("[Info] Server Starts\n");
 			CreateThread();
@@ -66,11 +66,13 @@ namespace server {
 		}
 	private:
 		void CreateThread() noexcept {
-			threads_.reserve(thread::GetNumWorkers() + 1);
+			threads_.reserve(thread::GetNumWorkers() * 2);
 			for (int i = 0; i < thread::GetNumWorkers(); ++i) {
 				threads_.emplace_back([this, i]() { WorkerThread(i); });
 			};
-			threads_.emplace_back(TimerThread);
+			for (int i = 0; i < thread::GetNumWorkers(); ++i) {
+				threads_.emplace_back(timer::Thread, iocp_, i);
+			}
 
 			for (std::thread& th : threads_) {
 				th.join();
@@ -83,7 +85,7 @@ namespace server {
 			//int cnt{};
 			for (int i = thread::ID(); i < client::GetMaxClients(); i += thread::GetNumWorkers()) {
 				if (sessions_->TryAccess(i)) {
-					if (false == (*sessions_)[i].Send()) {
+					if (false == (*sessions_)[i].Emplace<packet::SCCheckConnection>()) {
 						Disconnect(i);
 					}
 					//cnt += 1;
@@ -96,7 +98,7 @@ namespace server {
 		void RunAI() noexcept;
 
 		static constexpr unsigned short kPort{ 9000 };
-		static constexpr auto kTransferFrequency{ 1.0 / 5555555 };
+		static constexpr auto kTransferCheckFrequency{ 2.0 };
 
 		using SessionArray = lf::Array<client::Session>;
 		std::vector<std::thread> threads_;

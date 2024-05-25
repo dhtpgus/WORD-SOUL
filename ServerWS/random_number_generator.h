@@ -14,7 +14,14 @@ class RandomNumberGenerator {
 public:
 	RandomNumberGenerator() noexcept;
 
-	template<class T>
+	template<class T> requires std::integral<T>
+	T Rand(T min, T max) noexcept {
+		auto rand_num = ((*uid_)(*dre_));
+
+		return min + rand_num % (max - min + 1);
+	}
+
+	template<class T> requires std::floating_point<T>
 	T Rand(T min, T max) noexcept {
 		double rand_num = static_cast<double>((*uid_)(*dre_));
 		rand_num /= std::numeric_limits<long long>::max();

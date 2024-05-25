@@ -23,14 +23,27 @@ namespace a_star {
 			dst_y_ = rs_dst_y;
 		}*/
 
-		auto Expand(StateVector& next) const noexcept {
+		auto Expand(StateVector& next, int id, const std::unordered_map<int, Position>& others) const noexcept {
 			const float kPi{ acosf(-1) };
 
 			for (int i = 0; i < kNumExpand; ++i) {
 				auto next_x = cur_.x + cosf(kPi * 2 * i / kNumExpand) * distance_;
 				auto next_y = cur_.y + sinf(kPi * 2 * i / kNumExpand) * distance_;
-				
-				if (WorldMap::kOutOfBounds != world_map.FindRegion(Position{ next_x, next_y, 0.0f })) {
+				Position next_pos{ next_x, next_y, 0.0f };
+
+				bool break_flag{};
+
+				if (WorldMap::kOutOfBounds != world_map.FindRegion(next_pos)) {
+					for (auto& [other_id, other_pos] : others) {
+						if (id != other_id and GetDistance2DSq(other_pos, next_pos) < 80.0f) {
+							break_flag = true;
+							break;
+						}
+					}
+					if (break_flag) {
+						continue;
+					}
+					
 					next.emplace_back(depth_ + 1, dir_, next_x, next_y, dst_.x, dst_.y, distance_);
 					if (next.back().dir_ == kDirUndefined) {
 						next.back().dir_ = kPi * 2 * i / kNumExpand;
@@ -59,7 +72,7 @@ namespace a_star {
 			return H() < 1.0f;
 		}
 
-		static constexpr size_t kNumExpand{ 40 };
+		static constexpr size_t kNumExpand{ 12 };
 		static constexpr float kDirUndefined{ -1.0f };
 	private:
 		int depth_;
@@ -69,9 +82,9 @@ namespace a_star {
 		Position dst_;
 	};
 
-	inline Position GetNextPosition(const Position& cur, const Position& trg, float time, float speed) noexcept
+	inline Position GetNextPosition(const Position& cur, float& d, const Position& trg, float time, float speed, int id, const std::unordered_map<int, Position>& others) noexcept
 	{
-		constexpr auto kMaxTries{ 40 };
+		constexpr auto kMaxTries{ 25 };
 
 		StatePQ open_queue;
 		open_queue.emplace(0, State::kDirUndefined, cur.x, cur.y, trg.x, trg.y, time * speed);
@@ -88,11 +101,12 @@ namespace a_star {
 			open_queue.pop();
 
 			if (true == state.Check()) {
-				return Position{ cur.x + cosf(state.GetDir()) * time * speed,
-					cur.y + sinf(state.GetDir()) * time * speed, cur.z };
+				auto dir = state.GetDir();
+				d = dir;
+				return Position{ cur.x + cosf(dir) * time * speed, cur.y + sinf(dir) * time * speed, cur.z };
 			}
 
-			state.Expand(next_states);
+			state.Expand(next_states, id, others);
 
 			for (const auto& state : next_states) {
 				open_queue.push(state);
@@ -100,6 +114,7 @@ namespace a_star {
 		}
 		auto dir = open_queue.top().GetDir();
 
+		d = dir;
 		return Position{ cur.x + cosf(dir) * time * speed,
 			cur.y + sinf(dir) * time * speed, cur.z };
 	}

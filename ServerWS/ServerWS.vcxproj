@@ -139,7 +139,7 @@
     <ClCompile Include="main.cpp">
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
     </ClCompile>
-    <ClCompile Include="monster.cpp" />
+    <ClCompile Include="mob.cpp" />
     <ClCompile Include="packet.cpp" />
     <ClCompile Include="random_number_generator.cpp" />
     <ClCompile Include="lf_child_node.cpp" />
@@ -171,7 +171,7 @@
     <ClInclude Include="entity_manager.h" />
     <ClInclude Include="lf_array.h" />
     <ClInclude Include="lf_node.h" />
-    <ClInclude Include="monster.h" />
+    <ClInclude Include="mob.h" />
     <ClInclude Include="packet.h" />
     <ClInclude Include="player.h" />
     <ClInclude Include="lf_relaxed_queue.h" />
@@ -186,7 +186,7 @@
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="scripts\monster_settings.lua" />
+    <None Include="scripts\mob_settings.lua" />
     <None Include="scripts\server_settings.lua" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

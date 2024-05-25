@@ -1,12 +1,12 @@
 #include <print>
-#include "monster.h"
+#include "mob.h"
 #include "boss.h"
 #include "player.h"
 
 namespace entity {
 	char Base::GetFlag() const noexcept
 	{
-		char flag{};
+		char flag{ flag_ };
 		auto type = GetType();
 
 		switch (type) {
@@ -14,9 +14,9 @@ namespace entity {
 		{
 			break;
 		}
-		case Type::kMonster:
+		case Type::kMob:
 		{
-			auto m = reinterpret_cast<const Monster*>(this);
+			auto m = reinterpret_cast<const Mob*>(this);
 			flag |= static_cast<char>(m->GetState());
 			break;
 		}
@@ -40,14 +40,14 @@ namespace entity {
 		switch (type) {
 		case Type::kPlayer:
 			return 600.0f;
-		case Type::kMonster:
+		case Type::kMob:
 		{
-			auto m = reinterpret_cast<const Monster*>(this);
+			auto m = reinterpret_cast<const Mob*>(this);
 			switch (m->GetState()) {
 			case fsm::State::kChase:
-				return m->kChaseSpeed;
+				return mob::vel_chase;
 			case fsm::State::kWander:
-				return m->kWanderSpeed;
+				return mob::vel_wander;
 			default:
 				return 0.0f;
 			}

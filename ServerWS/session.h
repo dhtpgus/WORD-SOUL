@@ -21,14 +21,12 @@ namespace client {
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
 			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{},
-			rq_{ thread::GetNumWorkers() }, wsabuf_send_{} {
+			rq_{ thread::GetNumWorkers() } {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
-			wsabuf_send_[0].buf = reinterpret_cast<char*>(free_list<packet::SCCheckConnection>.Get());
-			wsabuf_send_[0].len = sizeof(packet::SCCheckConnection);
+			wsabuf_recv_.buf = buf_recv_.GetRecvPoint();
 		}
 		~Session() noexcept {
-			packet::Collect(wsabuf_send_[0].buf);
 			Delete();
 		}
 		Session(const Session&) = delete;
@@ -38,39 +36,22 @@ namespace client {
 
 		void Receive() noexcept {
 			static DWORD flags = 0;
-			wsabuf_recv_.buf = buf_recv_.GetRecvPoint();
 			WSARecv(sock_, &wsabuf_recv_, 1, nullptr, &flags, &ox_.over, nullptr);
 		}
 
 		template<class Packet, class... Value>
-		void Emplace(Value... value) noexcept {
-			rq_.Emplace<Packet>(value...);
-		}
+		bool Emplace(Value... value) noexcept {
+			//rq_.Emplace<Packet>(value...);
+			auto p = free_list<Packet>.Get(value...);
 
-		int Send() noexcept {
-			DWORD num_packet{ 1 };
-			while (true) {
-				if (num_packet >= 100) {
-					break;
-				}
-				packet::Base* packet = rq_.Pop();
-				if (packet == lf::kPopFailed) {
-					break;
-				}
-				wsabuf_send_[num_packet].buf = reinterpret_cast<char*>(packet);
-				wsabuf_send_[num_packet].len = packet->size + sizeof(packet::Base);
-				
-				num_packet += 1;
-			}
-
+			WSABUF wb;
+			wb.buf = reinterpret_cast<char*>(p);
+			wb.len = (p->size + 2);
 			auto ox = free_list<OverEx>.Get(Operation::kSend);
-			int ret = WSASend(sock_, &wsabuf_send_[0], num_packet, nullptr, 0, &ox->over, 0);
 
-			for (DWORD i = 1; i < num_packet; ++i) {
-				packet::Collect(wsabuf_send_[i].buf);
-			}
-
-			return ret == 0;
+			auto r = WSASend(sock_, &wb, 1, nullptr, 0, &ox->over, 0);
+			free_list<Packet>.Collect(p);
+			return r == 0;
 		}
 
 		void Reset(int id, SOCKET sock, HANDLE iocp) noexcept {
@@ -111,7 +92,6 @@ namespace client {
 		SOCKET sock_;
 		BufferRecv buf_recv_;
 		WSABUF wsabuf_recv_;
-		std::array<WSABUF, 100> wsabuf_send_;
 		int id_;
 		int party_id_;
 		entity::Player player_;
