@@ -17,7 +17,7 @@ namespace server {
 			closesocket(client_sock);
 			return;
 		}
-		
+
 		if (sessions_->TryAccess(session_id)) {
 			auto& session = (*sessions_)[session_id];
 			session.Receive();
@@ -170,7 +170,7 @@ namespace server {
 			player.flag_ = p.flag;
 			auto party_id{ session.GetPartyID() };
 
-			if (party_id == -1) {
+			if (-1 == party_id or -1 == player.region_) {
 				break;
 			}
 
@@ -195,7 +195,7 @@ namespace server {
 							en_pos.z, en.GetVel(), en.dir_, en.GetFlag());
 					}
 					else {
-						session.Emplace<packet::SCRemoveEntity>(en_id, (char)1);
+						session.Emplace<packet::SCRemoveEntity>(en_id, char{ 1 });
 					}
 					entities.EndAccess(en_id);
 				}

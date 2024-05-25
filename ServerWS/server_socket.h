@@ -28,9 +28,7 @@ namespace server {
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
 			server_addr_.sin_port = htons(kPort);
 
-			for (auto vl : view_lists) {
-				vl = new ViewList{ 1 };
-			}
+			InitViewLists();
 
 			accepter_ = std::make_shared<Accepter>();
 			for (int i = 0; i < parties.size(); ++i) {

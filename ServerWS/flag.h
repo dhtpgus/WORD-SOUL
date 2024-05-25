@@ -1,23 +1,17 @@
 #pragma once
 
-namespace flag {
-	struct Base {
+struct Flag {
+	using T = char;
 
-	};
+	void SetBit(int i) {
+		data |= static_cast<T>(1ULL << i);
+	}
+	void ClearBit(int i) {
+		data &= static_cast<T>(~(1ULL << i));
+	}
+	void ToggleBit(int i) {
+		data ^= static_cast<T>(~(1ULL << i));
+	}
 
-	struct Bit8 : Base {
-		char data;
-	};
-
-	struct Bit16 : Base {
-		short data;
-	};
-
-	struct Bit32 : Base {
-		int data;
-	};
-
-	struct Bit64 : Base {
-		long long data;
-	};
-}
+	T data;
+};
