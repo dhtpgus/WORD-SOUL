@@ -73,11 +73,14 @@ WorldMap::WorldMap() noexcept
 	}
 
 	regions_[0].AddAdjRegion(&regions_[1]);
+	regions_[0].AddAdjRegion(&regions_[0]);
 
 	for (int i = 1; i <= 10; ++i) {
 		regions_[i].AddAdjRegion(&regions_[i - 1]);
+		regions_[i].AddAdjRegion(&regions_[i]);
 		regions_[i].AddAdjRegion(&regions_[i + 1]);
 	}
 
 	regions_[11].AddAdjRegion(&regions_[10]);
+	regions_[11].AddAdjRegion(&regions_[11]);
 }

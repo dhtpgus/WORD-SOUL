@@ -39,6 +39,11 @@ namespace packet {
 			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
 			break;
 		}
+		case Type::kSCModifyHP: {
+			using Packet = SCModifyHP;
+			free_list<Packet>.Collect(reinterpret_cast<Packet*>(p));
+			break;
+		}
 		default: {
 			if (debug::DisplaysMSG()) {
 				std::print("[Error] Unknown Packet: {}\n", static_cast<int>(packet->type));

@@ -5,10 +5,12 @@
 //---------------------------------------------------
 
 #pragma once
+#include <print>
 #include <unordered_map>
 #include "random_number_generator.h"
 #include "lua_script.h"
 #include "timer.h"
+#include "timer_thread.h"
 #include "entity.h"
 #include "fsm.h"
 
@@ -17,7 +19,7 @@ namespace entity {
 	public:
 		Mob(ID id, float x, float y, float z, short hp_diff) noexcept
 			: Base{ id, x, y, z, hp_diff }, state_{ fsm::State::kAIDisabled }
-			, target_pos_{}, target_id_{}, hitstop_time_ {} {
+			, target_pos_{}, target_id_{}, hitstop_time_{}, is_waken_up_{} {
 			SetType(Type::kMob);
 		}
 		void Decide(int p1_id, int p2_id, const Position& p1_pos, const Position& p2_pos) noexcept;
@@ -31,6 +33,21 @@ namespace entity {
 			attack_timer_.ResetTimePoint();
 		}
 
+		void WakeUp() noexcept {
+			if (is_waken_up_) {
+				return;
+			}
+			bool expected{ false };
+			if (true == is_waken_up_.compare_exchange_strong(expected, true)) {
+				timer::event_pq->Emplace(GetID(), 0, Operation::kUpdateMobAI);
+			}
+		}
+
+		void Print() noexcept {
+			std::print("id {}: (x, y, z) = ({}, {}, {}), flag = {:08b}\n",
+				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, GetFlag());
+		}
+
 	private:
 		void Move(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
 		void Attack() noexcept;
@@ -38,6 +55,7 @@ namespace entity {
 		int target_id_;
 		Position target_pos_;
 		fsm::State state_;
+		std::atomic_bool is_waken_up_;
 		Timer move_timer_;
 		Timer attack_timer_;
 		float hitstop_time_;

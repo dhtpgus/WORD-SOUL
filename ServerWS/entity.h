@@ -38,7 +38,7 @@ namespace entity {
 
 		ID GetID() const noexcept {	return id_; }
 
-		const Position& GetPostion() const noexcept { return pos_; }
+		const Position& GetPosition() const noexcept { return pos_; }
 
 		void Delete() noexcept {}
 

@@ -2,7 +2,11 @@
 #include "free_list.h"
 #include "debug.h"
 #include "timer.h"
-#include "mob.h"
+
+auto GetPartyIDFromKey(ULONG_PTR key) noexcept
+{
+	return static_cast<Party::ID>(key >> 32);
+}
 
 namespace server {
 	Socket sock;
@@ -12,18 +16,18 @@ namespace server {
 		auto client_sock = accepter_->GetAcceptedSocket();
 		accepter_->Accept();
 
-		auto session_id = sessions_->Allocate<client::Session>(client_sock, iocp_);
+		auto session_id = sessions.Allocate<client::Session>(client_sock, iocp_);
 		if (session_id == SessionArray::kInvalidID) {
 			closesocket(client_sock);
 			return;
 		}
 
-		if (sessions_->TryAccess(session_id)) {
-			auto& session = (*sessions_)[session_id];
+		if (sessions.TryAccess(session_id)) {
+			auto& session = sessions[session_id];
 			session.Receive();
 			session.Emplace<packet::SCNewEntity>(entity::kAvatarID, 80.0f, 500.0f, 0.0f, entity::Type::kPlayer, 0);
 			session.GetPlayer().SetPosition(80.0f, 500.0f, 0.0f);
-			sessions_->EndAccess(session_id);
+			sessions.EndAccess(session_id);
 		}
 	}
 
@@ -39,64 +43,70 @@ namespace server {
 		Timer timer;
 		Timer::Duration duration{};
 		Timer::Duration ac_duration{};
-		Timer::Duration ac_duration2{};
-
-		const DWORD kDelay = debug::DisplaysMSG() ? 10UL : 1UL;
 
 		while (true) {
 			key = 0xFFFF'FFFF'FFFF'FFFF;
 			retval = GetQueuedCompletionStatus(iocp_, &transferred, &key,
-				reinterpret_cast<LPOVERLAPPED*>(&ox), kDelay);
+				reinterpret_cast<LPOVERLAPPED*>(&ox), INFINITE);
 
 			int id = static_cast<int>(key);
 
 			if (0 == retval) {
-				if (sessions_->TryAccess(id)) {
+				if (sessions.TryAccess(id)) {
 					Disconnect(id);
-					sessions_->EndAccess(id);
+					sessions.EndAccess(id);
 				}
 			}
 			else {
 				switch (ox->op)
 				{
 				case Operation::kSend:
+				{
 					free_list<OverEx>.Collect(ox);
 					break;
+				}
 				case Operation::kAccept:
+				{
 					ProcessAccept();
 					break;
+				}
 				case Operation::kRecv:
-					if (transferred == 0) {
+				{
+					if (0 == transferred) {
 						break;
 					}
-					if (sessions_->TryAccess(id)) {
-						auto& buffer = (*sessions_)[id].GetBuffer();
+					if (sessions.TryAccess(id)) {
+						auto& buffer = sessions[id].GetBuffer();
 						transferred += buffer.GetSizeRemains();
 
 						/*if (debug::DisplaysMSG()) {
-							std::print("[MSG] {}({}): {}\n", id, sessions_->Exists(id),
+							std::print("[MSG] {}({}): {}\n", id, sessions->Exists(id),
 								buffer.GetBinary(transferred));
 						}*/
 
 						while (transferred != 0) {
 							ProcessPacket(buffer, transferred, id);
 						}
-						(*sessions_)[id].Receive();
+						sessions[id].Receive();
 
-						sessions_->EndAccess(id);
+						sessions.EndAccess(id);
 					}
 					break;
+				}
+
+				case Operation::kUpdateMobAI:
+				{
+					if (entity::managers[GetPartyIDFromKey(key)].UpdateAI(id)) {
+						timer::event_pq->Emplace(id, 20, Operation::kUpdateMobAI);
+					}
+					free_list<OverEx>.Collect(ox);
+					break;
+				}
 				}
 			}
 
 			duration = timer.GetDuration();
 			ac_duration += duration;
-			ac_duration2 += duration;
-
-			//if (ac_duration2 >= 0.03) {
-			//	ac_duration2 = 0.0;
-				RunAI();
-			//}
 
 			if (ac_duration >= kTransferCheckFrequency) {
 				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
@@ -121,7 +131,7 @@ namespace server {
 		auto type = buf.GetPacketType();
 		n_bytes -= sizeof(size) + sizeof(type) + size;
 
-		auto& session = (*sessions_)[session_id];
+		auto& session = sessions[session_id];
 
 		switch (type) {
 		case packet::Type::kTest:
@@ -143,11 +153,11 @@ namespace server {
 
 				auto partner_id = parties[p.id].GetPartnerID(session_id);
 				
-				if (sessions_->TryAccess(partner_id)) {
-					auto& pos = session.GetPlayer().GetPostion();
-					(*sessions_)[partner_id].Emplace<packet::SCNewEntity>(
+				if (sessions.TryAccess(partner_id)) {
+					auto& pos = session.GetPlayer().GetPosition();
+					sessions[partner_id].Emplace<packet::SCNewEntity>(
 						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
-					sessions_->EndAccess(partner_id);
+					sessions.EndAccess(partner_id);
 				}
 			}
 			else {
@@ -170,7 +180,17 @@ namespace server {
 			player.flag_ = p.flag;
 			auto party_id{ session.GetPartyID() };
 
-			if (-1 == party_id or -1 == player.region_) {
+			if (-1 == party_id) {
+				break;
+			}
+
+			auto partner_id = parties[party_id].GetPartnerID(session_id);
+
+			if (sessions.TryAccess(partner_id)) {
+				sessions[partner_id].Emplace<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.r, p.flag);
+				sessions.EndAccess(partner_id);
+			}
+			if (-1 == player.region_) {
 				break;
 			}
 
@@ -183,29 +203,24 @@ namespace server {
 			for (entity::ID en_id : en_ids) {
 				if (entities.TryAccess(en_id)) { 
 					auto& en = entities[en_id];
-					const auto& en_pos = en.GetPostion();
+					const auto& en_pos = en.GetPosition();
 
-					if (entity::CanSee(en_pos, player.GetPostion())) {
+					if (entity::CanSee(en_pos, player.GetPosition())) {
 						if (view_lists[session.GetID()]->Insert(en_id)) {
 							session.Emplace<packet::SCNewEntity>(en_id,
 								en_pos.x, en_pos.y, en_pos.z, en.GetType(), en.GetFlag());
 						}
-
-						session.Emplace<packet::SCPosition>(en_id, en_pos.x, en_pos.y,
-							en_pos.z, en.GetVel(), en.dir_, en.GetFlag());
+						
+						session.Emplace<packet::SCPosition>(&en);
+						if (entity::Type::kMob == en.GetType()) {
+							reinterpret_cast<entity::Mob*>(&en)->WakeUp();
+						}
 					}
 					else {
 						session.Emplace<packet::SCRemoveEntity>(en_id, char{ 1 });
 					}
 					entities.EndAccess(en_id);
 				}
-			}
-
-			auto partner_id = parties[party_id].GetPartnerID(session_id);
-			
-			if (sessions_->TryAccess(partner_id)) {
-				(*sessions_)[partner_id].Emplace<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.r, p.flag);
-				sessions_->EndAccess(partner_id);
 			}
 			break;
 		}
@@ -234,51 +249,6 @@ namespace server {
 		}
 	}
 
-	void Socket::RunAI() noexcept
-	{
-		for (int i = thread::ID(); i < parties.size(); i += thread::GetNumWorkers()) {
-			if (not parties[i].IsAssembled()) {
-				continue;
-			}
-			auto members{ parties[i].GetPartyMembers() };
-			const Position* pos[2]{};
-			bool break_flag{};
-
-			for (int p = 0; p < 2; ++p) {
-				if (sessions_->TryAccess(members[p])) {
-					pos[p] = &(*sessions_)[members[p]].GetPlayer().GetPostion();
-					sessions_->EndAccess(members[p]);
-				}
-				else {
-					break_flag = true;
-					break;
-				}
-			}
-			if (true == break_flag) {
-				continue;
-			}
-
-			entity::managers[i].Update(members[0], members[2], *pos[0], *pos[1]);
-
-			for (int j = 0; j < entity::kMaxEntities; ++j) {
-				if (entity::managers[i].TryAccess(j)) {
-					auto& en = entity::managers[i][j];
-					auto& en_pos = en.GetPostion();
-
-					for (auto mem : members) {
-						if (sessions_->TryAccess(mem)) {
-							(*sessions_)[mem].Emplace<packet::SCPosition>(en.GetID(), en_pos.x, en_pos.y, en_pos.z, en.GetVel(), en.dir_, en.GetFlag());
-							
-							/*if (en.region_ == 0 and en.GetFlag() % 4 == 0b11)
-							std::print("{}: {} {} {} - {} {:08b}\n", en.GetID(), en_pos.x, en_pos.y, en_pos.z, en.region_, en.GetFlag());*/
-							sessions_->EndAccess(mem);
-						}
-					}
-
-					entity::managers[i].EndAccess(j);
-				}
-			}
-		}
-	}
+	
 }
 

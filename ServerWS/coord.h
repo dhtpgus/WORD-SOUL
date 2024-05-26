@@ -1,5 +1,7 @@
 #pragma once
 #include <cmath>
+#include <chrono>
+#include <print>
 
 struct Position {
 	Position() noexcept = default;
@@ -7,10 +9,14 @@ struct Position {
 	Position(float grid_x, float grid_y) noexcept
 		: x{ kPivotX + kUnitLength * grid_x }, y{ kPivotY + kUnitLength * grid_y }, z{ 0.0f } {}
 	
+	void Print() const noexcept {
+		std::print("(x, y, z) = ({}, {}, {})\n", x, y, z);
+	}
+
 	static constexpr float kPivotX = 0.0f;
 	static constexpr float kPivotY = 0.0f;
 	static constexpr float kUnitLength = 1000.0f;
-	float x{}, y{}, z{};
+	float x{ 1e9f }, y{ 1e9f }, z{ 1e9f };
 };
 
 struct Vector {
@@ -52,8 +58,8 @@ inline bool IsInRectGrid(const Position& p, const Position& center, float w, flo
 {
 	w *= Position::kUnitLength;
 	h *= Position::kUnitLength;
-	return center.x - w / 2 < p.x and p.x < center.x + w / 2
-		and center.y - h / 2 < p.y and p.y < center.y + h / 2;
+	return center.x - w / 2 <= p.x and p.x <= center.x + w / 2
+		and center.y - h / 2 <= p.y and p.y <= center.y + h / 2;
 }
 
 inline bool IsInCircleGrid(const Position& p, Position& center, float r)

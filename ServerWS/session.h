@@ -10,7 +10,7 @@
 #include "buffer.h"
 #include "packet.h"
 #include "player.h"
-#include "lf_relaxed_queue.h"
+#include "lf_array.h"
 #include "debug.h"
 #include "over_ex.h"
 #include "lua_script.h"
@@ -20,8 +20,7 @@ namespace client {
 	public:
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
-			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{},
-			rq_{ thread::GetNumWorkers() } {
+			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{} {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			wsabuf_recv_.buf = buf_recv_.GetRecvPoint();
@@ -66,19 +65,7 @@ namespace client {
 			}
 		}
 
-		void Delete() noexcept {
-			if (debug::DisplaysMSG()) {
-				std::print("[Info] (ID: {}) has left the game.\n", GetID());
-			}
-			packet::Base* packet{};
-			while (true) {
-				packet = rq_.Pop();
-				if (nullptr == packet) {
-					break;
-				}
-				packet::Collect(packet);
-			}
-		}
+		void Delete() noexcept;
 
 		BufferRecv& GetBuffer() noexcept { return buf_recv_; }
 		int GetID() const noexcept { return id_; }
@@ -95,7 +82,6 @@ namespace client {
 		int id_;
 		int party_id_;
 		entity::Player player_;
-		lf::RelaxedQueue<packet::Base, 1e-4> rq_;
 	};
 
 	inline int GetMaxClients() noexcept {
@@ -117,3 +103,6 @@ namespace client {
 		return max_clients;
 	}
 }
+
+using SessionArray = lf::Array<client::Session>;
+inline SessionArray sessions{ client::GetMaxClients(), thread::GetNumWorkers() };

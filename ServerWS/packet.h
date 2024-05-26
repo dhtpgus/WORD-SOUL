@@ -77,6 +77,11 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
 			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, r{ r }, flag{ static_cast<char>(flag)} {}
 
+		SCPosition(entity::Base* e) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
+			, id{ e->GetID() }, x{ e->GetPosition().x }, y{ e->GetPosition().y }, z{ e->GetPosition().z }
+			, v{ e->GetVel() }, r{ e->dir_ }, flag{ e->GetFlag() } {}
+
 		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z,
 			float rs_v, float rs_r, int rs_flag) noexcept {
 			id = rs_id;
@@ -86,6 +91,16 @@ namespace packet {
 			v = rs_v;
 			r = rs_r;
 			flag = static_cast<char>(rs_flag);
+		}
+
+		void Reset(entity::Base* e) noexcept {
+			id = e->GetID();
+			x = e->GetPosition().x;
+			y = e->GetPosition().y;
+			z = e->GetPosition().z;
+			v = e->GetVel();
+			r = e->dir_;
+			flag = e->GetFlag();
 		}
 
 		entity::ID id;

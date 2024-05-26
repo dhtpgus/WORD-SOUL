@@ -16,7 +16,7 @@ namespace entity {
 		}
 		void SetPosition(float x, float y, float z) {
 			Base::SetPosition(x, y, z);
-			region_ = world_map.FindRegion(GetPostion());
+			region_ = world_map.FindRegion(GetPosition());
 		}
 	};
 }
