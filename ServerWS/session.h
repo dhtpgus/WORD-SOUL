@@ -10,9 +10,9 @@
 #include "buffer.h"
 #include "packet.h"
 #include "player.h"
-#include "lf_array.h"
 #include "debug.h"
 #include "over_ex.h"
+#include "concurrent_ds.h"
 #include "lua_script.h"
 
 namespace client {
@@ -104,5 +104,5 @@ namespace client {
 	}
 }
 
-using SessionArray = lf::Array<client::Session>;
+using SessionArray = concurrent::Array<client::Session>;
 inline SessionArray sessions{ client::GetMaxClients(), thread::GetNumWorkers() };

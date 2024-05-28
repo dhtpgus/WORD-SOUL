@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="concurrent_ds.cpp" />
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="fsm.cpp" />
@@ -155,6 +156,7 @@
     <ClInclude Include="boss.h" />
     <ClInclude Include="buffer.h" />
     <ClInclude Include="cas_lock.h" />
+    <ClInclude Include="concurrent_ds.h" />
     <ClInclude Include="coord.h" />
     <ClInclude Include="flag.h" />
     <ClInclude Include="free_list.h" />

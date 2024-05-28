@@ -233,6 +233,60 @@ namespace server {
 			parties[party_id].Exit(session_id);
 			break;
 		}
+		case packet::Type::kStressTest:
+		{
+			packet::StressTest p{ buf.GetData() };
+
+			auto& player = session.GetPlayer();
+			player.SetPosition(p.x, p.y, p.z);
+			session.Emplace<packet::StressTest>(static_cast<entity::ID>(session_id), p.x, p.y, p.z, p.tp);
+
+			auto party_id{ session.GetPartyID() };
+
+			if (-1 == party_id) {
+				break;
+			}
+
+			auto partner_id = parties[party_id].GetPartnerID(session_id);
+
+			if (sessions.TryAccess(partner_id)) {
+				sessions[partner_id].Emplace<packet::StressTest>(entity::kPartnerID, p.x, p.y, p.z, p.tp);
+				sessions.EndAccess(partner_id);
+			}
+			if (-1 == player.region_) {
+				break;
+			}
+
+			std::vector<int> en_ids;
+			en_ids.reserve(30);
+
+			auto& entities = entity::managers[party_id];
+			entities.GetEntitiesInRegion(player.region_, en_ids);
+
+			for (entity::ID en_id : en_ids) {
+				if (entities.TryAccess(en_id)) {
+					auto& en = entities[en_id];
+					const auto& en_pos = en.GetPosition();
+
+					if (entity::CanSee(en_pos, player.GetPosition())) {
+						if (view_lists[session.GetID()]->Insert(en_id)) {
+							session.Emplace<packet::SCNewEntity>(en_id,
+								en_pos.x, en_pos.y, en_pos.z, en.GetType(), en.GetFlag());
+						}
+
+						session.Emplace<packet::SCPosition>(&en);
+						if (entity::Type::kMob == en.GetType()) {
+							reinterpret_cast<entity::Mob*>(&en)->WakeUp();
+						}
+					}
+					else {
+						session.Emplace<packet::SCRemoveEntity>(en_id, char{ 1 });
+					}
+					entities.EndAccess(en_id);
+				}
+			}
+			break;
+		}
 		default:
 		{
 			std::print("[Error] Unknown Packet: {}\n", static_cast<int>(type));

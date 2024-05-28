@@ -124,7 +124,7 @@ namespace lf {
 				elements_[id].data = new Type{ id, value... };
 			}
 			else {
-				elements_[id].data->Reset(id, value...);
+				reinterpret_cast<Type*>(elements_[id].data)->Reset(id, value...);
 			}
 			elements_[id].cas_lock.Unlock();
 			elements_[id].ref_cnt = 1;

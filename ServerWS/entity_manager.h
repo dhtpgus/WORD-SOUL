@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
-#include "lf_array.h"
 #include "thread.h"
 #include "entity.h"
 #include "session.h"
@@ -16,15 +15,15 @@
 #include "party.h"
 #include "boss.h"
 #include "world_map.h"
-#include "lf_base15_tree.h"
+#include "concurrent_ds.h"
 
 namespace entity {
 	inline constexpr auto kMaxEntities{ 100 };
 
-	class Manager : public lf::Array<Base> {
+	class Manager : public concurrent::Array<entity::Base> {
 	public:
 		Manager() noexcept
-			: lf::Array<Base>{ kMaxEntities, thread::GetNumWorkers() }
+			: concurrent::Array<Base>{ kMaxEntities, thread::GetNumWorkers() }
 			, entities_in_region_{}, id_{ -1 } {}
 
 		void SetID(int id) noexcept {
@@ -138,7 +137,7 @@ namespace entity {
 			}
 		}
 
-		std::array<lf::Base15Tree, WorldMap::kNumRegions> entities_in_region_;
+		std::array<concurrent::Set, WorldMap::kNumRegions> entities_in_region_;
 		int id_;
 	};
 
