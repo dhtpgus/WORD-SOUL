@@ -54,6 +54,12 @@ struct SCCheckConnection : PacketBase
 	char data;
 };
 
+struct SCModifyHP : PacketBase
+{
+	short id;
+	short hp;
+};
+
 struct CSJoinParty : PacketBase
 {
 	uint16 id;
