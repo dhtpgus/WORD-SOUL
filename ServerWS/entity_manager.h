@@ -69,9 +69,10 @@ namespace entity {
 				auto& m = *reinterpret_cast<Mob*>(&Get(id));
 				std::unordered_map<int, Position> positions_in_region{};
 				std::vector<int> id_in_region{};
+				id_in_region.reserve(30);
 
-				if ((m.GetFlag() & 0b111) == 0b111)
-				m.Print();
+				/*if ((m.GetFlag() & 0b111) == 0b111)
+				m.Print();*/
 
 				m.Decide(players[0], players[1], players_pos[0], players_pos[1]);
 				if (fsm::State::kAIDisabled == m.GetState()) {
@@ -79,7 +80,16 @@ namespace entity {
 					return false;
 				}
 
-				entities_in_region_[m.region_].GetElements(id_in_region);
+				auto region = m.region_;
+
+				if (IsValidRegion(region)) {
+					entities_in_region_[region].GetElements(id_in_region);
+				}
+				/*else {
+					auto pos = m.GetPosition();
+					printf("%f %f %f\n", pos.x, pos.y, pos.z);
+				}*/
+
 				for (auto id : id_in_region) {
 					if (TryAccess(id)) {
 						positions_in_region.try_emplace(id, Get(id).GetPosition());
@@ -91,13 +101,13 @@ namespace entity {
 				int r = world_map.FindRegion(m.GetPosition());
 
 				if (r != m.region_) {
-					MarkRegion(m.region_, r, m.GetID());
+					MarkRegion(region, r, m.GetID());
 				}
 				m.region_ = r;
 
 				const auto& m_pos = m.GetPosition();
 
-				for (int i = 0; i < players.size(); ++i) {
+				for (int i = (int)players.size() - 1; i >= 0; --i) {
 					sessions[players[i]].Emplace<packet::SCPosition>(&m);
 					sessions.EndAccess(players[i]);
 				}
@@ -122,6 +132,21 @@ namespace entity {
 			}
 		}
 		void MarkRegion(int prev_region, int curr_region, ID id) {
+			if (curr_region < 0 or curr_region >= WorldMap::kNumRegions) {
+				if (prev_region < 0 or prev_region >= WorldMap::kNumRegions) {
+					return;
+				}
+				auto& prev_adjs = world_map.GetRegion(prev_region).GetAdjRegions();
+				for (auto adj : prev_adjs) {
+					entities_in_region_[adj->GetID()].Remove(id);
+				}
+				return;
+			}
+			if (prev_region < 0 or prev_region >= WorldMap::kNumRegions) {
+				MarkRegion(curr_region, id);
+				return;
+			}
+
 			auto& curr_adjs = world_map.GetRegion(curr_region).GetAdjRegions();
 			auto& prev_adjs = world_map.GetRegion(prev_region).GetAdjRegions();
 

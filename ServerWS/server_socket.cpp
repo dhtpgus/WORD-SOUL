@@ -3,16 +3,20 @@
 #include "debug.h"
 #include "timer.h"
 
-auto GetPartyIDFromKey(ULONG_PTR key) noexcept
+auto GetPartyID(int id) noexcept
 {
-	return static_cast<Party::ID>(key >> 32);
+	return static_cast<Party::ID>(id >> 16);
 }
 
 namespace server {
 	Socket sock;
 
+	//inline int ccnt;
+
 	void Socket::ProcessAccept() noexcept
 	{
+		//std::print("c cnt: {}\n", ++ccnt);
+
 		auto client_sock = accepter_->GetAcceptedSocket();
 		accepter_->Accept();
 
@@ -75,28 +79,26 @@ namespace server {
 					if (0 == transferred) {
 						break;
 					}
+#if USES_NONBLOCKING_DS
 					if (sessions.TryAccess(id)) {
+#endif
 						auto& buffer = sessions[id].GetBuffer();
 						transferred += buffer.GetSizeRemains();
-
-						/*if (debug::DisplaysMSG()) {
-							std::print("[MSG] {}({}): {}\n", id, sessions->Exists(id),
-								buffer.GetBinary(transferred));
-						}*/
 
 						while (transferred != 0) {
 							ProcessPacket(buffer, transferred, id);
 						}
 						sessions[id].Receive();
-
+#if USES_NONBLOCKING_DS
 						sessions.EndAccess(id);
 					}
+#endif
 					break;
 				}
 
 				case Operation::kUpdateMobAI:
 				{
-					if (entity::managers[GetPartyIDFromKey(key)].UpdateAI(id)) {
+					if (entity::managers[GetPartyID(id)].UpdateAI(id % 0x10000)) {
 						timer::event_pq->Emplace(id, 20, Operation::kUpdateMobAI);
 					}
 					free_list<OverEx>.Collect(ox);
@@ -104,16 +106,17 @@ namespace server {
 				}
 				}
 			}
+#if USES_NONBLOCKING_DS
+			//duration = timer.GetDuration();
+			//ac_duration += duration;
 
-			duration = timer.GetDuration();
-			ac_duration += duration;
+			//if (ac_duration >= kTransferCheckFrequency) {
+			//	//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
+			//	ac_duration = 0.0;
 
-			if (ac_duration >= kTransferCheckFrequency) {
-				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
-				ac_duration = 0.0;
-
-				Send();
-			}
+			//	Send();
+			//}
+#endif
 		}
 	}
 
@@ -143,6 +146,7 @@ namespace server {
 		case packet::Type::kCSJoinParty:
 		{
 			packet::CSJoinParty p{ buf.GetData() };
+			//std::print("(ID: {}) tried to join Party: {}.\n", session_id, p.id);
 			if (parties[p.id].TryEnter(session_id)) {
 				if (debug::DisplaysMSG()) {
 					std::print("(ID: {}) has joined Party: {}.\n", session_id, p.id);
@@ -175,7 +179,7 @@ namespace server {
 
 			auto& player = session.GetPlayer();
 			
-			player.SetPosition(p.x, p.y, p.z);
+			auto region = player.SetPosition(p.x, p.y, p.z);
 			player.dir_ = p.r;
 			player.flag_ = p.flag;
 			auto party_id{ session.GetPartyID() };
@@ -190,7 +194,7 @@ namespace server {
 				sessions[partner_id].Emplace<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, p.v, p.r, p.flag);
 				sessions.EndAccess(partner_id);
 			}
-			if (-1 == player.region_) {
+			if (-1 == region) {
 				break;
 			}
 
@@ -198,7 +202,7 @@ namespace server {
 			en_ids.reserve(30);
 
 			auto& entities = entity::managers[party_id];
-			entities.GetEntitiesInRegion(player.region_, en_ids);
+			entities.GetEntitiesInRegion(region, en_ids);
 
 			for (entity::ID en_id : en_ids) {
 				if (entities.TryAccess(en_id)) { 
@@ -238,7 +242,7 @@ namespace server {
 			packet::StressTest p{ buf.GetData() };
 
 			auto& player = session.GetPlayer();
-			player.SetPosition(p.x, p.y, p.z);
+			auto region = player.SetPosition(p.x, p.y, p.z);
 			session.Emplace<packet::StressTest>(static_cast<entity::ID>(session_id), p.x, p.y, p.z, p.tp);
 
 			auto party_id{ session.GetPartyID() };
@@ -250,10 +254,10 @@ namespace server {
 			auto partner_id = parties[party_id].GetPartnerID(session_id);
 
 			if (sessions.TryAccess(partner_id)) {
-				sessions[partner_id].Emplace<packet::StressTest>(entity::kPartnerID, p.x, p.y, p.z, p.tp);
+				//sessions[partner_id].Emplace<packet::SCPosition>(entity::kPartnerID, p.x, p.y, p.z, 0.0f, 0.0f, char{0});
 				sessions.EndAccess(partner_id);
 			}
-			if (-1 == player.region_) {
+			if (-1 == region) {
 				break;
 			}
 
@@ -261,7 +265,7 @@ namespace server {
 			en_ids.reserve(30);
 
 			auto& entities = entity::managers[party_id];
-			entities.GetEntitiesInRegion(player.region_, en_ids);
+			entities.GetEntitiesInRegion(region, en_ids);
 
 			for (entity::ID en_id : en_ids) {
 				if (entities.TryAccess(en_id)) {

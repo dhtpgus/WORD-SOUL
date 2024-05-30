@@ -152,15 +152,16 @@ namespace packet {
 	struct SCResult : Base {
 		SCResult(bool value, char flags = 0) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, data{} {
-			data |= (static_cast<char>(value) << 7);
+			data |= static_cast<unsigned char>(value) * 128;
 			data |= flags;
 		}
 		void Reset(bool value, char flags = 0) noexcept {
-			data |= (static_cast<char>(value) << 7);
+			data = 0;
+			data |= static_cast<unsigned char>(value) * 128;
 			data |= flags;
 		}
 
-		char data;
+		unsigned char data;
 	};
 
 	struct SCCheckConnection : Base {

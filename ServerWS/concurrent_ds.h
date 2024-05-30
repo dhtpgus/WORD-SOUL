@@ -7,7 +7,7 @@
 #include "lf_base15_tree.h"
 #include "free_list.h"
 
-#define USES_NONBLOCKING_CONCURRENT_DS 0
+#define USES_NONBLOCKING_DS 01
 
 namespace concurrent {
 	namespace blocking {
@@ -64,8 +64,8 @@ namespace concurrent {
 				if (not queue_.empty()) {
 					ID id = queue_.front();
 					queue_.pop();
-					data_[id] = new Type{ id, value... };
 					q_mx_.unlock();
+					data_[id] = new Type{ id, value... };
 					return id;
 				}
 				q_mx_.unlock();
@@ -152,10 +152,11 @@ namespace concurrent {
 				mx_.unlock();
 				return r;
 			}
-			template<class Container>
-			void GetElements(Container& con) {
+			void GetElements(std::vector<int>& con) {
 				mx_.lock();
-				std::copy(set_.begin(), set_.end(), con.begin());
+				for (int i : set_) {
+					con.push_back(i);
+				}
 				mx_.unlock();
 			}
 		private:
@@ -165,7 +166,7 @@ namespace concurrent {
 	}
 	
 
-#if USES_NONBLOCKING_CONCURRENT_DS
+#if USES_NONBLOCKING_DS
 
 	template<class T, double kTimeTolerance>
 	using Queue = lf::RelaxedQueue<T, kTimeTolerance>;
