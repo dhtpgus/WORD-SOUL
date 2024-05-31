@@ -24,11 +24,15 @@ public:
 	virtual void GetHit(const FVector& ImpactPoint) override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	virtual void Destroyed() override;
+
+	void PlayAttackMontage();
+
+	uint16 MonsterID;
+	
 protected:
 	virtual void BeginPlay() override;
 
 	void Die();
-
 	void PlayHitReactMontage(const FName& SectionName);
 
 private:
@@ -46,6 +50,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* AttackMontage;
 
 	UPROPERTY()
 	AActor* CombatTarget;

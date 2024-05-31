@@ -160,3 +160,13 @@ void AEnemy::Destroyed()
 	}
 }
 
+void AEnemy::PlayAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance and AttackMontage)
+	{
+		AnimInstance->Montage_Play(AttackMontage);
+		AnimInstance->Montage_JumpToSection("Default", AttackMontage);
+	}
+}
+

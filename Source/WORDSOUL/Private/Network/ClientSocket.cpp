@@ -57,6 +57,17 @@ uint32 ClientSocket::Run()
 				switch (packetType)
 				{
 				case (uint8)EPacketType::SCNewEntity:
+					SCNewEntity entityInfo;
+					if (memcpy(&entityInfo, bufferPtr, sizeof(SCNewEntity)))
+					{
+						PlayerController->RecvEntitynfo(entityInfo);
+						UE_LOG(LogTemp, Warning, TEXT("monster entity type %d"), entityInfo.entity_type);
+						if (entityInfo.entity_type == 2)
+						{
+							UE_LOG(LogTemp, Warning, TEXT("monster x y z : %f  %f  %f"), entityInfo.x, entityInfo.y, entityInfo.z);
+						}
+						
+					}
 					break;
 				case (uint8)EPacketType::SCPosition:
 					if (totalBytes >= sizeof(SCPosition))
@@ -68,6 +79,10 @@ uint32 ClientSocket::Run()
 							{
 								PlayerController->RecvCharacterInfo(characterInfo);
 								//UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+							}
+							else // Monster
+							{
+								PlayerController->RecvMonsterInfo(characterInfo);
 							}
 						}
 					}	

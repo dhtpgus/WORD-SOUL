@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "NetWork/ClientSocket.h"
 #include "Characters/WORDSOULCharacter.h"
+#include "Enemy/Enemy.h"
 #include "NetWork/Packet.h"
 #include "WORDSOULPlayerController.generated.h"
 
@@ -23,11 +24,23 @@ public:
 	virtual ~AWORDSOULPlayerController();
 
 	virtual void Tick(float DeltaTime) override;
+
+	void SpawnMonster(const SCNewEntity& EntityInfo);
+
+	void SendPlayerInfo();
 	
+	void RecvEntitynfo(const SCNewEntity& EntityInfo);
 	void RecvCharacterInfo(const SCPosition& CharacterInfo);
+	void RecvMonsterInfo(const SCPosition& MonsterInfo);
 
 	UPROPERTY(BlueprintReadWrite)
 	AWORDSOULCharacter* OtherCharacter;
+
+	UPROPERTY(BlueprintReadWrite)
+	AEnemy* Monster;
+
+	UPROPERTY(EditDefaultsOnly, Category = Spawn)
+	TSubclassOf<class AEnemy> MonsterToSpawn;
 
 protected:
 	virtual void BeginPlay() override;
@@ -37,10 +50,10 @@ private:
 	ClientSocket* Socket;
 	bool bIsConnected;
 	SCPosition OtherCharacterInfo;
+	SCPosition EnemyInfo;
+	SCNewEntity NewEntityInfo;
 	
 	void UpdatePlayerInfo(const SCPosition& CharacterInfo);
-
-	FVector PreviousLocation, CurrentLocation;
-	FRotator CharacterRotation;
+	void UpdateMonsterInfo(const SCPosition& MonsterInfo);
 
 };
