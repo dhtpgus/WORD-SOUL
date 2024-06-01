@@ -44,8 +44,8 @@ namespace entity {
 		}
 
 		void Print() noexcept {
-			std::print("id {}: (x, y, z) = ({}, {}, {}), flag = {:08b}\n",
-				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, GetFlag());
+			std::print("id {}: (x, y, z) = ({}, {}, {}), region: {}, flag = {:08b}\n",
+				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, region_, GetFlag());
 		}
 
 	private:

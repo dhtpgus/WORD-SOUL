@@ -106,17 +106,18 @@ namespace server {
 				}
 				}
 			}
-#if USES_NONBLOCKING_DS
-			//duration = timer.GetDuration();
-			//ac_duration += duration;
-
-			//if (ac_duration >= kTransferCheckFrequency) {
-			//	//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
-			//	ac_duration = 0.0;
-
-			//	Send();
-			//}
-#endif
+//#if USES_NONBLOCKING_DS
+//
+//			duration = timer.GetDuration();
+//			ac_duration += duration;
+//
+//			if (ac_duration >= kTransferCheckFrequency) {
+//				//if (rng.Rand(0, 10) == 0) std::print("{}: {}\n", thread::ID(), ac_duration);
+//				ac_duration = 0.0;
+//
+//				Send();
+//			}
+//#endif
 		}
 	}
 

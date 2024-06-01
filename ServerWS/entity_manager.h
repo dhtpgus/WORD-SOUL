@@ -48,11 +48,17 @@ namespace entity {
 					MarkRegion(r, m.GetID());
 					EndAccess(m_id);
 				}
+				ai_locks[m_id].Unlock();
 
 				//std::print("{}, ({}, {})\n", world_map.FindRegion(pos), pos.x, pos.y);
 			}
 		}
 		bool UpdateAI(entity::ID id) noexcept {
+			lf::CASLockGuard lg{ ai_locks[id] };
+			if (lg) {
+				return false;
+			}
+
 			auto players{ parties[id_].GetPartyMembers() };
 			Position players_pos[players.size()]{};
 
@@ -81,13 +87,13 @@ namespace entity {
 				}
 
 				auto region = m.region_;
-
+				
 				if (IsValidRegion(region)) {
 					entities_in_region_[region].GetElements(id_in_region);
 				}
+
 				/*else {
-					auto pos = m.GetPosition();
-					printf("%f %f %f\n", pos.x, pos.y, pos.z);
+					m.Print();
 				}*/
 
 				for (auto id : id_in_region) {
@@ -96,6 +102,7 @@ namespace entity {
 						EndAccess(id);
 					}
 				}
+				positions_in_region.erase(id);
 
 				m.Act(0.020f, positions_in_region);
 				int r = world_map.FindRegion(m.GetPosition());
@@ -118,6 +125,11 @@ namespace entity {
 			}
 
 			return false;
+		}
+
+		void KillMonster(ID id) {
+			ai_locks[id].TryLock();
+			ReserveDelete(id);
 		}
 
 		template<class Container>
@@ -163,6 +175,7 @@ namespace entity {
 		}
 
 		std::array<concurrent::Set, WorldMap::kNumRegions> entities_in_region_;
+		std::array<lf::CASLock, kMaxEntities> ai_locks;
 		int id_;
 	};
 

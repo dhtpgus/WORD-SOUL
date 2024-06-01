@@ -26,8 +26,8 @@ namespace entity {
 		}
 		else if (distance_sq < mob::ai_activation_range_sq){
 			float rad = rng.Rand(0.0f, 2 * kPi);
-			target_pos_.x = GetPosition().x + 200.0f * cosf(rad);
-			target_pos_.y = GetPosition().y + 200.0f * sinf(rad);
+			auto [x, y] = target_pos_.GetXY();
+			target_pos_.SetXY(x + 200.0f * cosf(rad), y + 200.0f * sinf(rad));
 			state_ = fsm::State::kWander;
 		}
 		else {
@@ -60,7 +60,7 @@ namespace entity {
 	{
 		const float kVel{ (fsm::State::kChase == state_) ? mob::vel_chase : mob::vel_wander };
 
-		auto new_pos = a_star::GetNextPosition(GetPosition(), dir_, target_pos_, time, kVel, GetID(), positions_in_region);
+		auto new_pos = a_star::GetNextPosition(GetPosition(), dir_, target_pos_, time, kVel, positions_in_region);
 		SetPosition(new_pos.x, new_pos.y, new_pos.z);
 	}
 
@@ -73,7 +73,6 @@ namespace entity {
 		flag_ &= static_cast<char>(~0b100);
 		if (attack_timer_.GetDuration(mob::attack_cooldown) != 0.0f) {
 			flag_ |= 0b100;
-			
 		}
 	}
 }
