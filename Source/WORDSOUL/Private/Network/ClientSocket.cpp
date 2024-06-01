@@ -61,9 +61,9 @@ uint32 ClientSocket::Run()
 					if (memcpy(&entityInfo, bufferPtr, sizeof(SCNewEntity)))
 					{
 						PlayerController->RecvEntitynfo(entityInfo);
-						UE_LOG(LogTemp, Warning, TEXT("monster entity type %d"), entityInfo.entity_type);
 						if (entityInfo.entity_type == 2)
 						{
+							UE_LOG(LogTemp, Warning, TEXT("monster entity type %d"), entityInfo.entity_type);
 							UE_LOG(LogTemp, Warning, TEXT("monster x y z : %f  %f  %f"), entityInfo.x, entityInfo.y, entityInfo.z);
 						}
 						
