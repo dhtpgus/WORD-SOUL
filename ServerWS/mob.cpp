@@ -71,9 +71,9 @@ namespace entity {
 		dir_ = atan2f(target_pos_.y - pos.y, target_pos_.x - pos.x);
 
 		auto local_flag = flag_;
-		local_flag &= ~0b1100;
+		local_flag &= ~0b11100;
 		if (attack_timer_.GetDuration(mob::attack_cooldown) != 0.0f) {
-			local_flag |= 0b0100;
+			local_flag |= 0b00100;
 		}
 		flag_ = local_flag;
 	}

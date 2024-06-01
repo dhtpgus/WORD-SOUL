@@ -11,7 +11,7 @@
 namespace entity {
 	class Player : public Base {
 	public:
-		Player() : Base{ 0, 0.0f, 0.0f, 0.0f, 100 } {
+		Player() : Base{ 0, 0.0f, 0.0f, 0.0f, 8000 } {
 			SetType(Type::kPlayer);
 		}
 		int SetPosition(float x, float y, float z) {

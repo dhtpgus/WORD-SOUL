@@ -18,8 +18,9 @@ struct Flag {
 		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
 			&local_data, local_data ^ (~i));
 	}
-	bool Set(T i) {
-
+	bool Set(T expected, T desired) {
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&expected, desired);
 	}
 
 	volatile T data;

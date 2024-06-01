@@ -114,19 +114,38 @@ namespace packet {
 	};
 
 	struct SCNewEntity : Base {
-		SCNewEntity(entity::ID id, float x, float y, float z, entity::Type et, int flag) noexcept
+		SCNewEntity(entity::ID id, short hp, float x, float y, float z, entity::Type et, int flag) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCNewEntity }
-			, id{ id }, x{ x }, y{ y }, z{ z }, entity_type{ et }, flag{ static_cast<char>(flag) } {}
-		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, entity::Type rs_et, int rs_flag) noexcept {
+			, id{ id }, hp{ hp }, x{ x }, y{ y }, z{ z }, entity_type{ et }, flag{ static_cast<char>(flag) } {}
+		SCNewEntity(entity::Base* en, char flag) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCNewEntity }
+			, id{ en->GetID() }, entity_type{ en->GetType() }, hp{ en->hp_ }, flag{ static_cast<char>(flag) } {
+
+			Position local_pos{ en->GetPosition() };
+			x = local_pos.x;
+			y = local_pos.y;
+			z = local_pos.z;
+		}
+		void Reset(entity::ID rs_id, short rs_hp, float rs_x, float rs_y, float rs_z, entity::Type rs_et, int rs_flag) noexcept {
 			id = rs_id;
+			hp = rs_hp;
 			x = rs_x;
 			y = rs_y;
 			z = rs_z;
 			entity_type = rs_et;
+		}
+		void Reset(entity::Base* en, int rs_flag) noexcept {
+			id = en->GetID();
+			Position local_pos{ en->GetPosition() };
+			x = local_pos.x;
+			y = local_pos.y;
+			z = local_pos.z;
+			hp = en->hp_;
+			entity_type = en->GetType();
 			flag = static_cast<char>(rs_flag);
 		}
 		entity::ID id;
-		//short hp;
+		short hp;
 		float x;
 		float y;
 		float z;

@@ -82,7 +82,8 @@ namespace entity {
 		float GetMoveTime(float time) noexcept {
 			return move_timer_.GetDuration(time);
 		}
-		void GetDamaged() noexcept {
+		void GetDamaged(short damage) noexcept {
+			Base::GetDamaged(damage);
 			hitstop_time_ = 1.0f;
 			attack_timer_.ResetTimePoint();
 		}
@@ -102,19 +103,25 @@ namespace entity {
 				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, region_, GetFlag());
 		}
 
-		bool IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept {
+		HitStatus IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept {
 			static const auto kPi{ acosf(-1) };
 
 			Position local_pos{ GetPosition() };
 			auto local_dir = ConvertAngle(dir_);
 			if (mob::attack_range == GetDistance2DSq(attacker_pos, local_pos)) {
-				return false;
+				return HitStatus::kNone;
 			}
 
 			auto theta = ConvertAngle(attacker_pos.GetAngle(local_pos));
 
-			theta = ConvertAngle(local_dir - theta);
-			return (theta < mob::attack_angle or theta > 2 * kPi - mob::attack_angle);
+			theta = ConvertAngle(attacker_dir - theta);
+			if (theta < mob::attack_angle or theta > 2 * kPi - mob::attack_angle) {
+				if (90.0f <= fabs(ConvertAngle(local_dir - mob::attack_angle) - kPi / 2)) {
+					return HitStatus::kFront;
+				}
+				return HitStatus::kBack;
+			}
+			return HitStatus::kNone;
 		}
 
 	private:
