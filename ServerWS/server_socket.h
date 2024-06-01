@@ -13,12 +13,12 @@
 #include "party.h"
 #include "view_list.h"
 #include "timer_thread.h"
+#include "entity_manager.h"
 
 namespace server {
 	class Socket {
 	public:
-		Socket() noexcept : accepter_{}
-			, sessions_{ std::make_shared<SessionArray>(client::GetMaxClients(), thread::GetNumWorkers()) } {
+		Socket() noexcept : accepter_{} {
 			WSAData wsadata;
 			if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
 				exit(1);
@@ -28,11 +28,11 @@ namespace server {
 			server_addr_.sin_addr.s_addr = htonl(INADDR_ANY);
 			server_addr_.sin_port = htons(kPort);
 
-			for (auto vl : view_lists) {
-				vl = new ViewList{ 1 };
-			}
+			InitViewLists();
+			entity::InitManager();
 
 			accepter_ = std::make_shared<Accepter>();
+
 			for (int i = 0; i < parties.size(); ++i) {
 				parties[i].SetID(i);
 			}
@@ -45,6 +45,7 @@ namespace server {
 		Socket& operator=(const Socket&) = delete;
 		Socket& operator=(Socket&&) = delete;
 		~Socket() noexcept {
+			DeleteViewLists();
 			WSACleanup();
 		}
 
@@ -60,14 +61,14 @@ namespace server {
 		}
 
 		void Disconnect(int id) noexcept {
-			auto& party = parties[(*sessions_)[id].GetPartyID()];
+			auto& party = parties[sessions[id].GetPartyID()];
 			party.Exit(id);
 			auto partner_id = party.GetPartnerID(id);
-			if (sessions_->TryAccess(partner_id)) {
-				(*sessions_)[partner_id].Emplace<packet::SCRemoveEntity>(entity::kPartnerID, 0);
-				sessions_->EndAccess(partner_id);
+			if (sessions.TryAccess(partner_id)) {
+				sessions[partner_id].Emplace<packet::SCRemoveEntity>(entity::kPartnerID, 0);
+				sessions.EndAccess(partner_id);
 			}
-			sessions_->ReserveDelete(id);
+			sessions.ReserveDelete(id);
 		}
 	private:
 		void CreateThread() noexcept {
@@ -89,28 +90,25 @@ namespace server {
 		void Send() noexcept {
 			//int cnt{};
 			for (int i = thread::ID(); i < client::GetMaxClients(); i += thread::GetNumWorkers()) {
-				if (sessions_->TryAccess(i)) {
-					if (false == (*sessions_)[i].Emplace<packet::SCCheckConnection>()) {
+				if (sessions.TryAccess(i)) {
+					if (false == sessions[i].Emplace<packet::SCCheckConnection>()) {
 						Disconnect(i);
 					}
 					//cnt += 1;
-					sessions_->EndAccess(i);
+					sessions.EndAccess(i);
 				}
 			}
 			//if (rng.Rand(0, 2000) == 2) std::print("{}: {}\n", thread::ID(), cnt);
 		}
 		void ProcessPacket(BufferRecv& buf, DWORD& n_bytes, int session_id) noexcept;
-		void RunAI() noexcept;
 
 		static constexpr unsigned short kPort{ 9000 };
 		static constexpr auto kTransferCheckFrequency{ 2.0 };
 
-		using SessionArray = lf::Array<client::Session>;
 		std::vector<std::thread> threads_;
 		sockaddr_in server_addr_;
 		HANDLE iocp_;
 		std::shared_ptr<Accepter> accepter_;
-		std::shared_ptr<SessionArray> sessions_;
 	};
 
 	extern Socket sock;

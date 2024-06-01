@@ -8,7 +8,7 @@
 #include <atomic>
 
 namespace lf {
-	// TryLock만을 제공: 블로킹 알고리즘에 사용하지 아니한다.
+	// TryLock만을 제공: 블로킹 알고리즘에 사용하지 않도록 주의한다.
 	class CASLock {
 	public:
 		CASLock() noexcept : has_locked{} {}

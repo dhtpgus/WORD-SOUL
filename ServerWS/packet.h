@@ -5,6 +5,7 @@
 //---------------------------------------------------
 
 #pragma once
+#include <chrono>
 #include <string>
 #include "entity.h"
 
@@ -22,7 +23,7 @@ namespace packet {
 		kCSPosition,
 		kCSLeaveParty,
 
-		kPack = 255
+		kStressTest = 255
 	};
 	using Size = unsigned char;
 
@@ -77,6 +78,11 @@ namespace packet {
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
 			, id(id), x{ x }, y{ y }, z{ z }, v{ v }, r{ r }, flag{ static_cast<char>(flag)} {}
 
+		SCPosition(entity::Base* e) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCPosition }
+			, id{ e->GetID() }, x{ e->GetPosition().x }, y{ e->GetPosition().y }, z{ e->GetPosition().z }
+			, v{ e->GetVel() }, r{ e->dir_ }, flag{ e->GetFlag() } {}
+
 		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z,
 			float rs_v, float rs_r, int rs_flag) noexcept {
 			id = rs_id;
@@ -86,6 +92,16 @@ namespace packet {
 			v = rs_v;
 			r = rs_r;
 			flag = static_cast<char>(rs_flag);
+		}
+
+		void Reset(entity::Base* e) noexcept {
+			id = e->GetID();
+			x = e->GetPosition().x;
+			y = e->GetPosition().y;
+			z = e->GetPosition().z;
+			v = e->GetVel();
+			r = e->dir_;
+			flag = e->GetFlag();
 		}
 
 		entity::ID id;
@@ -110,6 +126,7 @@ namespace packet {
 			flag = static_cast<char>(rs_flag);
 		}
 		entity::ID id;
+		//short hp;
 		float x;
 		float y;
 		float z;
@@ -136,15 +153,16 @@ namespace packet {
 	struct SCResult : Base {
 		SCResult(bool value, char flags = 0) noexcept
 			: Base{ GetPacketSize<decltype(*this)>(), Type::kSCResult }, data{} {
-			data |= (static_cast<char>(value) << 7);
+			data |= static_cast<unsigned char>(value) * 128;
 			data |= flags;
 		}
 		void Reset(bool value, char flags = 0) noexcept {
-			data |= (static_cast<char>(value) << 7);
+			data = 0;
+			data |= static_cast<unsigned char>(value) * 128;
 			data |= flags;
 		}
 
-		char data;
+		unsigned char data;
 	};
 
 	struct SCCheckConnection : Base {
@@ -165,22 +183,6 @@ namespace packet {
 
 		entity::ID id;
 		short hp_diff;
-	};
-
-	struct Pack : Base {
-		Pack() noexcept : Base{ 0, Type::kPack } {
-			buffer.reserve(4096);
-		}
-		int GetTotalSize() const {
-			return static_cast<int>(buffer.size());
-		}
-		char* GetData() const {
-			return const_cast<char*>(buffer.c_str());
-		}
-		void Append(Base* packet) noexcept {
-			buffer += std::string{ (char*)packet, static_cast<size_t>(packet->size + 2) };
-		}
-		std::string buffer;
 	};
 
 	struct CSJoinParty : Base {
@@ -210,6 +212,53 @@ namespace packet {
 		float v;
 		float r;
 		char flag;
+	};
+
+	// ---------------------------------------------
+
+	struct StressTest : Base {
+		using Clock = std::chrono::high_resolution_clock;
+		using TimePoint = Clock::time_point;
+
+		StressTest() noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kStressTest }
+			, id{}, x{}, y{}, z{}, tp{} {}
+
+		StressTest(entity::ID id, float x, float y, float z, TimePoint tp) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kStressTest }
+			, id(id), x{ x }, y{ y }, z{ z }, tp{ tp } {}
+
+		StressTest(entity::Base* e, TimePoint tp) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kStressTest }
+			, id{ e->GetID() }, x{ e->GetPosition().x }, y{ e->GetPosition().y }
+			, z{ e->GetPosition().z }, tp{ tp } {}
+
+		StressTest(const char* byte) noexcept
+			: Base{ GetPacketSize<decltype(*this)>(), Type::kStressTest }, id{}, x{}, y{}, z{}, tp{} {
+			Deserialize(this, byte);
+		}
+
+		void Reset(entity::ID rs_id, float rs_x, float rs_y, float rs_z, TimePoint rs_tp) noexcept {
+			id = rs_id;
+			x = rs_x;
+			y = rs_y;
+			z = rs_z;
+			tp = rs_tp;
+		}
+
+		void Reset(entity::Base* e, TimePoint rs_tp) noexcept {
+			id = e->GetID();
+			x = e->GetPosition().x;
+			y = e->GetPosition().y;
+			z = e->GetPosition().z;
+			tp = rs_tp;
+		}
+
+		entity::ID id;
+		float x;
+		float y;
+		float z;
+		TimePoint tp;
 	};
 
 #pragma pack(pop)

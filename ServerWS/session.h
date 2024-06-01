@@ -10,9 +10,9 @@
 #include "buffer.h"
 #include "packet.h"
 #include "player.h"
-#include "lf_relaxed_queue.h"
 #include "debug.h"
 #include "over_ex.h"
+#include "concurrent_ds.h"
 #include "lua_script.h"
 
 namespace client {
@@ -20,8 +20,7 @@ namespace client {
 	public:
 		Session() = delete;
 		Session(int id, SOCKET sock, HANDLE iocp) noexcept
-			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{},
-			rq_{ thread::GetNumWorkers() } {
+			: ox_{ Operation::kRecv }, sock_{ sock }, wsabuf_recv_{}, player_{} {
 			Reset(id, sock, iocp);
 			wsabuf_recv_.len = (ULONG)kBufferSize;
 			wsabuf_recv_.buf = buf_recv_.GetRecvPoint();
@@ -41,10 +40,9 @@ namespace client {
 
 		template<class Packet, class... Value>
 		bool Emplace(Value... value) noexcept {
-			//rq_.Emplace<Packet>(value...);
-			auto p = free_list<Packet>.Get(value...);
+			Packet* p = free_list<Packet>.Get(value...);
 
-			WSABUF wb;
+			WSABUF wb{};
 			wb.buf = reinterpret_cast<char*>(p);
 			wb.len = (p->size + 2);
 			auto ox = free_list<OverEx>.Get(Operation::kSend);
@@ -66,19 +64,7 @@ namespace client {
 			}
 		}
 
-		void Delete() noexcept {
-			if (debug::DisplaysMSG()) {
-				std::print("[Info] (ID: {}) has left the game.\n", GetID());
-			}
-			packet::Base* packet{};
-			while (true) {
-				packet = rq_.Pop();
-				if (nullptr == packet) {
-					break;
-				}
-				packet::Collect(packet);
-			}
-		}
+		void Delete() noexcept;
 
 		BufferRecv& GetBuffer() noexcept { return buf_recv_; }
 		int GetID() const noexcept { return id_; }
@@ -95,7 +81,6 @@ namespace client {
 		int id_;
 		int party_id_;
 		entity::Player player_;
-		lf::RelaxedQueue<packet::Base, 1e-4> rq_;
 	};
 
 	inline int GetMaxClients() noexcept {
@@ -117,3 +102,6 @@ namespace client {
 		return max_clients;
 	}
 }
+
+using SessionArray = concurrent::Array<client::Session>;
+inline SessionArray sessions{ client::GetMaxClients(), thread::GetNumWorkers() };

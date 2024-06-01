@@ -1,23 +1,26 @@
 #pragma once
+#include <atomic>
 
-namespace flag {
-	struct Base {
+template<class T>
+struct Flag {
+	bool SetBit(T i) {
+		auto local_data = data;
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&local_data, local_data | i);
+	}
+	bool ClearBit(T i) {
+		auto local_data = data;
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&local_data, local_data & (~i));
+	}
+	bool ToggleBit(T i) {
+		auto local_data = data;
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&local_data, local_data ^ (~i));
+	}
+	bool Set(T i) {
 
-	};
+	}
 
-	struct Bit8 : Base {
-		char data;
-	};
-
-	struct Bit16 : Base {
-		short data;
-	};
-
-	struct Bit32 : Base {
-		int data;
-	};
-
-	struct Bit64 : Base {
-		long long data;
-	};
-}
+	volatile T data;
+};

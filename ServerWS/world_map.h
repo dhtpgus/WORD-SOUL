@@ -36,3 +36,8 @@ private:
 };
 
 inline WorldMap world_map;
+
+inline bool IsValidRegion(int r_id)
+{
+	return r_id >= 0 and r_id < WorldMap::kNumRegions;
+}

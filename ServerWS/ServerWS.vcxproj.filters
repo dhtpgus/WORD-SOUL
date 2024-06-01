@@ -96,6 +96,15 @@
     <ClCompile Include="lf_base15_tree.cpp">
       <Filter>소스 파일\thread</Filter>
     </ClCompile>
+    <ClCompile Include="party.cpp">
+      <Filter>소스 파일\others</Filter>
+    </ClCompile>
+    <ClCompile Include="session.cpp">
+      <Filter>소스 파일\network</Filter>
+    </ClCompile>
+    <ClCompile Include="concurrent_ds.cpp">
+      <Filter>소스 파일\thread</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="session.h">
@@ -206,11 +215,14 @@
     <ClInclude Include="lua\include\lualib.h">
       <Filter>헤더 파일\lua\include</Filter>
     </ClInclude>
-    <ClInclude Include="view_list.h">
-      <Filter>헤더 파일\entity</Filter>
-    </ClInclude>
     <ClInclude Include="flag.h">
       <Filter>헤더 파일\others</Filter>
+    </ClInclude>
+    <ClInclude Include="view_list.h">
+      <Filter>헤더 파일\others</Filter>
+    </ClInclude>
+    <ClInclude Include="concurrent_ds.h">
+      <Filter>헤더 파일\thread</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -5,44 +5,16 @@
 //---------------------------------------------------
 
 #pragma once
+#include <print>
 #include <unordered_map>
 #include "random_number_generator.h"
 #include "lua_script.h"
 #include "timer.h"
+#include "timer_thread.h"
 #include "entity.h"
 #include "fsm.h"
 
 namespace entity {
-	class Mob : public Base {
-	public:
-		Mob(ID id, float x, float y, float z, short hp_diff) noexcept
-			: Base{ id, x, y, z, hp_diff }, state_{ fsm::State::kAIDisabled }
-			, target_pos_{}, target_id_{}, hitstop_time_ {} {
-			SetType(Type::kMob);
-		}
-		void Decide(int p1_id, int p2_id, const Position& p1_pos, const Position& p2_pos) noexcept;
-		void Act(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
-		auto GetState() const noexcept { return state_; }
-		float GetMoveTime(float time) noexcept {
-			return move_timer_.GetDuration(time);
-		}
-		void GetDamaged() noexcept {
-			hitstop_time_ = 1.0f;
-			attack_timer_.ResetTimePoint();
-		}
-
-	private:
-		void Move(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
-		void Attack() noexcept;
-
-		int target_id_;
-		Position target_pos_;
-		fsm::State state_;
-		Timer move_timer_;
-		Timer attack_timer_;
-		float hitstop_time_;
-	};
-
 	namespace mob {
 		inline std::unordered_map<int, Position> spawn_points;
 		inline short hp_default;
@@ -54,6 +26,8 @@ namespace entity {
 		inline float ai_activation_range_sq;
 		inline float acquisition_range_sq;
 		inline float attack_range_sq;
+
+		inline float attack_angle;
 
 		inline float attack_cooldown;
 		inline float hitstop_time;
@@ -85,6 +59,8 @@ namespace entity {
 			acquisition_range_sq = acquisition_range * acquisition_range;
 			attack_range_sq = attack_range * attack_range;
 
+			mob::attack_angle = settings.GetConstant<float>("ATTACK_ANGLE");
+
 			mob::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
 			mob::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
 
@@ -92,6 +68,67 @@ namespace entity {
 			mob::vel_chase = settings.GetConstant<float>("VEL_CHASE");
 		}
 	}
+
+	class Mob : public Base {
+	public:
+		Mob(ID id, float x, float y, float z, short hp_diff) noexcept
+			: Base{ id, x, y, z, hp_diff }, state_{ fsm::State::kAIDisabled }
+			, target_pos_{}, target_id_{}, hitstop_time_{}, is_waken_up_{} {
+			SetType(Type::kMob);
+		}
+		void Decide(int p1_id, int p2_id, const Position& p1_pos, const Position& p2_pos) noexcept;
+		void Act(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
+		auto GetState() const noexcept { return state_; }
+		float GetMoveTime(float time) noexcept {
+			return move_timer_.GetDuration(time);
+		}
+		void GetDamaged() noexcept {
+			hitstop_time_ = 1.0f;
+			attack_timer_.ResetTimePoint();
+		}
+
+		void WakeUp() noexcept {
+			if (is_waken_up_) {
+				return;
+			}
+			bool expected{ false };
+			if (true == is_waken_up_.compare_exchange_strong(expected, true)) {
+				timer::event_pq->Emplace(GetID(), 0, Operation::kUpdateMobAI);
+			}
+		}
+
+		void Print() noexcept {
+			std::print("id {}: (x, y, z) = ({}, {}, {}), region: {}, flag = {:08b}\n",
+				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, region_, GetFlag());
+		}
+
+		bool IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept {
+			static const auto kPi{ acosf(-1) };
+
+			Position local_pos{ GetPosition() };
+			auto local_dir = ConvertAngle(dir_);
+			if (mob::attack_range == GetDistance2DSq(attacker_pos, local_pos)) {
+				return false;
+			}
+
+			auto theta = ConvertAngle(attacker_pos.GetAngle(local_pos));
+
+			theta = ConvertAngle(local_dir - theta);
+			return (theta < mob::attack_angle or theta > 2 * kPi - mob::attack_angle);
+		}
+
+	private:
+		void Move(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
+		void Attack() noexcept;
+
+		int target_id_;
+		Position target_pos_;
+		fsm::State state_;
+		std::atomic_bool is_waken_up_;
+		Timer move_timer_;
+		Timer attack_timer_;
+		float hitstop_time_;
+	};
 
 	inline bool CanSee(const Position& pos1, const Position& pos2)
 	{

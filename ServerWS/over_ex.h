@@ -11,7 +11,7 @@
 #pragma comment(lib, "Mswsock.lib")
 
 enum class Operation : char {
-	kNone, kSend, kRecv, kAccept
+	kNone, kSend, kRecv, kAccept, kUpdateMobAI
 };
 
 struct OverEx {

@@ -7,14 +7,10 @@ namespace timer {
 	using Clock = std::chrono::high_resolution_clock;
 	using TimePoint = Clock::time_point;
 
-	enum class EventType {
-		kNone, kUpdateMobAI
-	};
-
 	struct Event {
 		Event() = default;
-		Event(int id, int milliseconds, EventType type)
-			: id{ id }, tp{ Clock::now() + std::chrono::milliseconds{ milliseconds } }, type{ type } {}
+		Event(int id, int milliseconds, Operation op)
+			: id{ id }, tp{ Clock::now() + std::chrono::milliseconds{ milliseconds } }, op{ op } {}
 
 		constexpr bool operator<(const Event& rhs) const {
 			return tp > rhs.tp;
@@ -22,12 +18,12 @@ namespace timer {
 
 		Clock::time_point tp{};
 		int id{};
-		EventType type{};
+		Operation op{};
 	};
 
 	class EventPQ : public Concurrency::concurrent_priority_queue<Event> {
 	public:
-		void Emplace(int id, int milliseconds, EventType type) noexcept {
+		void Emplace(int id, int milliseconds, Operation type) noexcept {
 			push(Event{ id, milliseconds, type });
 		}
 	};
@@ -36,7 +32,7 @@ namespace timer {
 
 	inline void Thread(HANDLE iocp, int id)
 	{
-		constexpr auto kSleep = std::chrono::milliseconds{ 200000 };
+		constexpr auto kSleep = std::chrono::milliseconds{ 2 };
 		while (true) {
 			Event event;
 			auto current_tp = Clock::now();
@@ -46,15 +42,17 @@ namespace timer {
 					std::this_thread::sleep_for(kSleep);
 					continue;
 				}
-				switch (event.type) {
-				case EventType::kNone:
-					exit(1);
-				/*case EventType::kRandomMove:
+				switch (event.op) {
+				case Operation::kUpdateMobAI:
 				{
-					auto ox = free_list<OverEx>.Get(Operation::kNPCMove);
+					auto ox = free_list<OverEx>.Get(event.op);
 					PostQueuedCompletionStatus(iocp, 1, event.id, &ox->over);
 					break;
-				}*/
+				}
+				default:
+					std::print("Unknown Operation: {}\n", static_cast<int>(event.op));
+					system("pause");
+					exit(1);
 				}
 				continue;
 			}

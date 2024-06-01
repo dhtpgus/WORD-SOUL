@@ -5,8 +5,10 @@
 //---------------------------------------------------
 
 #pragma once
+#include <print>
 #include <numeric>
-#include "session.h"
+#include "lf_relaxed_queue.h"
+#include "thread.h"
 #include "cas_lock.h"
 #include "debug.h"
 #include "random_number_generator.h"
@@ -122,7 +124,7 @@ namespace lf {
 				elements_[id].data = new Type{ id, value... };
 			}
 			else {
-				elements_[id].data->Reset(id, value...);
+				reinterpret_cast<Type*>(elements_[id].data)->Reset(id, value...);
 			}
 			elements_[id].cas_lock.Unlock();
 			elements_[id].ref_cnt = 1;

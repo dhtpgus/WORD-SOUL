@@ -3,31 +3,17 @@
 #include <array>
 #include <vector>
 #include <tuple>
-#include "lf_array.h"
-#include "entity_manager.h"
+#include "concurrent_ds.h"
+#include "session.h"
 
 class Party {
 public:
 	using ID = unsigned short;
 
 	Party() noexcept : num_player_{}, player_ids_{ kEmpty, kEmpty }, id_{} {}
-	bool TryEnter(ID id) noexcept {
-		if (num_player_ >= kMaxPlayer) {
-			return false;
-		}
-		for (int i = 0; i < kMaxPlayer; ++i) {
-			if (CAS(&player_ids_[i], kEmpty, id)) {
-				num_player_ += 1;
-				
-				if (num_player_ == 2) {
-					entity::managers[id_].SpawnMonsters();
-				}
 
-				return true;
-			}
-		}
-		return false;
-	}
+	bool TryEnter(ID id) noexcept;
+
 	ID GetPartnerID(ID id) const noexcept {
 		for (auto i : player_ids_) {
 			if (i != id) {

@@ -31,14 +31,12 @@ namespace entity {
 		}
 
 		void SetPosition(float x, float y, float z) noexcept {
-			float xy[2]{ x, y };
-			*reinterpret_cast<long long*>(&pos_.x) = *reinterpret_cast<long long*>(xy);
-			pos_.z = z;
+			pos_.SetXYZ(x, y, z);
 		}
 
 		ID GetID() const noexcept {	return id_; }
 
-		const Position& GetPostion() const noexcept { return pos_; }
+		const Position& GetPosition() const noexcept { return pos_; }
 
 		void Delete() noexcept {}
 
