@@ -34,7 +34,7 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 
 void AWORDSOULPlayerController::SpawnMonster(const SCNewEntity& EntityInfo)
 {
-	if ((EntityInfo.id != 0xFFFF and EntityInfo.id != 0xFFFE) and (EntityInfo.flag & 0b0000'0011) == 0) // spawn monster
+	if ((EntityInfo.id != 0xFFFF and EntityInfo.id != 0xFFFE) and (EntityInfo.flag & 0b0000'0011) == 0 and EntityInfo.entity_type == 2) // spawn monster
 	{
 		FVector MonsterSpawnLocation = FVector(EntityInfo.x, EntityInfo.y, EntityInfo.z);
 		FRotator MonsterSpawnRotation = FRotator::ZeroRotator;
