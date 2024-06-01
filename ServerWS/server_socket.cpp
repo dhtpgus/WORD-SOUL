@@ -180,6 +180,7 @@ namespace server {
 
 			auto& player = session.GetPlayer();
 			
+			Position p_pos{ p.x, p.y, p.z };
 			auto region = player.SetPosition(p.x, p.y, p.z);
 			player.dir_ = p.r;
 			player.flag_ = p.flag;
@@ -218,11 +219,21 @@ namespace server {
 						
 						session.Emplace<packet::SCPosition>(&en);
 						if (entity::Type::kMob == en.GetType()) {
-							reinterpret_cast<entity::Mob*>(&en)->WakeUp();
+							auto& m = *reinterpret_cast<entity::Mob*>(&en);
+							m.WakeUp();
+							if (m.IsAttacked(p_pos, p.r)) {
+								auto local_flag = m.flag_;
+								local_flag &= ~0b1100;
+								local_flag |= 0b1000;
+								m.flag_ = local_flag;
+							}
+							
 						}
 					}
 					else {
-						session.Emplace<packet::SCRemoveEntity>(en_id, char{ 1 });
+						if (view_lists[session.GetID()]->Remove(en_id)) {
+							session.Emplace<packet::SCRemoveEntity>(en_id, char{ 1 });
+						}
 					}
 					entities.EndAccess(en_id);
 				}

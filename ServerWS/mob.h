@@ -15,6 +15,60 @@
 #include "fsm.h"
 
 namespace entity {
+	namespace mob {
+		inline std::unordered_map<int, Position> spawn_points;
+		inline short hp_default;
+		inline short hp_diff;
+
+		inline float ai_activation_range;
+		inline float acquisition_range;
+		inline float attack_range;
+		inline float ai_activation_range_sq;
+		inline float acquisition_range_sq;
+		inline float attack_range_sq;
+
+		inline float attack_angle;
+
+		inline float attack_cooldown;
+		inline float hitstop_time;
+
+		inline float vel_chase;
+		inline float vel_wander;
+
+		inline void LoadData() noexcept
+		{
+			lua::Script settings{ "scripts/mob_settings.lua" };
+			const int kNumPoints{ settings.GetConstant<int>("NUM_POINTS") };
+
+			for (int i = 0; i < kNumPoints; ++i) {
+				auto r_ptr = settings.CallFunction<int, float>("get_spawn_point", 2, { i + 1 });
+				auto& r = *r_ptr;
+				r[0] += rng.Rand(-5.0f, 5.0f);
+				r[1] += rng.Rand(-5.0f, 5.0f);
+				spawn_points.emplace(i, Position{ r[0], r[1], 0.0f });
+			}
+
+			hp_default = settings.GetConstant<short>("HP_DEFAULT");
+			hp_diff = settings.GetConstant<short>("HP_DIFF");
+
+			ai_activation_range = settings.GetConstant<float>("AI_ACTIVATION_RANGE");
+			acquisition_range = settings.GetConstant<float>("ACQUISITION_RANGE");
+			attack_range = settings.GetConstant<float>("ATTACK_RANGE");
+
+			ai_activation_range_sq = ai_activation_range * ai_activation_range;
+			acquisition_range_sq = acquisition_range * acquisition_range;
+			attack_range_sq = attack_range * attack_range;
+
+			mob::attack_angle = settings.GetConstant<float>("ATTACK_ANGLE");
+
+			mob::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
+			mob::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
+
+			mob::vel_wander = settings.GetConstant<float>("VEL_WANDER");
+			mob::vel_chase = settings.GetConstant<float>("VEL_CHASE");
+		}
+	}
+
 	class Mob : public Base {
 	public:
 		Mob(ID id, float x, float y, float z, short hp_diff) noexcept
@@ -48,6 +102,21 @@ namespace entity {
 				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, region_, GetFlag());
 		}
 
+		bool IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept {
+			static const auto kPi{ acosf(-1) };
+
+			Position local_pos{ GetPosition() };
+			auto local_dir = ConvertAngle(dir_);
+			if (mob::attack_range == GetDistance2DSq(attacker_pos, local_pos)) {
+				return false;
+			}
+
+			auto theta = ConvertAngle(attacker_pos.GetAngle(local_pos));
+
+			theta = ConvertAngle(local_dir - theta);
+			return (theta < mob::attack_angle or theta > 2 * kPi - mob::attack_angle);
+		}
+
 	private:
 		void Move(float time, const std::unordered_map<int, Position>& positions_in_region) noexcept;
 		void Attack() noexcept;
@@ -60,56 +129,6 @@ namespace entity {
 		Timer attack_timer_;
 		float hitstop_time_;
 	};
-
-	namespace mob {
-		inline std::unordered_map<int, Position> spawn_points;
-		inline short hp_default;
-		inline short hp_diff;
-
-		inline float ai_activation_range;
-		inline float acquisition_range;
-		inline float attack_range;
-		inline float ai_activation_range_sq;
-		inline float acquisition_range_sq;
-		inline float attack_range_sq;
-
-		inline float attack_cooldown;
-		inline float hitstop_time;
-
-		inline float vel_chase;
-		inline float vel_wander;
-
-		inline void LoadData() noexcept
-		{
-			lua::Script settings{ "scripts/mob_settings.lua" };
-			const int kNumPoints{ settings.GetConstant<int>("NUM_POINTS") };
-
-			for (int i = 0; i < kNumPoints; ++i) {
-				auto r_ptr = settings.CallFunction<int, float>("get_spawn_point", 2, { i + 1 });
-				auto& r = *r_ptr;
-				r[0] += rng.Rand(-5.0f, 5.0f);
-				r[1] += rng.Rand(-5.0f, 5.0f);
-				spawn_points.emplace(i, Position{ r[0], r[1], 0.0f });
-			}
-
-			hp_default = settings.GetConstant<short>("HP_DEFAULT");
-			hp_diff = settings.GetConstant<short>("HP_DIFF");
-
-			ai_activation_range = settings.GetConstant<float>("AI_ACTIVATION_RANGE");
-			acquisition_range = settings.GetConstant<float>("ACQUISITION_RANGE");
-			attack_range = settings.GetConstant<float>("ATTACK_RANGE");
-
-			ai_activation_range_sq = ai_activation_range * ai_activation_range;
-			acquisition_range_sq = acquisition_range * acquisition_range;
-			attack_range_sq = attack_range * attack_range;
-
-			mob::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
-			mob::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
-
-			mob::vel_wander = settings.GetConstant<float>("VEL_WANDER");
-			mob::vel_chase = settings.GetConstant<float>("VEL_CHASE");
-		}
-	}
 
 	inline bool CanSee(const Position& pos1, const Position& pos2)
 	{

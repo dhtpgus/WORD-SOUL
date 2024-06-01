@@ -55,7 +55,7 @@ namespace entity {
 		}
 		bool UpdateAI(entity::ID id) noexcept {
 			lf::CASLockGuard lg{ ai_locks[id] };
-			if (lg) {
+			if (not lg) {
 				return false;
 			}
 
@@ -111,8 +111,6 @@ namespace entity {
 					MarkRegion(region, r, m.GetID());
 				}
 				m.region_ = r;
-
-				const auto& m_pos = m.GetPosition();
 
 				for (int i = (int)players.size() - 1; i >= 0; --i) {
 					sessions[players[i]].Emplace<packet::SCPosition>(&m);

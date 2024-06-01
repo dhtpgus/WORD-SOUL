@@ -12,6 +12,8 @@ HITSTOP_TIME = 0.5
 VEL_WANDER = 150.0;
 VEL_CHASE = 300.0;
 
+ATTACK_ANGLE = 23.4
+
 -- 1´ç 10.0f
 SPAWN_POINTS = {
 	{ 6.1, 35 }, { 602, 242 }, { 1358, -372 }, { 1327, -551 }, { 1059, -566 },

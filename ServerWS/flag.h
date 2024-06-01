@@ -1,17 +1,26 @@
 #pragma once
+#include <atomic>
 
+template<class T>
 struct Flag {
-	using T = char;
+	bool SetBit(T i) {
+		auto local_data = data;
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&local_data, local_data | i);
+	}
+	bool ClearBit(T i) {
+		auto local_data = data;
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&local_data, local_data & (~i));
+	}
+	bool ToggleBit(T i) {
+		auto local_data = data;
+		return std::atomic_compare_exchange_strong(reinterpret_cast<volatile std::atomic<T>*>(&data),
+			&local_data, local_data ^ (~i));
+	}
+	bool Set(T i) {
 
-	void SetBit(int i) {
-		data |= static_cast<T>(1ULL << i);
-	}
-	void ClearBit(int i) {
-		data &= static_cast<T>(~(1ULL << i));
-	}
-	void ToggleBit(int i) {
-		data ^= static_cast<T>(~(1ULL << i));
 	}
 
-	T data;
+	volatile T data;
 };

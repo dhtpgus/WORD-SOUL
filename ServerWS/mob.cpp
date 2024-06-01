@@ -70,9 +70,11 @@ namespace entity {
 
 		dir_ = atan2f(target_pos_.y - pos.y, target_pos_.x - pos.x);
 
-		flag_ &= static_cast<char>(~0b100);
+		auto local_flag = flag_;
+		local_flag &= ~0b1100;
 		if (attack_timer_.GetDuration(mob::attack_cooldown) != 0.0f) {
-			flag_ |= 0b100;
+			local_flag |= 0b0100;
 		}
+		flag_ = local_flag;
 	}
 }

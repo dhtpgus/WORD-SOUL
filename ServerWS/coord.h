@@ -42,6 +42,13 @@ struct Position {
 		z = nz;
 	}
 
+	float GetAngle(const Position& other) const {
+		static const float kPi = acosf(-1);
+		auto [sx, sy] = GetXY();
+		auto [ox, oy] = other.GetXY();
+		return atan2f(oy - sy, ox - sx);
+	}
+
 	void Print() const noexcept {
 		std::print("(x, y, z) = ({}, {}, {})\n", x, y, z);
 	}
@@ -107,4 +114,9 @@ inline bool IsInCircleGrid(const Position& p, Position&& center, float r)
 	r *= Position::kUnitLength;
 	bool ret = GetDistance2DSq(p, center) <= r * r;
 	return ret;
+}
+
+inline float ConvertAngle(float angle) {
+	static const auto kPi{ acosf(-1) };
+	return fmod(angle + 2 * kPi, 2 * kPi);
 }

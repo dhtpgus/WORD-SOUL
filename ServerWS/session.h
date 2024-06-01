@@ -40,10 +40,9 @@ namespace client {
 
 		template<class Packet, class... Value>
 		bool Emplace(Value... value) noexcept {
-			//rq_.Emplace<Packet>(value...);
-			auto p = free_list<Packet>.Get(value...);
+			Packet* p = free_list<Packet>.Get(value...);
 
-			WSABUF wb;
+			WSABUF wb{};
 			wb.buf = reinterpret_cast<char*>(p);
 			wb.len = (p->size + 2);
 			auto ox = free_list<OverEx>.Get(Operation::kSend);
