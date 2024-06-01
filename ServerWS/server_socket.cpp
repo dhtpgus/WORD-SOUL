@@ -231,7 +231,9 @@ namespace server {
 									local_flag &= ~0b11100;
 									local_flag |= 0b01000;
 									m.flag_ = local_flag;
-									m.GetDamaged(80);
+									if (m.GetDamaged(80)) {
+										entities.Kill(en_id);
+									}
 									break;
 								}
 								case entity::HitStatus::kBack:
@@ -240,7 +242,9 @@ namespace server {
 									local_flag &= ~0b11100;
 									local_flag |= 0b10000;
 									m.flag_ = local_flag;
-									m.GetDamaged(80);
+									if (m.GetDamaged(80)) {
+										entities.Kill(en_id);
+									}
 									break;
 								}
 							}

@@ -28,6 +28,7 @@ namespace entity {
 		inline float attack_range_sq;
 
 		inline float attack_angle;
+		inline short damage;
 
 		inline float attack_cooldown;
 		inline float hitstop_time;
@@ -60,6 +61,7 @@ namespace entity {
 			attack_range_sq = attack_range * attack_range;
 
 			mob::attack_angle = settings.GetConstant<float>("ATTACK_ANGLE");
+			mob::damage = settings.GetConstant<short>("DAMAGE");
 
 			mob::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
 			mob::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
@@ -82,10 +84,11 @@ namespace entity {
 		float GetMoveTime(float time) noexcept {
 			return move_timer_.GetDuration(time);
 		}
-		void GetDamaged(short damage) noexcept {
-			Base::GetDamaged(damage);
+		bool GetDamaged(short damage) noexcept {
+			auto r = Base::GetDamaged(damage);
 			hitstop_time_ = 1.0f;
 			attack_timer_.ResetTimePoint();
+			return r;
 		}
 
 		void WakeUp() noexcept {
@@ -122,6 +125,9 @@ namespace entity {
 				return HitStatus::kBack;
 			}
 			return HitStatus::kNone;
+		}
+		auto GetTargetID() const noexcept {
+			return target_id_;
 		}
 
 	private:
