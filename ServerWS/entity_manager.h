@@ -105,6 +105,20 @@ namespace entity {
 				positions_in_region.erase(id);
 
 				m.Act(0.020f, positions_in_region);
+
+				if ((m.GetFlag() & 0b100) != 0) {
+					auto trg = m.GetTargetID();
+					sessions[trg].GetPlayer().GetDamaged(mob::damage);
+					for (auto p : players) {
+						if (p == trg) {
+							sessions[p].Emplace<packet::SCModifyHP>(entity::kAvatarID, mob::damage);
+						}
+						else {
+							sessions[p].Emplace<packet::SCModifyHP>(entity::kPartnerID, mob::damage);
+						}
+					}
+				}
+
 				int r = world_map.FindRegion(m.GetPosition());
 
 				if (r != m.region_) {
@@ -125,7 +139,7 @@ namespace entity {
 			return false;
 		}
 
-		void KillMonster(ID id) {
+		void Kill(ID id) {
 			ai_locks[id].TryLock();
 			ReserveDelete(id);
 		}

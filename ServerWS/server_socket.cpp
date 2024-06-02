@@ -29,8 +29,9 @@ namespace server {
 		if (sessions.TryAccess(session_id)) {
 			auto& session = sessions[session_id];
 			session.Receive();
-			session.Emplace<packet::SCNewEntity>(entity::kAvatarID, 80.0f, 500.0f, 0.0f, entity::Type::kPlayer, 0);
-			session.GetPlayer().SetPosition(80.0f, 500.0f, 0.0f);
+			auto& player = session.GetPlayer();
+			player.SetPosition(80.0f, 500.0f, 0.0f);
+			session.Emplace<packet::SCNewEntity>(entity::kAvatarID, player.hp_.load(), 80.0f, 500.0f, 0.0f, entity::Type::kPlayer, 0);
 			sessions.EndAccess(session_id);
 		}
 	}
@@ -98,7 +99,7 @@ namespace server {
 
 				case Operation::kUpdateMobAI:
 				{
-					if (entity::managers[GetPartyID(id)].UpdateAI(id % 0x10000)) {
+					if (entity::managers[GetPartyID(id)].UpdateAI(id & 0xFFFF)) {
 						timer::event_pq->Emplace(id, 20, Operation::kUpdateMobAI);
 					}
 					free_list<OverEx>.Collect(ox);
@@ -159,9 +160,10 @@ namespace server {
 				auto partner_id = parties[p.id].GetPartnerID(session_id);
 				
 				if (sessions.TryAccess(partner_id)) {
-					auto& pos = session.GetPlayer().GetPosition();
+					auto& partner = session.GetPlayer();
+					auto& pos = partner.GetPosition();
 					sessions[partner_id].Emplace<packet::SCNewEntity>(
-						entity::kPartnerID, pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
+						entity::kPartnerID, partner.hp_.load(), pos.x, pos.y, pos.z, entity::Type::kPlayer, 0);
 					sessions.EndAccess(partner_id);
 				}
 			}
@@ -213,21 +215,41 @@ namespace server {
 
 					if (entity::CanSee(en_pos, player.GetPosition())) {
 						if (view_lists[session.GetID()]->Insert(en_id)) {
-							session.Emplace<packet::SCNewEntity>(en_id,
-								en_pos.x, en_pos.y, en_pos.z, en.GetType(), en.GetFlag());
+							char flag = static_cast<char>(en.has_informed_to_client);
+							en.has_informed_to_client = true;
+							session.Emplace<packet::SCNewEntity>(&en, flag);
 						}
 						
-						session.Emplace<packet::SCPosition>(&en);
 						if (entity::Type::kMob == en.GetType()) {
 							auto& m = *reinterpret_cast<entity::Mob*>(&en);
 							m.WakeUp();
-							if (m.IsAttacked(p_pos, p.r)) {
-								auto local_flag = m.flag_;
-								local_flag &= ~0b1100;
-								local_flag |= 0b1000;
-								m.flag_ = local_flag;
+
+							switch (m.IsAttacked(p_pos, p.r)) {
+								case entity::HitStatus::kFront:
+								{
+									auto local_flag = m.flag_;
+									local_flag &= ~0b11100;
+									local_flag |= 0b01000;
+									m.flag_ = local_flag;
+									if (m.GetDamaged(80)) {
+										entities.Kill(en_id);
+									}
+									break;
+								}
+								case entity::HitStatus::kBack:
+								{
+									auto local_flag = m.flag_;
+									local_flag &= ~0b11100;
+									local_flag |= 0b10000;
+									m.flag_ = local_flag;
+									if (m.GetDamaged(80)) {
+										entities.Kill(en_id);
+									}
+									break;
+								}
 							}
-							
+
+							session.Emplace<packet::SCPosition>(&en);
 						}
 					}
 					else {
@@ -286,8 +308,7 @@ namespace server {
 
 					if (entity::CanSee(en_pos, player.GetPosition())) {
 						if (view_lists[session.GetID()]->Insert(en_id)) {
-							session.Emplace<packet::SCNewEntity>(en_id,
-								en_pos.x, en_pos.y, en_pos.z, en.GetType(), en.GetFlag());
+							session.Emplace<packet::SCNewEntity>(&en, char{ 0 });
 						}
 
 						session.Emplace<packet::SCPosition>(&en);

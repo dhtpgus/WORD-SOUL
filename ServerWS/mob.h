@@ -28,6 +28,7 @@ namespace entity {
 		inline float attack_range_sq;
 
 		inline float attack_angle;
+		inline short damage;
 
 		inline float attack_cooldown;
 		inline float hitstop_time;
@@ -60,6 +61,7 @@ namespace entity {
 			attack_range_sq = attack_range * attack_range;
 
 			mob::attack_angle = settings.GetConstant<float>("ATTACK_ANGLE");
+			mob::damage = settings.GetConstant<short>("DAMAGE");
 
 			mob::attack_cooldown = settings.GetConstant<float>("ATTACK_COOLDOWN");
 			mob::hitstop_time = settings.GetConstant<float>("HITSTOP_TIME");
@@ -82,9 +84,11 @@ namespace entity {
 		float GetMoveTime(float time) noexcept {
 			return move_timer_.GetDuration(time);
 		}
-		void GetDamaged() noexcept {
+		bool GetDamaged(short damage) noexcept {
+			auto r = Base::GetDamaged(damage);
 			hitstop_time_ = 1.0f;
 			attack_timer_.ResetTimePoint();
+			return r;
 		}
 
 		void WakeUp() noexcept {
@@ -102,19 +106,28 @@ namespace entity {
 				GetID(), GetPosition().x, GetPosition().y, GetPosition().z, region_, GetFlag());
 		}
 
-		bool IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept {
+		HitStatus IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept {
 			static const auto kPi{ acosf(-1) };
 
 			Position local_pos{ GetPosition() };
 			auto local_dir = ConvertAngle(dir_);
 			if (mob::attack_range == GetDistance2DSq(attacker_pos, local_pos)) {
-				return false;
+				return HitStatus::kNone;
 			}
 
 			auto theta = ConvertAngle(attacker_pos.GetAngle(local_pos));
 
-			theta = ConvertAngle(local_dir - theta);
-			return (theta < mob::attack_angle or theta > 2 * kPi - mob::attack_angle);
+			theta = ConvertAngle(attacker_dir - theta);
+			if (theta < mob::attack_angle or theta > 2 * kPi - mob::attack_angle) {
+				if (90.0f <= fabs(ConvertAngle(local_dir - mob::attack_angle) - kPi / 2)) {
+					return HitStatus::kFront;
+				}
+				return HitStatus::kBack;
+			}
+			return HitStatus::kNone;
+		}
+		auto GetTargetID() const noexcept {
+			return target_id_;
 		}
 
 	private:
