@@ -10,6 +10,8 @@ namespace entity {
 		auto distance_sq_p1 = GetDistance2DSq(p1_pos, GetPosition());
 		auto distance_sq_p2 = GetDistance2DSq(p2_pos, GetPosition());
 		int target = distance_sq_p1 > distance_sq_p2 ? 2 : 1;
+		target_id_ = target == 1 ? p1_id : p2_id;
+
 		auto distance_sq = target == 1 ? distance_sq_p1 : distance_sq_p2;
 		const float kPi = acosf(-1);
 

@@ -145,11 +145,11 @@ namespace packet {
 			flag = static_cast<char>(rs_flag);
 		}
 		entity::ID id;
-		short hp;
 		float x;
 		float y;
 		float z;
 		entity::Type entity_type;
+		short hp;
 		char flag;
 	};
 

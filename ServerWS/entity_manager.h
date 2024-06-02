@@ -108,6 +108,7 @@ namespace entity {
 
 				if ((m.GetFlag() & 0b100) != 0) {
 					auto trg = m.GetTargetID();
+					//std::print("{} {} {}\n", trg, players[0], players[1]);
 					sessions[trg].GetPlayer().GetDamaged(mob::damage);
 					for (auto p : players) {
 						if (p == trg) {

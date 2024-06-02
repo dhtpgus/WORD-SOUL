@@ -111,7 +111,7 @@ namespace entity {
 
 			Position local_pos{ GetPosition() };
 			auto local_dir = ConvertAngle(dir_);
-			if (mob::attack_range == GetDistance2DSq(attacker_pos, local_pos)) {
+			if (mob::attack_range < GetDistance2DSq(attacker_pos, local_pos)) {
 				return HitStatus::kNone;
 			}
 
