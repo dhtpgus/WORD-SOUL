@@ -58,6 +58,8 @@ namespace entity {
 			return hp_ < damage;
 		}
 
+		HitStatus IsAttacked(const Position& attacker_pos, float attacker_dir) noexcept;
+
 		char flag_;
 		int region_;
 		float dir_;

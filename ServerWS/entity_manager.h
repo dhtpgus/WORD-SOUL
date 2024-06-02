@@ -108,14 +108,23 @@ namespace entity {
 
 				if ((m.GetFlag() & 0b100) != 0) {
 					auto trg = m.GetTargetID();
-					//std::print("{} {} {}\n", trg, players[0], players[1]);
-					sessions[trg].GetPlayer().GetDamaged(mob::damage);
-					for (auto p : players) {
-						if (p == trg) {
-							sessions[p].Emplace<packet::SCModifyHP>(entity::kAvatarID, mob::damage);
-						}
-						else {
-							sessions[p].Emplace<packet::SCModifyHP>(entity::kPartnerID, mob::damage);
+					auto& trg_player = sessions[trg].GetPlayer();
+
+					auto hit_status = trg_player.IsAttacked(m.GetPosition(), m.dir_);
+
+					if (hit_status != HitStatus::kNone) {
+						trg_player.GetDamaged(mob::damage);
+						char flag_to_bitor = hit_status == HitStatus::kFront ? 0b0001'0000 : 0b0010'0000;
+						trg_player.flag_ |= flag_to_bitor;
+
+						for (auto p : players) {
+							if (p == trg) {
+								sessions[p].Emplace<packet::SCModifyHP>(entity::kAvatarID, (short)-mob::damage);
+							}
+							else {
+								sessions[p].Emplace<packet::SCModifyHP>(entity::kPartnerID, (short)-mob::damage);
+							}
+							sessions[p].Emplace<packet::SCPosition>(&trg_player);
 						}
 					}
 				}
