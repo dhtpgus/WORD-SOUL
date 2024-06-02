@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Interfaces/HitInterface.h"
 #include "GameFramework/Character.h"
+#include "Characters/CharacterType.h"
 #include "Enemy.generated.h"
 
 class UAnimMontage;
@@ -25,7 +26,11 @@ public:
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	virtual void Destroyed() override;
 
+	UPROPERTY(BlueprintReadWrite)
+	EMonsterState MonsterState = EMonsterState::EMS_Wandering;
+
 	void PlayAttackMontage();
+	void PlayHitReactMontage(const FName& SectionName);
 
 	uint16 MonsterID;
 	
@@ -33,7 +38,6 @@ protected:
 	virtual void BeginPlay() override;
 
 	void Die();
-	void PlayHitReactMontage(const FName& SectionName);
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

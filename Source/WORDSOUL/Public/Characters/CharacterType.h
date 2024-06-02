@@ -15,3 +15,12 @@ enum class EActionState : uint8
 	EAS_Dodge UMETA(DisplayName = "Dodge"),
 	EAS_Pickup UMETA(DisplayName = "Pickup")
 };
+
+UENUM(BlueprintType)
+enum class EMonsterState : uint8
+{
+	EMS_Wandering UMETA(DisplayName = "Wandering"),
+	EMS_Chasing UMETA(DisplayName = "Chasing"),
+	EMS_Attacking UMETA(DisplayName = "Attacking"),
+	EMS_AIStop UMETA(DisplayName = "AIStop")
+};

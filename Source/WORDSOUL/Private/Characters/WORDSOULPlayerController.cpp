@@ -29,7 +29,7 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	SpawnMonster(NewEntityInfo);
 
 	UpdatePlayerInfo(OtherCharacterInfo);
-	//UpdateMonsterInfo(EnemyInfo);
+	UpdateMonsterInfo(EnemyInfo);
 }
 
 void AWORDSOULPlayerController::SpawnMonster(const SCNewEntity& EntityInfo)
@@ -193,36 +193,39 @@ void AWORDSOULPlayerController::UpdateMonsterInfo(const SCPosition& MonsterInfo)
 			cEnemy->SetActorRotation(FRotator(0.f, MonsterInfo.r, 0.f));
 
 
-			UAnimInstance* AnimInst = cEnemy->GetMesh()->GetAnimInstance();
-			UWORDSOULAnimInstance* WORDSOULAnimInst = Cast<UWORDSOULAnimInstance>(AnimInst);
-			if (WORDSOULAnimInst)
+			switch (MonsterInfo.flag & 0b0000'0011)
 			{
-				switch (MonsterInfo.flag & 0b0000'0011)
-				{
-				case 0: // AI off
-					break;
-				case 1: // wander
-					break;
-				case 2: // chase
-					break;
-				case 3: // attack mode
-					break;
-				default:
-					WORDSOULAnimInst->GroundSpeed = MonsterInfo.v;
-					break;
-				}
-
-				if ((MonsterInfo.flag & 0b0000'0100) != 0) // attack action
-				{
-					cEnemy->PlayAttackMontage();
-				}
-				else if ((MonsterInfo.flag & 0b0000'1000) != 0) // hit reaction
-				{
-
-				}
-				
+			case 0: // AI off
+				cEnemy->MonsterState = EMonsterState::EMS_AIStop;
+				break;
+			case 1: // wander
+				cEnemy->MonsterState = EMonsterState::EMS_Wandering;
+				break;
+			case 2: // chase
+				cEnemy->MonsterState = EMonsterState::EMS_Chasing;
+				break;
+			case 3: // attack mode
+				cEnemy->MonsterState = EMonsterState::EMS_Attacking;
+				break;
+			default:
+				break;
 			}
-			break;
+
+			if ((MonsterInfo.flag & 0b0000'0100) != 0) // attack action
+			{
+				cEnemy->PlayAttackMontage();
+				UE_LOG(LogTemp, Warning, TEXT("Attack"));
+			}
+			else if ((MonsterInfo.flag & 0b0000'1000) != 0) // hit reaction (front)
+			{
+				cEnemy->PlayHitReactMontage("Front");
+				UE_LOG(LogTemp, Warning, TEXT("Attacked Front"));
+			}
+			else if ((MonsterInfo.flag & 0b0001'0000) != 0) // hit reaction (back)
+			{
+				cEnemy->PlayHitReactMontage("Back");
+				UE_LOG(LogTemp, Warning, TEXT("Attacked Back"));
+			}
 		}
 	}
 }

@@ -244,7 +244,9 @@ void AWORDSOULCharacter::PlayAttackMontage()
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance and AttackMontage)
 	{
-		const TArray<FName> AttackComboList = { "Attack1", "Attack2", "Attack3" };
+		AnimInstance->Montage_Play(AttackMontage);
+		AnimInstance->Montage_JumpToSection("Default", AttackMontage);
+	/*	const TArray<FName> AttackComboList = { "Attack1", "Attack2", "Attack3" };
 
 		if (!(AnimInstance->Montage_IsPlaying(AttackMontage)))
 		{
@@ -254,7 +256,7 @@ void AWORDSOULCharacter::PlayAttackMontage()
 		{
 			AnimInstance->Montage_Play(AttackMontage);
 			AnimInstance->Montage_JumpToSection(AttackComboList[AttackComboCnt], AttackMontage);
-		}
+		}*/
 	}
 }
 
