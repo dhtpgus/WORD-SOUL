@@ -177,7 +177,7 @@ namespace server {
 			packet::CSPosition p{ buf.GetData() };
 
 			if (debug::DisplaysMSG()) {
-				std::print("(ID: {}) (x, y, z) = ({}, {}, {})\n", session_id, p.x, p.y, p.z);
+				std::print("(ID: {}) (x, y, z) = ({}, {}, {}), region: {}\n", session_id, p.x, p.y, p.z, world_map.FindRegion(Position{p.x, p.y, p.z}));
 			}
 
 			auto& player = session.GetPlayer();
