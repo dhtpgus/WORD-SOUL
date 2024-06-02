@@ -189,6 +189,7 @@
     <ClInclude Include="region.h" />
     <ClInclude Include="timer_thread.h" />
     <ClInclude Include="view_list.h" />
+    <ClInclude Include="worker_blocking.h" />
     <ClInclude Include="world_map.h" />
   </ItemGroup>
   <ItemGroup>

@@ -86,6 +86,7 @@ namespace server {
 		}
 
 		void WorkerThread(int id) noexcept;
+		void WorkerThreadBlocking(int id) noexcept;
 		void ProcessAccept() noexcept;
 		void Send() noexcept {
 			//int cnt{};
@@ -111,5 +112,5 @@ namespace server {
 		std::shared_ptr<Accepter> accepter_;
 	};
 
-	extern Socket sock;
+	inline Socket sock;
 };

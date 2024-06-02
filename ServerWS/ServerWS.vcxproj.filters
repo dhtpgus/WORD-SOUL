@@ -224,6 +224,9 @@
     <ClInclude Include="concurrent_ds.h">
       <Filter>헤더 파일\thread</Filter>
     </ClInclude>
+    <ClInclude Include="worker_blocking.h">
+      <Filter>헤더 파일\thread</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="scripts\server_settings.lua">

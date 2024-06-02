@@ -9,7 +9,6 @@ auto GetPartyID(int id) noexcept
 }
 
 namespace server {
-	Socket sock;
 
 	//inline int ccnt;
 
@@ -80,9 +79,7 @@ namespace server {
 					if (0 == transferred) {
 						break;
 					}
-#if USES_NONBLOCKING_DS
 					if (sessions.TryAccess(id)) {
-#endif
 						auto& buffer = sessions[id].GetBuffer();
 						transferred += buffer.GetSizeRemains();
 
@@ -90,10 +87,8 @@ namespace server {
 							ProcessPacket(buffer, transferred, id);
 						}
 						sessions[id].Receive();
-#if USES_NONBLOCKING_DS
 						sessions.EndAccess(id);
 					}
-#endif
 					break;
 				}
 
@@ -219,6 +214,9 @@ namespace server {
 							en.has_informed_to_client = true;
 							session.Emplace<packet::SCNewEntity>(&en, flag);
 						}
+
+						bool is_dead{};
+						bool is_hit{};
 						
 						if (entity::Type::kMob == en.GetType()) {
 							auto& m = *reinterpret_cast<entity::Mob*>(&en);
@@ -234,7 +232,10 @@ namespace server {
 									m.flag_ = local_flag;
 									if (m.GetDamaged(80)) {
 										entities.Kill(en_id);
+										is_dead = true;
+										is_hit = true;
 									}
+
 									break;
 								}
 								case entity::HitStatus::kBack:
@@ -245,13 +246,33 @@ namespace server {
 									m.flag_ = local_flag;
 									if (m.GetDamaged(80)) {
 										entities.Kill(en_id);
+										is_dead = true;
+										is_hit = true;
 									}
 									break;
 								}
 								}
 							}
 
-							session.Emplace<packet::SCPosition>(&en);
+							if (debug::DisplaysMSG()) {
+								m.Print();
+							}
+
+							if (is_hit) {
+								short hp_diff = -80;
+								session.Emplace<packet::SCModifyHP>(en_id, hp_diff);
+								if (sessions.TryAccess(partner_id)) {
+									sessions[partner_id].Emplace<packet::SCModifyHP>(en_id, hp_diff);
+									sessions.EndAccess(partner_id);
+								}
+							}
+
+							if (is_dead) {
+								session.Emplace<packet::SCRemoveEntity>(en_id, char{ 2 });
+							}
+							else {
+								session.Emplace<packet::SCPosition>(&en);
+							}
 						}
 					}
 					else {
