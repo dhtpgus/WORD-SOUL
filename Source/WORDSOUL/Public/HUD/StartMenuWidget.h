@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/EditableText.h"
+#include "Network/WORDSOULGameInstance.h"
 #include "StartMenuWidget.generated.h"
 
 class UButton;
@@ -18,9 +20,23 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
 	UButton* StartButton;
+
+	UPROPERTY()
+	UEditableText* IPTextBox;
+
+	UPROPERTY()
+	UButton* ConfirmButton;
+
 	
 private:
 	UFUNCTION(BlueprintCallable)
 	void OnStartButtonClicked();
+
+	UFUNCTION(BlueprintCallable)
+	void OnTextChanged(const FText& Text);
+
+	UFUNCTION()
+	void OnConfirmClicked();
+	
 	
 };

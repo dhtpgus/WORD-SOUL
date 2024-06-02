@@ -34,6 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() const { return ActionState; }
+	FORCEINLINE void SetCharacterState(ECharacterState state) { CharacterState = state; }
 	bool GetIsFalling() const;
 	float GetGroundSpeed() const;
 
@@ -44,6 +45,10 @@ public:
 	void PlayDodgeMontage();
 	void PlayPickupMontage();
 
+	UPROPERTY(VisibleAnywhere)
+	UAttributeComponent* Attributes;
+
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -51,10 +56,9 @@ protected:
 	void Turn(float value);
 	void LookUp(float value);
 	void MoveRight(float value);
-	void GetItem();
 	void Attack();
 	void Dodge();
-
+	void GetItem();
 	bool HasEnoughStamina();
 	bool IsOccupied();
 
@@ -73,9 +77,6 @@ protected:
 	void PickupEnd();
 
 private:
-	UPROPERTY(VisibleAnywhere)
-	UAttributeComponent* Attributes;
-
 	void InitWORDSOULOverlay();
 
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;

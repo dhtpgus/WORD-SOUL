@@ -61,12 +61,6 @@ uint32 ClientSocket::Run()
 					if (memcpy(&entityInfo, bufferPtr, sizeof(SCNewEntity)))
 					{
 						PlayerController->RecvEntitynfo(entityInfo);
-						if (entityInfo.entity_type == 2)
-						{
-							UE_LOG(LogTemp, Warning, TEXT("monster entity type %d"), entityInfo.entity_type);
-							UE_LOG(LogTemp, Warning, TEXT("monster x y z : %f  %f  %f"), entityInfo.x, entityInfo.y, entityInfo.z);
-						}
-						
 					}
 					break;
 				case (uint8)EPacketType::SCPosition:
@@ -95,6 +89,11 @@ uint32 ClientSocket::Run()
 					//UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
 					break;
 				case (uint8)EPacketType::SCModifyHp:
+					SCModifyHP modifyHpInfo;
+					if (memcpy(&modifyHpInfo, bufferPtr, sizeof(SCModifyHP)))
+					{
+						PlayerController->RecvHpInfo(modifyHpInfo);
+					}
 					break;
 				default:
 					break;

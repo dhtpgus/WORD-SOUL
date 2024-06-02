@@ -125,11 +125,11 @@ void AEnemy::GetHit(const FVector& ImpactPoint)
 
 		if (Theta <= 120.0)
 		{
-			PlayHitReactMontage(FName("Damaged_Front"));
+			PlayHitReactMontage(FName("Front"));
 		}
 		else
 		{
-			PlayHitReactMontage(FName("Damaged_Back"));
+			PlayHitReactMontage(FName("Back"));
 		}
 		
 	}

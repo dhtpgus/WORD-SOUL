@@ -8,6 +8,9 @@
 #include "Characters/WORDSOULCharacter.h"
 #include "Enemy/Enemy.h"
 #include "NetWork/Packet.h"
+#include "Items/Item.h"
+#include "Items/Weapons/Weapon.h"
+#include "NetWork/WORDSOULGameInstance.h"
 #include "WORDSOULPlayerController.generated.h"
 
 /**
@@ -32,6 +35,7 @@ public:
 	void RecvEntitynfo(const SCNewEntity& EntityInfo);
 	void RecvCharacterInfo(const SCPosition& CharacterInfo);
 	void RecvMonsterInfo(const SCPosition& MonsterInfo);
+	void RecvHpInfo(const SCModifyHP& HpInfo);
 
 	UPROPERTY(BlueprintReadWrite)
 	AWORDSOULCharacter* OtherCharacter;
@@ -49,11 +53,15 @@ protected:
 private:
 	ClientSocket* Socket;
 	bool bIsConnected;
-	SCPosition OtherCharacterInfo;
-	SCPosition EnemyInfo;
 	SCNewEntity NewEntityInfo;
+	SCPosition OtherCharacterInfo;
+	TMap<uint16, SCPosition> EnemyInfoMap;
+	SCModifyHP HPInfo;
+	
+	AItem* OverlappingItem;
 	
 	void UpdatePlayerInfo(const SCPosition& CharacterInfo);
-	void UpdateMonsterInfo(const SCPosition& MonsterInfo);
+	void UpdateMonsterInfo(const TMap<uint16, SCPosition>& EnemyInfoMap);
+	void UpdateEntityHp(SCModifyHP& hpInfo);
 
 };

@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Characters/WORDSOULAnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/AttributeComponent.h"
 #include "EngineUtils.h"
 
 
@@ -29,7 +30,8 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 	SpawnMonster(NewEntityInfo);
 
 	UpdatePlayerInfo(OtherCharacterInfo);
-	UpdateMonsterInfo(EnemyInfo);
+	UpdateMonsterInfo(EnemyInfoMap);
+	UpdateEntityHp(HPInfo);
 }
 
 void AWORDSOULPlayerController::SpawnMonster(const SCNewEntity& EntityInfo)
@@ -64,6 +66,8 @@ void AWORDSOULPlayerController::SpawnMonster(const SCNewEntity& EntityInfo)
 			if (SpawnMonster and SpawnMonster->MonsterID == NULL)
 			{
 				SpawnMonster->MonsterID = EntityInfo.id;
+				SpawnMonster->Attributes->SetMaxHealth(EntityInfo.hp);
+				SpawnMonster->Attributes->SetHealth(EntityInfo.hp);
 			}
 		}
 	}
@@ -78,7 +82,7 @@ void AWORDSOULPlayerController::SendPlayerInfo()
 	MyLoc.Y = -MyLoc.Y;
 	float GroundSpeed = MyCharacter->GetGroundSpeed();
 	char flag = NULL;
-	float MyRot = MyCharacter->GetActorRotation().Yaw;
+	float MyRot = FMath::DegreesToRadians(MyCharacter->GetActorRotation().Yaw);
 	if (MyCharacter->GetIsFalling())
 	{
 		flag = 0b0000'0001;
@@ -86,6 +90,18 @@ void AWORDSOULPlayerController::SendPlayerInfo()
 	if ((MyCharacter->GetActionState()) == EActionState::EAS_Dodge)
 	{
 		flag |= 0b000'0100;
+	}
+	else if (MyCharacter->GetActionState() == EActionState::EAS_Attacking)
+	{
+		flag |= 0b0000'1000;
+	}
+	else if (MyCharacter->GetActionState() == EActionState::EAS_Pickup)
+	{
+		flag |= 0b0100'0000;
+	}
+	else if (MyCharacter->GetCharacterState() == ECharacterState::ECS_EquippedWeapon)
+	{
+		flag |= 0b1000'0000;
 	}
 	Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag, MyRot);
 }
@@ -102,28 +118,46 @@ void AWORDSOULPlayerController::RecvCharacterInfo(const SCPosition& CharacterInf
 
 void AWORDSOULPlayerController::RecvMonsterInfo(const SCPosition& MonsterInfo)
 {
-	EnemyInfo = MonsterInfo;
+	if (EnemyInfoMap.Contains(MonsterInfo.id))
+	{
+		EnemyInfoMap[MonsterInfo.id] = MonsterInfo;
+	}
+	else
+	{
+		EnemyInfoMap.Add(MonsterInfo.id, MonsterInfo);
+	}
+}
+
+void AWORDSOULPlayerController::RecvHpInfo(const SCModifyHP& HpInfo)
+{
+	HPInfo = HpInfo;
 }
 
 void AWORDSOULPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UWORDSOULGameInstance* GameInstance = Cast<UWORDSOULGameInstance>(GetWorld()->GetGameInstance());
+	if (!GameInstance) return;
+	const char* ServerIPChars = TCHAR_TO_ANSI(*GameInstance->IPAddress);
+
 	Socket = ClientSocket::GetInstance();
 	Socket->InitSocket();
-	bIsConnected = Socket->ConnectToServer(SERVER_IP, SERVER_PORT);
+	bIsConnected = Socket->ConnectToServer(ServerIPChars, SERVER_PORT);
+	UE_LOG(LogTemp, Warning, TEXT("%s"), ServerIPChars);
 	if (bIsConnected)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT SUCCESS"));
 		Socket->SetPlayerController(this);
+
+		Socket->Party();
+		Socket->StartRecvThread();
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT FAILED"));
 	}
 
-	Socket->Party();
-	Socket->StartRecvThread();
 }
 
 void AWORDSOULPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -146,7 +180,7 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 			FVector NewLocation = FVector(CharacterInfo.x, -CharacterInfo.y, CharacterInfo.z);
 
 			cCharacter->SetActorLocation(NewLocation);
-			cCharacter->SetActorRotation(FRotator(0.f, CharacterInfo.r, 0.f));
+			cCharacter->SetActorRotation(FRotator(0.f, FMath::RadiansToDegrees(CharacterInfo.r), 0.f));
 
 			
 			UAnimInstance* AnimInst = cCharacter->GetMesh()->GetAnimInstance();
@@ -172,28 +206,41 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 				{
 					cCharacter->PlayAttackMontage();
 				}
+				else if ((CharacterInfo.flag & 0b0100'0000) != 0)
+				{
+					cCharacter->PlayPickupMontage();
+					AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
+					if (OverlappingWeapon)
+					{
+						OverlappingWeapon->Equip(cCharacter->GetMesh(), FName("RightHandSocket"), cCharacter, cCharacter);
+						OverlappingItem = nullptr;
+					}
+				}
+				else if ((CharacterInfo.flag & 0b1000'0000) != 0)
+				{
+					cCharacter->SetCharacterState(ECharacterState::ECS_EquippedWeapon);
+				}
 			}
 			break;
 		}
 	}
 }
 
-void AWORDSOULPlayerController::UpdateMonsterInfo(const SCPosition& MonsterInfo)
+void AWORDSOULPlayerController::UpdateMonsterInfo(const TMap<uint16, SCPosition>& cEnemyInfoMap)
 {
 	for (TActorIterator<APawn> It(GetWorld()); It; ++It)
 	{
 		APawn* cPawn = *It;
 		AEnemy* cEnemy = Cast<AEnemy>(cPawn);
-		if (cEnemy and cEnemy->MonsterID == MonsterInfo.id)
+		if (cEnemy and cEnemyInfoMap.Contains(cEnemy->MonsterID))
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("Monster x y z : %f %f %f"), MonsterInfo.x, MonsterInfo.y, MonsterInfo.z);
-			FVector NewLocation = FVector(MonsterInfo.x, MonsterInfo.y, 71.f);
+			//UE_LOG(LogTemp, Warning, TEXT("Monster x y z : %f %f %f"), cEnemyInfoMap[cEnemy->MonsterID].x, cEnemyInfoMap[cEnemy->MonsterID].y, 71.f);
+			FVector NewLocation = FVector(cEnemyInfoMap[cEnemy->MonsterID].x, -cEnemyInfoMap[cEnemy->MonsterID].y, 71.f);
 
 			cEnemy->SetActorLocation(NewLocation);
-			cEnemy->SetActorRotation(FRotator(0.f, MonsterInfo.r, 0.f));
+			cEnemy->SetActorRotation(FRotator(0.f, (FMath::RadiansToDegrees(cEnemyInfoMap[cEnemy->MonsterID].r) * -1.0f), 0.f));
 
-
-			switch (MonsterInfo.flag & 0b0000'0011)
+			switch (cEnemyInfoMap[cEnemy->MonsterID].flag & 0b0000'0011)
 			{
 			case 0: // AI off
 				cEnemy->MonsterState = EMonsterState::EMS_AIStop;
@@ -203,29 +250,54 @@ void AWORDSOULPlayerController::UpdateMonsterInfo(const SCPosition& MonsterInfo)
 				break;
 			case 2: // chase
 				cEnemy->MonsterState = EMonsterState::EMS_Chasing;
+				UE_LOG(LogTemp, Warning, TEXT("chasingState"));
 				break;
 			case 3: // attack mode
 				cEnemy->MonsterState = EMonsterState::EMS_Attacking;
+				UE_LOG(LogTemp, Warning, TEXT("AttackingState"));
 				break;
 			default:
 				break;
 			}
 
-			if ((MonsterInfo.flag & 0b0000'0100) != 0) // attack action
+			if ((cEnemyInfoMap[cEnemy->MonsterID].flag & 0b0000'0100) != 0) // attack action
 			{
 				cEnemy->PlayAttackMontage();
 				UE_LOG(LogTemp, Warning, TEXT("Attack"));
 			}
-			else if ((MonsterInfo.flag & 0b0000'1000) != 0) // hit reaction (front)
+			else if ((cEnemyInfoMap[cEnemy->MonsterID].flag & 0b0000'1000) != 0) // hit reaction (front)
 			{
 				cEnemy->PlayHitReactMontage("Front");
-				UE_LOG(LogTemp, Warning, TEXT("Attacked Front"));
 			}
-			else if ((MonsterInfo.flag & 0b0001'0000) != 0) // hit reaction (back)
+			else if ((cEnemyInfoMap[cEnemy->MonsterID].flag & 0b0001'0000) != 0) // hit reaction (back)
 			{
 				cEnemy->PlayHitReactMontage("Back");
-				UE_LOG(LogTemp, Warning, TEXT("Attacked Back"));
 			}
 		}
 	}
+}
+
+void AWORDSOULPlayerController::UpdateEntityHp(SCModifyHP& hpInfo)
+{
+	if (hpInfo.hp != NULL)
+	{
+		for (TActorIterator<APawn> It(GetWorld()); It; ++It)
+		{
+			APawn* cPawn = *It;
+			AEnemy* cEnemy = Cast<AEnemy>(cPawn);
+			AWORDSOULCharacter* cCharacter = Cast<AWORDSOULCharacter>(cPawn);
+			if (cEnemy and cEnemy->MonsterID == hpInfo.id)
+			{
+				float currentHealth = cEnemy->Attributes->GetHealth();
+				cEnemy->Attributes->SetHealth(currentHealth + hpInfo.hp);
+			}
+			if (cCharacter and cCharacter == OtherCharacter)
+			{
+				float currentHealth = OtherCharacter->Attributes->GetHealth();
+				cCharacter->Attributes->SetHealth(currentHealth + hpInfo.hp);
+			}
+		}
+		hpInfo.hp = NULL;
+	}
+
 }

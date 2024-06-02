@@ -14,4 +14,7 @@ class WORDSOUL_API UWORDSOULGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 	
+public:
+	UPROPERTY()
+	FString IPAddress;
 };

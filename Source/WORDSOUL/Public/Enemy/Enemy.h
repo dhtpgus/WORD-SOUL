@@ -33,6 +33,9 @@ public:
 	void PlayHitReactMontage(const FName& SectionName);
 
 	uint16 MonsterID;
+
+	UPROPERTY(VisibleAnywhere)
+	UAttributeComponent* Attributes;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -42,9 +45,6 @@ protected:
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool IsAlive;
-
-	UPROPERTY(VisibleAnywhere)
-	UAttributeComponent* Attributes;
 
 	UPROPERTY(VisibleAnywhere)
 	UHealthBarComponent* HealthBarWidget;

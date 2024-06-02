@@ -26,6 +26,7 @@ struct SCNewEntity : PacketBase
 	uint16 id;
 	float x, y, z;
 	uint8 entity_type;
+	short hp;
 	char flag;
 };
 

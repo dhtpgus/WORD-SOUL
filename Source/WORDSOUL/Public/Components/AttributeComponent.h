@@ -46,6 +46,9 @@ public:
 	float GetStaminaPercent();
 	FORCEINLINE float GetDodgeCost() const { return DodgeCost; }
 	FORCEINLINE float GetStamina() const { return Stamina; }
+	FORCEINLINE void SetMaxHealth(float value) { MaxHealth = value; };
+	FORCEINLINE void SetHealth(float value) { Health = value; };
+	FORCEINLINE float GetHealth() const { return Health; }
 
 	
 
