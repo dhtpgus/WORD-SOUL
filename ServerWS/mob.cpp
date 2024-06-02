@@ -27,7 +27,7 @@ namespace entity {
 			state_ = fsm::State::kChase;
 		}
 		else if (distance_sq < mob::ai_activation_range_sq){
-			float rad = rng.Rand(0.0f, 2 * kPi);
+			float rad = fmod(dir_ - rng.Rand(-0.3f, 0.3f), 2 * kPi);
 			auto [x, y] = target_pos_.GetXY();
 			target_pos_.SetXY(x + 200.0f * cosf(rad), y + 200.0f * sinf(rad));
 			state_ = fsm::State::kWander;
