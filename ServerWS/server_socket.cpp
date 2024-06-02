@@ -224,7 +224,8 @@ namespace server {
 							auto& m = *reinterpret_cast<entity::Mob*>(&en);
 							m.WakeUp();
 
-							switch (m.IsAttacked(p_pos, p.r)) {
+							if ((p.flag & 0b0000'1000) != 0) {
+								switch (m.IsAttacked(p_pos, p.r)) {
 								case entity::HitStatus::kFront:
 								{
 									auto local_flag = m.flag_;
@@ -246,6 +247,7 @@ namespace server {
 										entities.Kill(en_id);
 									}
 									break;
+								}
 								}
 							}
 
