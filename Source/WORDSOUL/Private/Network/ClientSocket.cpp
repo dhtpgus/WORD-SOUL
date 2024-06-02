@@ -207,6 +207,14 @@ void ClientSocket::Party()
 	send(sock, (char*)&partyPacket, sizeof(CSJoinParty), 0);
 }
 
+void ClientSocket::LeaveParty()
+{
+	CSLeaveParty LeavePartyPacket;
+	LeavePartyPacket.length = 0;
+	LeavePartyPacket.packetType = EPacketType::CSLeaveParty;
+}
+
+
 void ClientSocket::SetPlayerController(AWORDSOULPlayerController* playerController)
 {
 	if (playerController)

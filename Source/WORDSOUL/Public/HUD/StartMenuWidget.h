@@ -38,5 +38,4 @@ private:
 	UFUNCTION()
 	void OnConfirmClicked();
 	
-	
 };

@@ -164,6 +164,8 @@ void AWORDSOULPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason
 {
 	Super::EndPlay(EndPlayReason);
 
+	Socket->LeaveParty();
+	UE_LOG(LogTemp, Warning, TEXT("Leave Party 0"));
 	Socket->EndRecvThread();
 }
 

@@ -42,6 +42,7 @@ public:
 	void EndRecvThread();
 	void SendCharacterInfo(const FVector& location, float groundSpeed, char flag, float rotation);
 	void Party();
+	void LeaveParty();
 	void SetPlayerController(AWORDSOULPlayerController* playerController);
 
 private:
