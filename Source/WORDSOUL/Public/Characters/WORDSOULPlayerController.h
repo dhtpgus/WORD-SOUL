@@ -10,12 +10,12 @@
 #include "NetWork/Packet.h"
 #include "Items/Item.h"
 #include "Items/Weapons/Weapon.h"
-#include "NetWork/WORDSOULGameInstance.h"
 #include "WORDSOULPlayerController.generated.h"
 
 /**
  * 
  */
+class UWORDSOULGameInstance;
 
 UCLASS()
 class WORDSOUL_API AWORDSOULPlayerController : public APlayerController
@@ -51,8 +51,7 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	ClientSocket* Socket;
-	bool bIsConnected;
+	UWORDSOULGameInstance* GameInstance;
 	SCNewEntity NewEntityInfo;
 	SCPosition OtherCharacterInfo;
 	TMap<uint16, SCPosition> EnemyInfoMap;
@@ -63,5 +62,7 @@ private:
 	void UpdatePlayerInfo(const SCPosition& CharacterInfo);
 	void UpdateMonsterInfo(const TMap<uint16, SCPosition>& EnemyInfoMap);
 	void UpdateEntityHp(SCModifyHP& hpInfo);
+	UFUNCTION(BlueprintCallable)
+	void EndThread();
 
 };

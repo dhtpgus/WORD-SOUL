@@ -31,7 +31,7 @@ void UStartMenuWidget::NativeConstruct()
 
 void UStartMenuWidget::OnStartButtonClicked()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("WORDSOULBossMap"));
+	UGameplayStatics::OpenLevel(GetWorld(), TEXT("WORDSOULMap"));
 }
 
 void UStartMenuWidget::OnTextChanged(const FText& Text)

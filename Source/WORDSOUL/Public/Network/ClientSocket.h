@@ -55,5 +55,4 @@ private:
 	char recvBuffer[BUFSIZE];
 
 	AWORDSOULPlayerController* PlayerController;
-	
 };

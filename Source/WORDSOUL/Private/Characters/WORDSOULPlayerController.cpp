@@ -6,6 +6,7 @@
 #include "Characters/WORDSOULAnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/AttributeComponent.h"
+#include "Network/WORDSOULGameInstance.h"
 #include "EngineUtils.h"
 
 
@@ -23,7 +24,7 @@ void AWORDSOULPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (!bIsConnected) return;
+	if (!GameInstance->IsConnected()) return;
 
 	SendPlayerInfo();
 	
@@ -103,7 +104,7 @@ void AWORDSOULPlayerController::SendPlayerInfo()
 	{
 		flag |= 0b1000'0000;
 	}
-	Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag, MyRot);
+	GameInstance->Socket->SendCharacterInfo(MyLoc, GroundSpeed, flag, MyRot);
 }
 
 void AWORDSOULPlayerController::RecvEntitynfo(const SCNewEntity& EntityInfo)
@@ -137,26 +138,20 @@ void AWORDSOULPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UWORDSOULGameInstance* GameInstance = Cast<UWORDSOULGameInstance>(GetWorld()->GetGameInstance());
-	if (!GameInstance) return;
-	const char* ServerIPChars = TCHAR_TO_ANSI(*GameInstance->IPAddress);
-
-	Socket = ClientSocket::GetInstance();
-	Socket->InitSocket();
-	bIsConnected = Socket->ConnectToServer(ServerIPChars, SERVER_PORT);
-	UE_LOG(LogTemp, Warning, TEXT("%s"), ServerIPChars);
-	if (bIsConnected)
+	GameInstance = Cast<UWORDSOULGameInstance>(GetWorld()->GetGameInstance());
+	if (GameInstance and !GameInstance->IsConnected())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT SUCCESS"));
-		Socket->SetPlayerController(this);
+		GameInstance->InitNetwork();
+		GameInstance->Socket->SetPlayerController(this);
 
-		Socket->Party();
-		Socket->StartRecvThread();
+		GameInstance->Socket->Party();
 	}
-	else
+	if (GameInstance->IsConnected())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("SERVER CONNECT FAILED"));
+		GameInstance->Socket->SetPlayerController(this);
+		GameInstance->Socket->StartRecvThread();
 	}
+
 
 }
 
@@ -164,9 +159,12 @@ void AWORDSOULPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason
 {
 	Super::EndPlay(EndPlayReason);
 
-	Socket->LeaveParty();
-	UE_LOG(LogTemp, Warning, TEXT("Leave Party 0"));
-	Socket->EndRecvThread();
+	if (EndPlayReason == EEndPlayReason::LevelTransition)
+	{
+		/*GameInstance->Socket->EndRecvThread();*/
+		UE_LOG(LogTemp, Warning, TEXT("RecvThreadDestroyed"));
+	}
+
 }
 
 void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo)
@@ -193,7 +191,6 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 				if ((CharacterInfo.flag & 0b0000'0011) == 0b01) //jumping(IsFalling)
 				{
 					WORDSOULAnimInst->IsFalling = true;
-					//UE_LOG(LogTemp, Warning, TEXT("JUMP : TRUE"));
 				}
 				else
 				{
@@ -204,21 +201,22 @@ void AWORDSOULPlayerController::UpdatePlayerInfo(const SCPosition& CharacterInfo
 				{
 					cCharacter->PlayDodgeMontage();
 				}
-				else if ((CharacterInfo.flag & 0b0000'1000) != 0)
+				else if ((CharacterInfo.flag & 0b0000'1000) != 0) // attack
 				{
 					cCharacter->PlayAttackMontage();
 				}
-				else if ((CharacterInfo.flag & 0b0100'0000) != 0)
+				else if ((CharacterInfo.flag & 0b0100'0000) != 0) // pickup
 				{
 					cCharacter->PlayPickupMontage();
 					AWeapon* OverlappingWeapon = Cast<AWeapon>(OverlappingItem);
 					if (OverlappingWeapon)
 					{
-						OverlappingWeapon->Equip(cCharacter->GetMesh(), FName("RightHandSocket"), cCharacter, cCharacter);
+						OverlappingWeapon->AttachMeshTotSocket(cCharacter->GetMesh(), FName("RightHandSocket"));
 						OverlappingItem = nullptr;
+						UE_LOG(LogTemp, Warning, TEXT("Weapon Attached"));
 					}
 				}
-				else if ((CharacterInfo.flag & 0b1000'0000) != 0)
+				else if ((CharacterInfo.flag & 0b1000'0000) != 0) // state
 				{
 					cCharacter->SetCharacterState(ECharacterState::ECS_EquippedWeapon);
 				}
@@ -302,4 +300,9 @@ void AWORDSOULPlayerController::UpdateEntityHp(SCModifyHP& hpInfo)
 		hpInfo.hp = NULL;
 	}
 
+}
+
+void AWORDSOULPlayerController::EndThread()
+{
+	GameInstance->Socket->EndRecvThread();
 }

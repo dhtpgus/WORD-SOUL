@@ -49,54 +49,56 @@ uint32 ClientSocket::Run()
 		while (totalBytes > 1)
 		{
 			uint8 messageLength = *bufferPtr;
-			uint8 packetType = static_cast<uint8>(*(bufferPtr + PACKET_TYPE_OFFSET));
+			EPacketType packetType = static_cast<EPacketType>(*(bufferPtr + PACKET_TYPE_OFFSET));
 			int packetSize = messageLength + 2;
 			
 			if (totalBytes >= packetSize)
 			{
-				switch (packetType)
-				{
-				case (uint8)EPacketType::SCNewEntity:
-					SCNewEntity entityInfo;
-					if (memcpy(&entityInfo, bufferPtr, sizeof(SCNewEntity)))
+				if (PlayerController) {
+					switch (packetType)
 					{
-						PlayerController->RecvEntitynfo(entityInfo);
-					}
-					break;
-				case (uint8)EPacketType::SCPosition:
-					if (totalBytes >= sizeof(SCPosition))
-					{
-						SCPosition characterInfo;
-						if (memcpy(&characterInfo, bufferPtr, sizeof(SCPosition)))
+					case EPacketType::SCNewEntity:
+						SCNewEntity entityInfo;
+						if (memcpy(&entityInfo, bufferPtr, sizeof(SCNewEntity)))
 						{
-							if (characterInfo.id == 0xFFFF) // OtherPlayer
+							PlayerController->RecvEntitynfo(entityInfo);
+						}
+						break;
+					case EPacketType::SCPosition:
+						if (totalBytes >= sizeof(SCPosition))
+						{
+							SCPosition characterInfo;
+							if (memcpy(&characterInfo, bufferPtr, sizeof(SCPosition)))
 							{
-								PlayerController->RecvCharacterInfo(characterInfo);
-								//UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
-							}
-							else // Monster
-							{
-								PlayerController->RecvMonsterInfo(characterInfo);
+								if (characterInfo.id == 0xFFFF) // OtherPlayer
+								{
+									PlayerController->RecvCharacterInfo(characterInfo);
+									//UE_LOG(LogTemp, Warning, TEXT("Character x y z : %f  %f  %f"), characterInfo->x, characterInfo->y, characterInfo->z);
+								}
+								else // Monster
+								{
+									PlayerController->RecvMonsterInfo(characterInfo);
+								}
 							}
 						}
-					}	
-					break;
-				case (uint8)EPacketType::SCRemoveEntity:
-					break;
-				case (uint8)EPacketType::SCResult:
-					break;
-				case (uint8)EPacketType::SCCheckConnection:
-					//UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
-					break;
-				case (uint8)EPacketType::SCModifyHp:
-					SCModifyHP modifyHpInfo;
-					if (memcpy(&modifyHpInfo, bufferPtr, sizeof(SCModifyHP)))
-					{
-						PlayerController->RecvHpInfo(modifyHpInfo);
+						break;
+					case EPacketType::SCRemoveEntity:
+						break;
+					case EPacketType::SCResult:
+						break;
+					case EPacketType::SCCheckConnection:
+						//UE_LOG(LogTemp, Warning, TEXT("TEST MESSAGE"));
+						break;
+					case EPacketType::SCModifyHp:
+						SCModifyHP modifyHpInfo;
+						if (memcpy(&modifyHpInfo, bufferPtr, sizeof(SCModifyHP)))
+						{
+							PlayerController->RecvHpInfo(modifyHpInfo);
+						}
+						break;
+					default:
+						break;
 					}
-					break;
-				default:
-					break;
 				}
 				bufferPtr += packetSize;
 				totalBytes -= packetSize;
