@@ -66,6 +66,8 @@ void AWORDSOULCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	InitWORDSOULOverlay();
+
+	Tags.Add(FName("WORDSOULCharacter"));
 }
 
 void AWORDSOULCharacter::InitWORDSOULOverlay()

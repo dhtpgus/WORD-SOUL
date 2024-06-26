@@ -12,6 +12,7 @@ class UAnimMontage;
 class UAttributeComponent;
 class UHealthBarComponent;
 class AWeapon;
+class UPawnSensingComponent;
 
 UCLASS()
 class WORDSOUL_API AEnemy : public ACharacter, public IHitInterface
@@ -46,6 +47,9 @@ protected:
 	bool InTargetRange(AActor* Target, double Radius);
 	void MoveToTarget(AActor* Target);
 	AActor* ChoosePatrolTarget();
+
+	UFUNCTION()
+	void PawnSeen(APawn* SeenPawn);
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -95,4 +99,9 @@ private:
 	float WaitTimeMin = 4.f;
 	UPROPERTY(EditAnywhere, Category = "AI Navigation")
 	float WaitTimeMax = 8.f;
+
+	UPROPERTY(VisibleAnywhere)
+	UPawnSensingComponent* PawnSensing;
+
+	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 };
