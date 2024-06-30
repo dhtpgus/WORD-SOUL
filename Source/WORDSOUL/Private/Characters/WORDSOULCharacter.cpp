@@ -12,6 +12,7 @@
 #include "HUD/WORDSOULHUD.h"
 #include "HUD/WORDSOULOverlay.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include <Kismet/KismetMathLibrary.h>
 
 // Sets default values
@@ -26,6 +27,12 @@ AWORDSOULCharacter::AWORDSOULCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 400.f, 0.f);
+
+	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
+	GetMesh()->SetGenerateOverlapEvents(true);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
@@ -58,6 +65,11 @@ void AWORDSOULCharacter::SetWeaponCollisionEnabled(ECollisionEnabled::Type Colli
 		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
 		EquippedWeapon->IgnoreActors.Empty();
 	}
+}
+
+void AWORDSOULCharacter::GetHit_Implementation(const FVector& ImpactPoint)
+{
+	UE_LOG(LogTemp, Warning, TEXT("GetHit"));
 }
 
 // Called when the game starts or when spawned

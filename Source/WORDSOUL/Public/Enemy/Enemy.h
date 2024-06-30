@@ -39,6 +39,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	UAttributeComponent* Attributes;
+
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled);
 	
 protected:
 	virtual void BeginPlay() override;
@@ -51,6 +54,13 @@ protected:
 	UFUNCTION()
 	void PawnSeen(APawn* SeenPawn);
 
+	void Attack();
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
+
+	UPROPERTY(BlueprintReadOnly)
+	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool IsAlive;
@@ -88,6 +98,9 @@ private:
 	UPROPERTY(EditAnywhere)
 	double PatrolRadius = 200.f;
 
+	UPROPERTY(EditAnywhere)
+	double AttackRadius = 130.f;
+
 	UPROPERTY()
 	class AAIController* EnemyController;
 
@@ -100,8 +113,17 @@ private:
 	UPROPERTY(EditAnywhere, Category = "AI Navigation")
 	float WaitTimeMax = 8.f;
 
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float AttackTimeMin = 0.5f;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float AttackTimeMax = 1.f;
+
 	UPROPERTY(VisibleAnywhere)
 	UPawnSensingComponent* PawnSensing;
 
-	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
+	void StartAttackTimer();
+
+	FTimerHandle AttackTimer;
+
+	
 };

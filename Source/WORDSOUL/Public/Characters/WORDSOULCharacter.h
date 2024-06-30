@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "CharacterType.h"
 #include "NetWork/ClientSocket.h"
+#include "Interfaces/HitInterface.h"
 #include "WORDSOULCharacter.generated.h"
 
 #define MAX_ATTACK_COMBO 2
@@ -20,7 +21,7 @@ class UAttributeComponent;
 
 
 UCLASS()
-class WORDSOUL_API AWORDSOULCharacter : public ACharacter
+class WORDSOUL_API AWORDSOULCharacter : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
 
@@ -48,7 +49,7 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	UAttributeComponent* Attributes;
 
-	
+	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 protected:
 	virtual void BeginPlay() override;
 

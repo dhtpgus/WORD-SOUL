@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/AttributeComponent.h"
+#include "Components/BoxComponent.h"
 #include "HUD/HealthBarComponent.h"
 #include "Items/Weapons/Weapon.h"
 #include "AIController.h"
@@ -40,9 +41,20 @@ AEnemy::AEnemy()
 }
 
 
+void AEnemy::SetWeaponCollisionEnabled(ECollisionEnabled::Type CollisionEnabled)
+{
+	if (EquippedWeapon and EquippedWeapon->GetWeaponBox())
+	{
+		EquippedWeapon->GetWeaponBox()->SetCollisionEnabled(CollisionEnabled);
+		EquippedWeapon->IgnoreActors.Empty();
+	}
+}
+
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Tags.Add(FName("Enemy"));
 
 	if (HealthBarWidget)
 	{
@@ -100,7 +112,7 @@ void AEnemy::MoveToTarget(AActor* Target)
 	if (EnemyController == nullptr or Target == nullptr) return;
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
-	MoveRequest.SetAcceptanceRadius(15.f);
+	MoveRequest.SetAcceptanceRadius(35.f);
 	EnemyController->MoveTo(MoveRequest);
 }
 
@@ -130,18 +142,45 @@ void AEnemy::PawnSeen(APawn* SeenPawn)
 	if (EnemyState == EEnemyState::EES_Chasing) return;
 
 	if (SeenPawn->ActorHasTag(FName("WORDSOULCharacter")))
-	{
-		EnemyState = EEnemyState::EES_Chasing;
+	{		
 		GetWorldTimerManager().ClearTimer(PatrolTimer);
 		GetCharacterMovement()->MaxWalkSpeed = 300.f;
 		CombatTarget = SeenPawn;
-		MoveToTarget(CombatTarget);
+
+		if (EnemyState < EEnemyState::EES_Attacking)
+		{
+			EnemyState = EEnemyState::EES_Chasing;
+			MoveToTarget(CombatTarget);
+		}
 	}
+}
+
+void AEnemy::Attack()
+{
+	EnemyState = EEnemyState::EES_Engaged;
+	if (CombatTarget and CombatTarget->ActorHasTag(FName("Dead")))
+	{
+		CombatTarget = nullptr;
+	}
+	PlayAttackMontage();
+}
+
+void AEnemy::AttackEnd()
+{
+	EnemyState = EEnemyState::EES_NoState;
+	CheckCombatTarget();
 }
 
 void AEnemy::PatrolTimerFinished()
 {
 	MoveToTarget(PatrolTarget);
+}
+
+void AEnemy::StartAttackTimer()
+{
+	EnemyState = EEnemyState::EES_Attacking;
+	const float AttackTime = FMath::RandRange(AttackTimeMin, AttackTimeMax);
+	GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
 }
 
 void AEnemy::PlayHitReactMontage(const FName& SectionName)
@@ -181,14 +220,32 @@ void AEnemy::CheckCombatTarget()
 {
 	if (!InTargetRange(CombatTarget, CombatRadius))
 	{
+		GetWorldTimerManager().ClearTimer(AttackTimer);
 		CombatTarget = nullptr;
 		if (HealthBarWidget)
 		{
 			HealthBarWidget->SetVisibility(false);
 		}
-		EnemyState = EEnemyState::EES_Patrolling;
-		GetCharacterMovement()->MaxWalkSpeed = 125.f;
-		MoveToTarget(PatrolTarget);
+		if (EnemyState != EEnemyState::EES_Engaged)
+		{
+			EnemyState = EEnemyState::EES_Patrolling;
+			GetCharacterMovement()->MaxWalkSpeed = 125.f;
+			MoveToTarget(PatrolTarget);
+		}
+	}
+	else if (!InTargetRange(CombatTarget, AttackRadius) and EnemyState != EEnemyState::EES_Chasing)
+	{
+		GetWorldTimerManager().ClearTimer(AttackTimer);
+		if (EnemyState != EEnemyState::EES_Engaged)
+		{
+			EnemyState = EEnemyState::EES_Chasing;
+			GetCharacterMovement()->MaxWalkSpeed = 300.f;
+			MoveToTarget(CombatTarget);
+		}
+	}
+	else if (InTargetRange(CombatTarget, AttackRadius) and EnemyState != EEnemyState::EES_Attacking and EnemyState != EEnemyState::EES_Engaged and EnemyState != EEnemyState::EES_Dead)
+	{
+		StartAttackTimer();
 	}
 }
 
@@ -244,6 +301,9 @@ float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AC
 		HealthBarWidget->SetHealthPercent(Attributes->GetHealthPercent());
 	}
 	CombatTarget = EventInstigator->GetPawn();
+	EnemyState = EEnemyState::EES_Chasing;
+	GetCharacterMovement()->MaxWalkSpeed = 300.f;
+	MoveToTarget(CombatTarget);
 	return DamageAmount;
 }
 
@@ -261,7 +321,20 @@ void AEnemy::PlayAttackMontage()
 	if (AnimInstance and AttackMontage)
 	{
 		AnimInstance->Montage_Play(AttackMontage);
-		AnimInstance->Montage_JumpToSection("Default", AttackMontage);
+		const int32 Selection = FMath::RandRange(0, 1);
+		FName SectionName = FName();
+		switch (Selection)
+		{
+		case 0:
+			SectionName = FName("Attack1");
+			break;
+		case 1:
+			SectionName = FName("Attack2");
+			break;
+		default:
+			break;
+		}
+		AnimInstance->Montage_JumpToSection(SectionName, AttackMontage);
 	}
 }
 

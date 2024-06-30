@@ -59,6 +59,8 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (IsActorSameTag(OtherActor)) return;
+
 	const FVector Start = BoxTraceStart->GetComponentLocation();
 	const FVector End = BoxTraceEnd->GetComponentLocation();
 
@@ -87,6 +89,8 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	);
 	if (BoxHit.GetActor())
 	{
+		if (IsActorSameTag(BoxHit.GetActor())) return;
+
 		UGameplayStatics::ApplyDamage(BoxHit.GetActor(), Damage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
 
 		IHitInterface* HitInterface = Cast<IHitInterface>(BoxHit.GetActor());
@@ -98,4 +102,9 @@ void AWeapon::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 
 		CreateFields(BoxHit.ImpactPoint);
 	}
+}
+
+bool AWeapon::IsActorSameTag(AActor* OtherActor)
+{
+	return GetOwner()->ActorHasTag(TEXT("Enemy")) and OtherActor->ActorHasTag(TEXT("Enemy"));
 }
